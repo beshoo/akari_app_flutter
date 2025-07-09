@@ -1,0 +1,12 @@
+{
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 500,
+    "dart.flutterHotReloadOnSave": true,
+    "dart.hotReloadOnSave": true,
+    "dart.previewHotReloadOnSaveWatcher": true,
+    "dart.flutterHotRestartOnSave": false,
+    "debug.toolBarLocation": "floating",
+    "debug.showSubSessionsInToolBar": false,
+    "window.commandCenter": true,
+    "dart.showDevToolsDebugToolBarButtons": true
+} 
