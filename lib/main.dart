@@ -1,5 +1,7 @@
+import 'package:akari_app/data/repositories/home_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:get/get.dart';
 import 'package:phone_form_field/phone_form_field.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
@@ -10,6 +12,7 @@ import 'pages/otp_validation_page.dart';
 import 'pages/signup_page.dart';
 import 'pages/splash_page.dart';
 import 'pages/webview_page.dart';
+import 'pages/home/home_page.dart';
 import 'services/api_service.dart';
 import 'services/firebase_messaging_service.dart';
 import 'stores/auth_store.dart';
@@ -25,6 +28,8 @@ Future<void> main() async {
   
   // Initialize API service
   ApiService.initialize();
+  Get.put(ApiService.instance);
+  Get.put(HomeRepository());
   
   // Initialize Firebase messaging and request permission
   await FirebaseMessagingService.instance.initialize();
@@ -44,7 +49,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EnumsStore()),
       ],
       child: ToastificationWrapper(
-      child: MaterialApp(
+      child: GetMaterialApp(
         title: 'Akari App',
         debugShowCheckedModeBanner: false,
         
@@ -66,9 +71,15 @@ class MyApp extends StatelessWidget {
         
         // Force RTL layout direction
         builder: (context, child) {
+          final mediaQueryData = MediaQuery.of(context);
           return Directionality(
             textDirection: TextDirection.rtl,
-            child: child!,
+            child: MediaQuery(
+              data: mediaQueryData.copyWith(
+                textScaler: const TextScaler.linear(1.0),
+              ),
+              child: child!,
+            ),
           );
         },
         
@@ -151,6 +162,7 @@ class MyApp extends StatelessWidget {
           '/signup': (context) => const SignupPage(),
           '/login': (context) => const LoginPage(),
           '/onboarding': (context) => const OnboardingPage(),
+          '/home': (context) => const HomePage(),
         },
         
         onGenerateRoute: (settings) {

@@ -105,7 +105,7 @@ class _ParallaxSliderState extends State<ParallaxSlider> {
             height: 80,
             child: Center(
               child: Image.asset(
-                'assets/images/only_word.png',
+                'assets/images/logo.png',
                 height: 80,
                 fit: BoxFit.contain,
               ),

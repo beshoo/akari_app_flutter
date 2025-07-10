@@ -1,12 +1,16 @@
+import 'dart:io';
 import 'dart:math';
+import 'package:akari_app/pages/network_error_page.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:get/get.dart' hide Response;
 import '../config/environment.dart';
 import 'secure_storage.dart';
 
 class ApiService {
   static late Dio dio;
   static bool _initialized = false;
+  static bool _isErrorPageShown = false;
   
   static void initialize() {
     if (_initialized) return;
@@ -65,8 +69,74 @@ class ApiService {
           print('💥 Error: ${error.message}');
           print('📝 Response: ${error.response?.data}');
         }
+
+        // --- Network Error Handling ---
+        final isNetworkError = error.type == DioExceptionType.connectionTimeout ||
+            error.type == DioExceptionType.sendTimeout ||
+            error.type == DioExceptionType.receiveTimeout ||
+            error.type == DioExceptionType.unknown ||
+            error.error is SocketException;
+
+        if (isNetworkError) {
+          if (_isErrorPageShown) {
+            // If an error page is already shown, we prevent showing another one
+            // and just pass the error to the next handler.
+            return handler.next(error);
+          }
+          _isErrorPageShown = true;
+
+          final response = await Get.to<Response?>(
+            () => NetworkErrorPage(
+              onRetry: () async {
+                try {
+                  // Re-attempt the failed request with a 10-second timeout
+                  final newResponse = await dio.fetch(
+                    error.requestOptions.copyWith(
+                      sendTimeout: const Duration(seconds: 10),
+                      receiveTimeout: const Duration(seconds: 10),
+                      connectTimeout: const Duration(seconds: 10),
+                    ),
+                  );
+                  // If successful, pop the error page and return the response
+                  Get.back(result: newResponse);
+                } catch (e) {
+                  // If retry fails, print the error and stay on the error page
+                  if (kDebugMode) {
+                    print('--- RETRY FAILED ---');
+                    print(e);
+                  }
+                }
+              },
+            ),
+            preventDuplicates: true,
+          );
+
+          _isErrorPageShown = false;
+
+          if (response != null) {
+            // If retry was successful and a response was returned,
+            // resolve the original request with the new response.
+            return handler.resolve(response);
+          } else {
+            // If the error page was dismissed without a successful retry,
+            // pass the original error to the next handler.
+            return handler.next(error);
+          }
+        }
+        // --- End of Network Error Handling ---
+
+        // Handle Unauthenticated
+        if (error.response?.data is Map<String, dynamic>) {
+          final data = error.response!.data as Map<String, dynamic>;
+          if (data['message'] == 'Unauthenticated') {
+            await SecureStorage.deleteToken();
+            Get.offAllNamed('/login');
+            // We return the error to prevent other interceptors from processing it
+            return handler.next(error);
+          }
+        }
         
-        // Handle 401 Unauthorized
+        // Handle 401 Unauthorized (fallback)
         if (error.response?.statusCode == 401) {
           await SecureStorage.deleteToken();
           // Here you might want to navigate to login page

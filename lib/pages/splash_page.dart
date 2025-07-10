@@ -1,8 +1,6 @@
 import 'dart:async';
-
+import 'package:akari_app/services/secure_storage.dart';
 import 'package:flutter/material.dart';
-
-import 'onboarding_page.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -15,26 +13,24 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    _navigateToOnboarding();
+    _checkAuthAndNavigate();
   }
 
-  void _navigateToOnboarding() {
-    Timer(const Duration(seconds: 4), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => const OnboardingPage(),
-            transitionDuration: const Duration(milliseconds: 800),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-          ),
-        );
-      }
-    });
+  Future<void> _checkAuthAndNavigate() async {
+    // Wait for a few seconds on the splash screen
+    await Future.delayed(const Duration(seconds: 4));
+
+    final token = await SecureStorage.getToken();
+
+    if (!mounted) return;
+
+    if (token != null) {
+      // If token exists, go to home
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      // Otherwise, go to onboarding
+      Navigator.pushReplacementNamed(context, '/onboarding');
+    }
   }
 
   @override

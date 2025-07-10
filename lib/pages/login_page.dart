@@ -1,9 +1,8 @@
-import 'package:akari_app/pages/signup_page.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:phone_form_field/phone_form_field.dart';
+import 'package:provider/provider.dart';
+
 import '../stores/auth_store.dart';
-import 'otp_validation_page.dart';
 import '../utils/toast_helper.dart';
 
 class LoginPage extends StatefulWidget {

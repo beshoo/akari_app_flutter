@@ -650,7 +650,7 @@ class _SignupPageState extends State<SignupPage> {
                               end: Alignment.centerRight,
                             )
                           : null,
-                      color: isEnabled ? null : const Color(0xFFbda28c).withOpacity(0.6),
+                      color: isEnabled ? null : const Color(0xFFbda28c).withAlpha(153),
                     ),
                     child: Container(
                       height: 45,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -25,6 +26,7 @@ class OtpValidationPageState extends State<OtpValidationPage> {
   // OTP controllers
   final List<TextEditingController> _otpControllers = List.generate(6, (index) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
+  Timer? _timer;
   
   // State variables
   String _otp = '';
@@ -135,6 +137,7 @@ class OtpValidationPageState extends State<OtpValidationPage> {
   
   @override
   void dispose() {
+    _timer?.cancel();
     for (var controller in _otpControllers) {
       controller.dispose();
     }
@@ -145,12 +148,15 @@ class OtpValidationPageState extends State<OtpValidationPage> {
   }
   
   void _startResendTimer() {
-    Future.delayed(Duration(seconds: 1), () {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_resendTimer > 0) {
-        setState(() {
-          _resendTimer--;
-        });
-        _startResendTimer();
+        if (mounted) {
+          setState(() {
+            _resendTimer--;
+          });
+        }
+      } else {
+        _timer?.cancel();
       }
     });
   }
@@ -676,7 +682,7 @@ class OtpValidationPageState extends State<OtpValidationPage> {
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(35),
-          border: Border.all(color: Color(0xFFa47764).withOpacity(0.3)),
+          border: Border.all(color: const Color(0xFFa47764).withAlpha(77)),
         ),
         child: Center(
           child: Text(
@@ -706,7 +712,7 @@ class OtpValidationPageState extends State<OtpValidationPage> {
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(35),
-          border: Border.all(color: Color(0xFFa47764).withOpacity(0.3)),
+          border: Border.all(color: const Color(0xFFa47764).withAlpha(77)),
         ),
         child: Center(
           child: Icon(
