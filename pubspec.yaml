@@ -71,6 +71,18 @@ dependencies:
   firebase_core: ^3.2.0
   firebase_messaging: ^15.0.3
 
+  # Share functionality
+  share_plus: ^7.2.2
+  
+  # Icons
+  font_awesome_flutter: ^10.6.0
+  
+  # Bottom modal sheet
+  modal_bottom_sheet: ^3.0.0
+  
+  # Cached network image
+  cached_network_image: ^3.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

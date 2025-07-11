@@ -9,6 +9,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onHelpPressed,
     this.showBackButton = true,
     this.onBackPressed,
+    this.title,
   });
 
   final VoidCallback? onNotificationPressed;
@@ -17,6 +18,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onHelpPressed;
   final bool showBackButton;
   final VoidCallback? onBackPressed;
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +49,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               if (showBackButton) const SizedBox(width: 8),
+              if (title != null) 
+                Text(
+                  title!,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF8C7A6A),
+                  ),
+                )
+              else
               Image.asset(
                 'assets/images/logo.png',
                 height: 35,

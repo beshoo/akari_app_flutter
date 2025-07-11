@@ -17,6 +17,7 @@ import 'services/api_service.dart';
 import 'services/firebase_messaging_service.dart';
 import 'stores/auth_store.dart';
 import 'stores/enums_store.dart';
+import 'stores/reaction_store.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 Future<void> main() async {
@@ -47,6 +48,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthStore()),
         ChangeNotifierProvider(create: (_) => EnumsStore()),
+        ChangeNotifierProvider(create: (_) => ReactionStore()),
       ],
       child: ToastificationWrapper(
       child: GetMaterialApp(

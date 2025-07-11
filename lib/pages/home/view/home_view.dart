@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:akari_app/pages/home/bloc/home_bloc.dart';
 import 'package:akari_app/pages/home/bloc/home_event.dart';
 import 'package:akari_app/pages/home/bloc/home_state.dart';
+import 'package:akari_app/pages/region_page.dart';
 import 'package:akari_app/widgets/custom_app_bar.dart';
 import 'package:akari_app/widgets/custom_dialog.dart';
 import 'package:akari_app/widgets/custom_bottom_nav_bar.dart';
@@ -138,7 +139,15 @@ class _HomeViewState extends State<HomeView> {
                                         final region = state.regions[index];
                                         return GestureDetector(
                                           onTap: () {
-                                            // TODO: Handle region tap
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => RegionPage(
+                                                  regionId: region.id,
+                                                  regionName: region.name,
+                                                ),
+                                              ),
+                                            );
                                           },
                                           child: ClipRRect(
                                             borderRadius: BorderRadius.circular(12.0),
@@ -273,6 +282,7 @@ class _HomeViewState extends State<HomeView> {
                                             );
                                           },
                                         ),
+
                                         const SizedBox(height: 16),
                                         // Add extra bottom padding for FAB
                                         const SizedBox(height: 150),
