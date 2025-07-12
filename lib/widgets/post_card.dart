@@ -222,20 +222,15 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       right: 12,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Transaction type badge
-          _buildBadge(
-            _currentPostData.transactionTypeText,
-            _badgeGradient,
-          ),
-          
-          // Right side badges
+          // Left side badges
           Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ID badge
+              // Transaction type badge
               _buildBadge(
-                _currentPostData.badgeId,
+                _currentPostData.transactionTypeText,
                 _badgeGradient,
               ),
               
@@ -249,6 +244,12 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                   ),
                 ),
             ],
+          ),
+          
+          // Right side badges - ID badge aligned to top
+          _buildBadge(
+            _currentPostData.badgeId,
+            _badgeGradient,
           ),
         ],
       ),

@@ -153,6 +153,8 @@ class _HomeViewState extends State<HomeView> {
                                                 builder: (context) => RegionPage(
                                                   regionId: region.id,
                                                   regionName: region.name,
+                                                  hasShare: region.hasShare,
+                                                  hasApartment: region.hasApartment,
                                                 ),
                                               ),
                                             );

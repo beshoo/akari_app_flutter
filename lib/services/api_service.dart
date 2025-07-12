@@ -130,7 +130,16 @@ class ApiService {
           final data = error.response!.data as Map<String, dynamic>;
           if (data['message'] == 'Unauthenticated') {
             await SecureStorage.deleteToken();
-            Get.offAllNamed('/login');
+            // Navigate to login and clear all previous routes
+            try {
+              Get.offAllNamed('/login');
+            } catch (e) {
+              // Fallback: if named route fails, try to navigate to onboarding
+              if (kDebugMode) {
+                print('Failed to navigate to login, trying onboarding: $e');
+              }
+              Get.offAllNamed('/onboarding');
+            }
             // We return the error to prevent other interceptors from processing it
             return handler.next(error);
           }

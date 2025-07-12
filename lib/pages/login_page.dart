@@ -75,6 +75,17 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  // Handle close button press
+  void _handleCloseButton() {
+    // Check if we can pop (if there are previous routes in the stack)
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      // If no previous routes, navigate to onboarding instead of creating a black screen
+      Navigator.pushReplacementNamed(context, '/onboarding');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -134,7 +145,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             child: IconButton(
               icon: const Icon(Icons.close, color: Color(0xFFa47764)),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => _handleCloseButton(),
             ),
           ),
         ],

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:developer' as developer;
 import '../data/models/share_model.dart';
 import '../data/models/apartment_model.dart';
 import '../data/repositories/share_repository.dart';
 import '../data/repositories/apartment_repository.dart';
 import '../stores/auth_store.dart';
+import '../services/secure_storage.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/post_card.dart';
 import '../widgets/post_card_data.dart';
@@ -13,11 +15,15 @@ import '../widgets/custom_spinner.dart';
 class RegionPage extends StatefulWidget {
   final int? regionId;
   final String? regionName;
+  final bool hasShare;
+  final bool hasApartment;
 
   const RegionPage({
     super.key,
     this.regionId,
     this.regionName,
+    required this.hasShare,
+    required this.hasApartment,
   });
 
   @override
@@ -30,6 +36,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   
   TabController? _tabController;
+  final List<Widget> _tabs = [];
   
   // Global keys for refresh indicators
   final GlobalKey<RefreshIndicatorState> _sharesRefreshKey = GlobalKey<RefreshIndicatorState>();
@@ -43,7 +50,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   int currentSharePage = 1;
   String? shareErrorMessage;
   bool isRefreshingShares = false;
-  bool showSharesNoDataMessage = false;
+  bool hasLoadedShares = false;
 
   // Apartment state
   List<Apartment> apartments = [];
@@ -53,21 +60,43 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   int currentApartmentPage = 1;
   String? apartmentErrorMessage;
   bool isRefreshingApartments = false;
-  bool showApartmentsNoDataMessage = false;
+  bool hasLoadedApartments = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController!.addListener(_onTabChanged);
+    _buildTabs();
+    
+    if (_tabs.isNotEmpty) {
+      _tabController = TabController(length: _tabs.length, vsync: this);
+      _tabController!.addListener(_onTabChanged);
+    }
+    
     _scrollController.addListener(_onScroll);
 
-    // Simulate pull-to-refresh to load initial data. This shows the loading spinner.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _sharesRefreshKey.currentState?.show();
+        _loadInitialData();
       }
     });
+  }
+  
+  void _buildTabs() {
+    _tabs.clear();
+    if (widget.hasShare) {
+      _tabs.add(const Tab(text: 'الأسهم التنظيمية'));
+    }
+    if (widget.hasApartment) {
+      _tabs.add(const Tab(text: 'العقارات'));
+    }
+  }
+
+  void _loadInitialData() {
+    if (widget.hasShare) {
+      _sharesRefreshKey.currentState?.show();
+    } else if (widget.hasApartment) {
+      _apartmentsRefreshKey.currentState?.show();
+    }
   }
 
   @override
@@ -83,12 +112,27 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   void didUpdateWidget(covariant RegionPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.regionId != oldWidget.regionId) {
-      // When regionId changes, we should reload data.
-      // Move to the first tab.
-      _tabController?.animateTo(0);
-
-      // Clear the state for the apartments tab so it reloads when selected.
       setState(() {
+        _buildTabs();
+        
+        if (_tabs.isNotEmpty) {
+          _tabController?.dispose();
+          _tabController = TabController(length: _tabs.length, vsync: this);
+          _tabController!.addListener(_onTabChanged);
+        }
+      });
+      
+      // Clear the state for both tabs
+      setState(() {
+        shares.clear();
+        isLoadingShares = false;
+        isLoadingMoreShares = false;
+        hasMoreSharePages = true;
+        currentSharePage = 1;
+        shareErrorMessage = null;
+        isRefreshingShares = false;
+        hasLoadedShares = false;
+        
         apartments.clear();
         isLoadingApartments = false;
         isLoadingMoreApartments = false;
@@ -96,56 +140,96 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         currentApartmentPage = 1;
         apartmentErrorMessage = null;
         isRefreshingApartments = false;
-        showApartmentsNoDataMessage = false;
+        hasLoadedApartments = false;
       });
 
-      // Show the refresh indicator on the shares tab to load new data.
-      // This will also handle clearing the old shares data via _loadShares(refresh: true).
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _sharesRefreshKey.currentState?.show();
+        if (mounted) {
+          _loadInitialData();
+        }
       });
     }
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent * 0.95) {
-      if (_tabController!.index == 0) {
-        // Shares tab
-        if (!isLoadingMoreShares && hasMoreSharePages) {
-          _loadMoreShares();
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.95) {
+      if (_tabController == null) {
+        if (widget.hasShare) {
+          if (!isLoadingMoreShares && hasMoreSharePages) _loadMoreShares();
+        } else if (widget.hasApartment) {
+          if (!isLoadingMoreApartments && hasMoreApartmentPages) _loadMoreApartments();
         }
-      } else {
-        // Apartments tab
-        if (!isLoadingMoreApartments && hasMoreApartmentPages) {
-          _loadMoreApartments();
+        return;
+      }
+      
+      final currentTabIndex = _tabController!.index;
+      if (widget.hasShare && widget.hasApartment) {
+        if (currentTabIndex == 0) {
+          if (!isLoadingMoreShares && hasMoreSharePages) _loadMoreShares();
+        } else {
+          if (!isLoadingMoreApartments && hasMoreApartmentPages) _loadMoreApartments();
         }
+      } else if (widget.hasShare) {
+        if (!isLoadingMoreShares && hasMoreSharePages) _loadMoreShares();
+      } else if (widget.hasApartment) {
+        if (!isLoadingMoreApartments && hasMoreApartmentPages) _loadMoreApartments();
       }
     }
   }
 
   void _onTabChanged() {
-    // This listener is called when the tab selection changes.
-    // We only want to reload if the tab is selected, not during the transition.
     if (_tabController!.indexIsChanging) return;
     
-    if (_tabController!.index == 0) {
-      // Switched to shares tab
-      if (shares.isEmpty && !isLoadingShares) {
-        // Simulate pull-to-refresh when switching to shares tab
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _sharesRefreshKey.currentState?.show();
-        });
-      }
-    } else if (_tabController!.index == 1) {
-      // Switched to apartments tab
-      if (apartments.isEmpty && !isLoadingApartments) {
-        // Simulate pull-to-refresh when switching to apartments tab
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _apartmentsRefreshKey.currentState?.show();
-        });
+    final currentTabIndex = _tabController!.index;
+    
+    if (widget.hasShare && widget.hasApartment) {
+      if (currentTabIndex == 0) { // Shares
+        if (shares.isEmpty && !isLoadingShares) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _sharesRefreshKey.currentState?.show();
+          });
+        }
+      } else { // Apartments
+        if (apartments.isEmpty && !isLoadingApartments) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _apartmentsRefreshKey.currentState?.show();
+          });
+        }
       }
     }
+  }
+
+  // Helper method to log auth data before each request
+  Future<void> _logAuthData(String requestType) async {
+    final authStore = Provider.of<AuthStore>(context, listen: false);
+    final token = await SecureStorage.getToken();
+    
+    developer.log(
+      '🔐 Auth Data for $requestType Request',
+      name: 'AUTH_LOG',
+      time: DateTime.now(),
+    );
+    
+    developer.log(
+      'User ID: ${authStore.userId ?? 'null'}\n'
+      'Name: ${authStore.userName ?? 'null'}\n'
+      'Phone: ${authStore.userPhone ?? 'null'}\n'
+      'Privilege: ${authStore.userPrivilege ?? 'null'}\n'
+      'Authenticated: ${authStore.isUserAuthenticated}\n'
+      'Can Upload: ${authStore.canUpload}\n'
+      'Token Type: ${authStore.tokenType ?? 'null'}\n'
+      'Token Expires In: ${authStore.tokenExpiresIn ?? 'null'}\n'
+      'Has Token: ${token != null}\n'
+      'Token Length: ${token?.length ?? 0}\n'
+      'Support Phone: ${authStore.supportPhone ?? 'null'}\n'
+      'Show Ads Banner: ${authStore.showAdsBanner}\n'
+      'Open For All: ${authStore.isOpenForAll}\n'
+      'HTTP Error Log: ${authStore.httpErrorLog}\n'
+      'Chat Enabled: ${authStore.chatEnabled}\n'
+      'Region ID: ${widget.regionId ?? 'null'}\n'
+      'Region Name: ${widget.regionName ?? 'null'}',
+      name: 'AUTH_DETAILS',
+    );
   }
 
   // Share methods
@@ -159,22 +243,13 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         shares.clear();
         currentSharePage = 1;
         hasMoreSharePages = true;
-        showSharesNoDataMessage = false;
       }
     });
 
-    // Start timer for showing no data message
-    if (refresh) {
-      Future.delayed(const Duration(seconds: 10), () {
-        if (mounted && isLoadingShares && shares.isEmpty) {
-          setState(() {
-            showSharesNoDataMessage = true;
-          });
-        }
-      });
-    }
-
     try {
+      // Log auth data before making the request
+      await _logAuthData('Shares${refresh ? ' (Refresh)' : ''}');
+      
       final response = await _shareRepository.fetchShares(
         regionId: widget.regionId!,
         page: currentSharePage,
@@ -191,7 +266,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
           hasMoreSharePages = response.hasNextPage;
           isLoadingShares = false;
           shareErrorMessage = null;
-          showSharesNoDataMessage = false;
+          hasLoadedShares = true;
         });
       }
     } catch (e) {
@@ -199,7 +274,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         setState(() {
           isLoadingShares = false;
           shareErrorMessage = e.toString();
-          showSharesNoDataMessage = false;
+          hasLoadedShares = true;
         });
       }
     }
@@ -214,6 +289,10 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
 
     try {
       currentSharePage++;
+      
+      // Log auth data before making the request
+      await _logAuthData('Load More Shares (Page $currentSharePage)');
+      
       final response = await _shareRepository.fetchShares(
         regionId: widget.regionId!,
         page: currentSharePage,
@@ -224,6 +303,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
           shares.addAll(response.shares);
           hasMoreSharePages = response.hasNextPage;
           isLoadingMoreShares = false;
+          hasLoadedShares = true;
         });
       }
     } catch (e) {
@@ -231,6 +311,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         setState(() {
           isLoadingMoreShares = false;
           currentSharePage--; // Revert page increment on error
+          hasLoadedShares = true;
         });
         
         // Show error message for loading more
@@ -248,6 +329,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
     if (widget.regionId == null) return;
     setState(() {
       isRefreshingShares = true;
+      isLoadingShares = true;
     });
     await _loadShares(refresh: true);
     setState(() {
@@ -266,22 +348,13 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         apartments.clear();
         currentApartmentPage = 1;
         hasMoreApartmentPages = true;
-        showApartmentsNoDataMessage = false;
       }
     });
 
-    // Start timer for showing no data message
-    if (refresh) {
-      Future.delayed(const Duration(seconds: 10), () {
-        if (mounted && isLoadingApartments && apartments.isEmpty) {
-          setState(() {
-            showApartmentsNoDataMessage = true;
-          });
-        }
-      });
-    }
-
     try {
+      // Log auth data before making the request
+      await _logAuthData('Apartments${refresh ? ' (Refresh)' : ''}');
+      
       final response = await _apartmentRepository.fetchApartments(
         regionId: widget.regionId!,
         page: currentApartmentPage,
@@ -298,7 +371,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
           hasMoreApartmentPages = response.hasNextPage;
           isLoadingApartments = false;
           apartmentErrorMessage = null;
-          showApartmentsNoDataMessage = false;
+          hasLoadedApartments = true;
         });
       }
     } catch (e) {
@@ -306,7 +379,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         setState(() {
           isLoadingApartments = false;
           apartmentErrorMessage = e.toString();
-          showApartmentsNoDataMessage = false;
+          hasLoadedApartments = true;
         });
       }
     }
@@ -321,6 +394,10 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
 
     try {
       currentApartmentPage++;
+      
+      // Log auth data before making the request
+      await _logAuthData('Load More Apartments (Page $currentApartmentPage)');
+      
       final response = await _apartmentRepository.fetchApartments(
         regionId: widget.regionId!,
         page: currentApartmentPage,
@@ -331,6 +408,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
           apartments.addAll(response.apartments);
           hasMoreApartmentPages = response.hasNextPage;
           isLoadingMoreApartments = false;
+          hasLoadedApartments = true;
         });
       }
     } catch (e) {
@@ -338,6 +416,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         setState(() {
           isLoadingMoreApartments = false;
           currentApartmentPage--; // Revert page increment on error
+          hasLoadedApartments = true;
         });
         
         // Show error message for loading more
@@ -355,6 +434,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
     if (widget.regionId == null) return;
     setState(() {
       isRefreshingApartments = true;
+      isLoadingApartments = true;
     });
     await _loadApartments(refresh: true);
     setState(() {
@@ -366,8 +446,33 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    // Ensure TabController is initialized
-    _tabController ??= TabController(length: 2, vsync: this);
+    final List<Widget> tabViews = [];
+    if (widget.hasShare) {
+      tabViews.add(_buildSharesTab());
+    }
+    if (widget.hasApartment) {
+      tabViews.add(_buildApartmentsTab());
+    }
+
+    if (_tabs.isEmpty) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF7F5F2),
+        appBar: CustomAppBar(
+          showBackButton: true,
+          onBackPressed: () => Navigator.pop(context),
+        ),
+        body: Center(
+          child: Text(
+            'لا توجد بيانات متاحة لهذه المنطقة',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey,
+              fontFamily: 'Cairo',
+            ),
+          ),
+        ),
+      );
+    }
     
     return Scaffold(
       backgroundColor: const Color(0xFFF7F5F2),
@@ -411,48 +516,81 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
                   thickness: 1,
                   color: Color(0xFFd7c1c0),
                 ),
-                TabBar(
-                  controller: _tabController!,
-                  labelColor: const Color(0xFF633e3d),
-                  unselectedLabelColor: const Color(0xFF8C7A6A),
-                  indicatorColor: const Color(0xFF633e3d),
-                  indicatorWeight: 3,
-                  labelStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Cairo',
-                  ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Cairo',
-                  ),
-                  onTap: (index) {
-                    if (_tabController?.index == index) {
-                      // User clicked on the currently active tab - simulate pull-to-refresh
-                      if (index == 0) {
-                        _sharesRefreshKey.currentState?.show();
-                      } else if (index == 1) {
-                        _apartmentsRefreshKey.currentState?.show();
+                if (_tabs.length > 1)
+                  TabBar(
+                    controller: _tabController!,
+                    labelColor: const Color(0xFF633e3d),
+                    unselectedLabelColor: const Color(0xFF8C7A6A),
+                    indicatorColor: const Color(0xFF633e3d),
+                    indicatorWeight: 3,
+                    labelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Cairo',
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Cairo',
+                    ),
+                    onTap: (index) {
+                      if (_tabController?.index == index) {
+                        if (widget.hasShare && widget.hasApartment) {
+                          if (index == 0) _sharesRefreshKey.currentState?.show();
+                          else _apartmentsRefreshKey.currentState?.show();
+                        } else if (widget.hasShare) {
+                           _sharesRefreshKey.currentState?.show();
+                        } else if (widget.hasApartment) {
+                          _apartmentsRefreshKey.currentState?.show();
+                        }
                       }
-                    }
-                  },
-                  tabs: const [
-                    Tab(text: 'الأسهم التنظيمية'),
-                    Tab(text: 'العقارات'),
-                  ],
-                ),
+                    },
+                    tabs: _tabs,
+                  )
+                else if (_tabs.length == 1)
+                  Column(
+                    children: [
+                      // Single tab - show it as a header with tap-to-refresh functionality
+                      GestureDetector(
+                        onTap: () {
+                          if (widget.hasShare) {
+                            _sharesRefreshKey.currentState?.show();
+                          } else if (widget.hasApartment) {
+                            _apartmentsRefreshKey.currentState?.show();
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12.0),
+                          child: Center(
+                            child: Text(
+                              widget.hasShare ? 'الأسهم التنظيمية' : 'العقارات',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Cairo',
+                                color: Color(0xFF633e3d),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: Color(0xFFd7c1c0),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
           Expanded(
-            child: TabBarView(
-              controller: _tabController!,
-              children: [
-                _buildSharesTab(), // الأسهم التنظيمية tab
-                _buildApartmentsTab(), // العقارات tab
-              ],
-            ),
+            child: (_tabs.length > 1)
+              ? TabBarView(
+                  controller: _tabController!,
+                  children: tabViews,
+                )
+              : tabViews.first,
           ),
         ],
       ),
@@ -460,42 +598,19 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   }
 
   Widget _buildSharesTab() {
-    if (shareErrorMessage != null) {
-      return Center(
-        child: RefreshIndicator(
-          key: _sharesRefreshKey,
-          onRefresh: _refreshShares,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.7,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'حدث خطأ في تحميل الأسهم',
-                    style: TextStyle(fontSize: 18, color: Colors.red),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    shareErrorMessage!,
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () => _sharesRefreshKey.currentState?.show(),
-                    child: const Text('إعادة المحاولة'),
-                  ),
-                ],
-              ),
-            ),
-          ),
+    if (isLoadingShares && shares.isEmpty) {
+      return const Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: CustomSpinner(size: 32.0),
         ),
       );
     }
 
-    if (shares.isEmpty) {
+
+
+    if (shares.isEmpty && hasLoadedShares) {
       return RefreshIndicator(
         key: _sharesRefreshKey,
         onRefresh: _refreshShares,
@@ -504,41 +619,33 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
           child: SizedBox(
             height: MediaQuery.of(context).size.height * 0.7,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (showSharesNoDataMessage && !isLoadingShares) ...[
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'لا توجد أسهم متاحة',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () => _sharesRefreshKey.currentState?.show(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF633e3d),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text(
-                            'إعادة المحاولة',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Cairo',
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
+                const Text(
+                  'لا توجد أسهم متاحة',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () => _sharesRefreshKey.currentState?.show(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF633e3d),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                ],
+                  child: const Text(
+                    'إعادة المحاولة',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Cairo',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -601,42 +708,19 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   }
 
   Widget _buildApartmentsTab() {
-    if (apartmentErrorMessage != null) {
-      return Center(
-        child: RefreshIndicator(
-          key: _apartmentsRefreshKey,
-          onRefresh: _refreshApartments,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.7,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'حدث خطأ في تحميل العقارات',
-                    style: TextStyle(fontSize: 18, color: Colors.red),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    apartmentErrorMessage!,
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () => _apartmentsRefreshKey.currentState?.show(),
-                    child: const Text('إعادة المحاولة'),
-                  ),
-                ],
-              ),
-            ),
-          ),
+    if (isLoadingApartments && apartments.isEmpty) {
+      return const Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: CustomSpinner(size: 32.0),
         ),
       );
     }
+    
 
-    if (apartments.isEmpty) {
+
+    if (apartments.isEmpty && hasLoadedApartments) {
       return RefreshIndicator(
         key: _apartmentsRefreshKey,
         onRefresh: _refreshApartments,
@@ -645,41 +729,33 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
           child: SizedBox(
             height: MediaQuery.of(context).size.height * 0.7,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (showApartmentsNoDataMessage && !isLoadingApartments) ...[
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'لا توجد عقارات متاحة',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () => _apartmentsRefreshKey.currentState?.show(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF633e3d),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text(
-                            'إعادة المحاولة',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Cairo',
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
+                const Text(
+                  'لا توجد عقارات متاحة',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () => _apartmentsRefreshKey.currentState?.show(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF633e3d),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                ],
+                  child: const Text(
+                    'إعادة المحاولة',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Cairo',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
