@@ -47,45 +47,24 @@ class ShareRepository {
     required int regionId,
     int page = 1,
   }) async {
-    try {
-      final response = await _dio.get('/share/list/$regionId', queryParameters: {
-        'page': page,
-      });
+    final response = await _dio.get('/share/list/$regionId', queryParameters: {
+      'page': page,
+    });
 
-      if (kDebugMode) {
-        print("------- Share API Response -------");
-        print("Status Code: ${response.statusCode}");
-        print("URL: ${response.requestOptions.uri}");
-        print("Current Page: ${response.data?['current_page']}");
-        print("Total Items: ${response.data?['total']}");
-        print("Data Count: ${response.data?['data']?.length ?? 0}");
-        print("---------------------------------");
-      }
+    if (kDebugMode) {
+      print("------- Share API Response -------");
+      print("Status Code: ${response.statusCode}");
+      print("URL: ${response.requestOptions.uri}");
+      print("Current Page: ${response.data?['current_page']}");
+      print("Total Items: ${response.data?['total']}");
+      print("Data Count: ${response.data?['data']?.length ?? 0}");
+      print("---------------------------------");
+    }
 
-      if (response.statusCode == 200 && response.data != null) {
-        return SharePaginatedResponse.fromJson(response.data);
-      } else {
-        throw Exception('API returned status code ${response.statusCode}');
-      }
-    } on DioException catch (e) {
-      if (kDebugMode) {
-        print("DioException in fetchShares: ${e.message}");
-        print("DioException response: ${e.response}");
-      }
-      
-      if (e.response?.statusCode == 404) {
-        throw Exception('لم يتم العثور على أسهم في هذه المنطقة');
-      } else if (e.response?.statusCode == 401) {
-        throw Exception('غير مصرح لك بالوصول إلى هذه البيانات');
-      } else {
-        throw Exception('فشل في تحميل الأسهم بسبب خطأ في الشبكة');
-      }
-    } catch (e, stacktrace) {
-      if (kDebugMode) {
-        print("Unexpected error in fetchShares: $e");
-        print(stacktrace);
-      }
-      throw Exception('فشل في تحميل الأسهم بسبب خطأ غير متوقع: $e');
+    if (response.statusCode == 200 && response.data != null) {
+      return SharePaginatedResponse.fromJson(response.data);
+    } else {
+      throw Exception('API returned status code ${response.statusCode}');
     }
   }
 

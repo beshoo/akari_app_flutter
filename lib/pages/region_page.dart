@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../data/models/share_model.dart';
+import '../data/models/apartment_model.dart';
 import '../data/repositories/share_repository.dart';
-import '../widgets/share_card.dart';
+import '../data/repositories/apartment_repository.dart';
+import '../stores/auth_store.dart';
 import '../widgets/custom_app_bar.dart';
+import '../widgets/post_card.dart';
+import '../widgets/post_card_data.dart';
+import '../widgets/custom_spinner.dart';
 
 class RegionPage extends StatefulWidget {
   final int? regionId;
@@ -20,23 +26,41 @@ class RegionPage extends StatefulWidget {
 
 class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   final ShareRepository _shareRepository = ShareRepository();
+  final ApartmentRepository _apartmentRepository = ApartmentRepository();
   final ScrollController _scrollController = ScrollController();
   
   TabController? _tabController;
   
+  // Global keys for refresh indicators
+  final GlobalKey<RefreshIndicatorState> _sharesRefreshKey = GlobalKey<RefreshIndicatorState>();
+  final GlobalKey<RefreshIndicatorState> _apartmentsRefreshKey = GlobalKey<RefreshIndicatorState>();
+  
+  // Share state
   List<Share> shares = [];
-  bool isLoading = false;
-  bool isLoadingMore = false;
-  bool hasMorePages = true;
-  int currentPage = 1;
-  String? errorMessage;
+  bool isLoadingShares = false;
+  bool isLoadingMoreShares = false;
+  bool hasMoreSharePages = true;
+  int currentSharePage = 1;
+  String? shareErrorMessage;
+  bool isRefreshingShares = false;
+  bool showSharesNoDataMessage = false;
+
+  // Apartment state
+  List<Apartment> apartments = [];
+  bool isLoadingApartments = false;
+  bool isLoadingMoreApartments = false;
+  bool hasMoreApartmentPages = true;
+  int currentApartmentPage = 1;
+  String? apartmentErrorMessage;
+  bool isRefreshingApartments = false;
+  bool showApartmentsNoDataMessage = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController!.addListener(_onTabChanged);
-    _loadShares(refresh: true);
+    _loadShares(refresh: true); // Load shares by default
     _scrollController.addListener(_onScroll);
   }
 
@@ -52,8 +76,16 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * 0.95) {
-      if (!isLoadingMore && hasMorePages) {
-        _loadMoreShares();
+      if (_tabController!.index == 0) {
+        // Shares tab
+        if (!isLoadingMoreShares && hasMoreSharePages) {
+          _loadMoreShares();
+        }
+      } else {
+        // Apartments tab
+        if (!isLoadingMoreApartments && hasMoreApartmentPages) {
+          _loadMoreApartments();
+        }
       }
     }
   }
@@ -64,31 +96,54 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
     if (_tabController!.indexIsChanging) return;
     
     if (_tabController!.index == 0) {
-      // Switched to the first tab, reload the shares.
-      // The previous logic was complex; this is simpler.
-      // We are reloading on both tap and swipe for now to ensure data is fresh.
-      // A more complex state management solution would be needed to avoid reloads on swipe.
-      _loadShares(refresh: true);
+      // Switched to shares tab
+      if (shares.isEmpty && !isLoadingShares) {
+        // Simulate pull-to-refresh when switching to shares tab
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _sharesRefreshKey.currentState?.show();
+        });
+      }
+    } else if (_tabController!.index == 1) {
+      // Switched to apartments tab
+      if (apartments.isEmpty && !isLoadingApartments) {
+        // Simulate pull-to-refresh when switching to apartments tab
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _apartmentsRefreshKey.currentState?.show();
+        });
+      }
     }
   }
 
+  // Share methods
   Future<void> _loadShares({bool refresh = false}) async {
     if (widget.regionId == null) return;
 
     setState(() {
       if (refresh) {
-        isLoading = true;
-        errorMessage = null;
+        isLoadingShares = true;
+        shareErrorMessage = null;
         shares.clear();
-        currentPage = 1;
-        hasMorePages = true;
+        currentSharePage = 1;
+        hasMoreSharePages = true;
+        showSharesNoDataMessage = false;
       }
     });
+
+    // Start timer for showing no data message
+    if (refresh) {
+      Future.delayed(const Duration(seconds: 10), () {
+        if (mounted && isLoadingShares && shares.isEmpty) {
+          setState(() {
+            showSharesNoDataMessage = true;
+          });
+        }
+      });
+    }
 
     try {
       final response = await _shareRepository.fetchShares(
         regionId: widget.regionId!,
-        page: currentPage,
+        page: currentSharePage,
       );
 
       if (mounted) {
@@ -99,47 +154,49 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
             shares.addAll(response.shares);
           }
           
-          hasMorePages = response.hasNextPage;
-          isLoading = false;
-          errorMessage = null;
+          hasMoreSharePages = response.hasNextPage;
+          isLoadingShares = false;
+          shareErrorMessage = null;
+          showSharesNoDataMessage = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          isLoading = false;
-          errorMessage = e.toString();
+          isLoadingShares = false;
+          shareErrorMessage = e.toString();
+          showSharesNoDataMessage = false;
         });
       }
     }
   }
 
   Future<void> _loadMoreShares() async {
-    if (widget.regionId == null || !hasMorePages || isLoadingMore) return;
+    if (widget.regionId == null || !hasMoreSharePages || isLoadingMoreShares) return;
 
     setState(() {
-      isLoadingMore = true;
+      isLoadingMoreShares = true;
     });
 
     try {
-      currentPage++;
+      currentSharePage++;
       final response = await _shareRepository.fetchShares(
         regionId: widget.regionId!,
-        page: currentPage,
+        page: currentSharePage,
       );
 
       if (mounted) {
         setState(() {
           shares.addAll(response.shares);
-          hasMorePages = response.hasNextPage;
-          isLoadingMore = false;
+          hasMoreSharePages = response.hasNextPage;
+          isLoadingMoreShares = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          isLoadingMore = false;
-          currentPage--; // Revert page increment on error
+          isLoadingMoreShares = false;
+          currentSharePage--; // Revert page increment on error
         });
         
         // Show error message for loading more
@@ -155,9 +212,123 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
 
   Future<void> _refreshShares() async {
     if (widget.regionId == null) return;
-    
+    setState(() {
+      isRefreshingShares = true;
+    });
     await _loadShares(refresh: true);
+    setState(() {
+      isRefreshingShares = false;
+    });
   }
+
+  // Apartment methods
+  Future<void> _loadApartments({bool refresh = false}) async {
+    if (widget.regionId == null) return;
+
+    setState(() {
+      if (refresh) {
+        isLoadingApartments = true;
+        apartmentErrorMessage = null;
+        apartments.clear();
+        currentApartmentPage = 1;
+        hasMoreApartmentPages = true;
+        showApartmentsNoDataMessage = false;
+      }
+    });
+
+    // Start timer for showing no data message
+    if (refresh) {
+      Future.delayed(const Duration(seconds: 10), () {
+        if (mounted && isLoadingApartments && apartments.isEmpty) {
+          setState(() {
+            showApartmentsNoDataMessage = true;
+          });
+        }
+      });
+    }
+
+    try {
+      final response = await _apartmentRepository.fetchApartments(
+        regionId: widget.regionId!,
+        page: currentApartmentPage,
+      );
+
+      if (mounted) {
+        setState(() {
+          if (refresh) {
+            apartments = response.apartments;
+          } else {
+            apartments.addAll(response.apartments);
+          }
+          
+          hasMoreApartmentPages = response.hasNextPage;
+          isLoadingApartments = false;
+          apartmentErrorMessage = null;
+          showApartmentsNoDataMessage = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoadingApartments = false;
+          apartmentErrorMessage = e.toString();
+          showApartmentsNoDataMessage = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadMoreApartments() async {
+    if (widget.regionId == null || !hasMoreApartmentPages || isLoadingMoreApartments) return;
+
+    setState(() {
+      isLoadingMoreApartments = true;
+    });
+
+    try {
+      currentApartmentPage++;
+      final response = await _apartmentRepository.fetchApartments(
+        regionId: widget.regionId!,
+        page: currentApartmentPage,
+      );
+
+      if (mounted) {
+        setState(() {
+          apartments.addAll(response.apartments);
+          hasMoreApartmentPages = response.hasNextPage;
+          isLoadingMoreApartments = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoadingMoreApartments = false;
+          currentApartmentPage--; // Revert page increment on error
+        });
+        
+        // Show error message for loading more
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('فشل في تحميل المزيد من العقارات'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _refreshApartments() async {
+    if (widget.regionId == null) return;
+    setState(() {
+      isRefreshingApartments = true;
+    });
+    await _loadApartments(refresh: true);
+    setState(() {
+      isRefreshingApartments = false;
+    });
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -224,11 +395,12 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
                   ),
                   onTap: (index) {
                     if (_tabController?.index == index) {
-                      // User clicked on the currently active tab
+                      // User clicked on the currently active tab - simulate pull-to-refresh
                       if (index == 0) {
-                        _loadShares(refresh: true);
+                        _sharesRefreshKey.currentState?.show();
+                      } else if (index == 1) {
+                        _apartmentsRefreshKey.currentState?.show();
                       }
-                      // Handle other tabs if needed
                     }
                   },
                   tabs: const [
@@ -243,8 +415,8 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
             child: TabBarView(
               controller: _tabController!,
               children: [
-                _buildBody(), // الأسهم التنظيمية tab
-                _buildPropertiesTab(), // العقارات tab
+                _buildSharesTab(), // الأسهم التنظيمية tab
+                _buildApartmentsTab(), // العقارات tab
               ],
             ),
           ),
@@ -253,200 +425,285 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildBody() {
-    if (isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
+  Widget _buildSharesTab() {
+    if (shareErrorMessage != null) {
+      return Center(
+        child: RefreshIndicator(
+          key: _sharesRefreshKey,
+          onRefresh: _refreshShares,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.7,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'حدث خطأ في تحميل الأسهم',
+                    style: TextStyle(fontSize: 18, color: Colors.red),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    shareErrorMessage!,
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () => _sharesRefreshKey.currentState?.show(),
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       );
     }
 
-    if (errorMessage != null) {
-      return _buildErrorState();
-    }
-
     if (shares.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return RefreshIndicator(
-      onRefresh: _refreshShares,
-      child: ListView.builder(
-        controller: _scrollController,
-        padding: const EdgeInsets.all(16),
-        itemCount: shares.length + (isLoadingMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          // Guard against race condition: if the index is out of bounds,
-          // it means the list was cleared during the build. Return an empty widget.
-          if (index >= shares.length) {
-            // Still show the loading indicator if it's expected to be there.
-            if (isLoadingMore && index == shares.length) {
-              return _buildLoadingMoreIndicator();
-            }
-            return const SizedBox.shrink();
-          }
-
-          return ShareCard(
-            share: shares[index],
-            scrollController: _scrollController,
-            onShareUpdated: (updatedShare) {
-              if (!mounted) return;
-              setState(() {
-                if (index < shares.length) {
-                  shares[index] = updatedShare;
-                }
-              });
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildLoadingMoreIndicator() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      alignment: Alignment.center,
-      child: const CircularProgressIndicator(),
-    );
-  }
-
-  Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            'assets/images/connection_lost.png',
-            height: 120,
-            width: 120,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'حدث خطأ في التحميل',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF374151),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            errorMessage ?? 'خطأ غير معروف',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF6B7280),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => _loadShares(refresh: true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF633e3d),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 32,
-                vertical: 12,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('إعادة المحاولة'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return RefreshIndicator(
-      onRefresh: _refreshShares,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height - 200,
-          child: Center(
+      return RefreshIndicator(
+        key: _sharesRefreshKey,
+        onRefresh: _refreshShares,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.7,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset(
-                  'assets/images/empty_status.png',
-                  height: 120,
-                  width: 120,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'لا توجد أسهم متاحة',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF374151),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'سيتم عرض الأسهم المتاحة في هذه المنطقة',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF6B7280),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => _loadShares(refresh: true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF633e3d),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                if (showSharesNoDataMessage && !isLoadingShares) ...[
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'لا توجد أسهم متاحة',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: () => _sharesRefreshKey.currentState?.show(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF633e3d),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text(
+                            'إعادة المحاولة',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Cairo',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: const Text('إعادة التحميل'),
-                ),
+                ],
               ],
             ),
           ),
         ),
-      ),
+      );
+    }
+
+    return RefreshIndicator(
+      key: _sharesRefreshKey,
+      onRefresh: _refreshShares,
+      child: _buildShareList(),
     );
   }
 
-  Widget _buildPropertiesTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            'assets/images/empty_status.png',
-            height: 120,
-            width: 120,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'قريباً',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF374151),
+  Widget _buildShareList() {
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: shares.length + (hasMoreSharePages ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == shares.length) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CustomSpinner(size: 32.0),
+            ),
+          );
+        }
+        
+        // Safety check to prevent range errors
+        if (index >= shares.length) {
+          return const SizedBox.shrink();
+        }
+        
+        return _buildShareItem(shares[index], index);
+      },
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+    );
+  }
+
+  Widget _buildShareItem(Share share, int index) {
+    final authStore = Provider.of<AuthStore>(context, listen: false);
+    final bool canShowOwner =
+        authStore.userPrivilege == 'admin' || authStore.userPrivilege == 'owner';
+
+    return PostCard(
+      key: ValueKey('share_${share.id}'),
+      postData: SharePostAdapter(share, showOwner: canShowOwner),
+      scrollController: _scrollController,
+      onPostUpdated: (updatedPost) {
+        if (updatedPost is SharePostAdapter) {
+          setState(() {
+            // Additional safety check before updating
+            if (index < shares.length) {
+              shares[index] = updatedPost.share;
+            }
+          });
+        }
+      },
+    );
+  }
+
+  Widget _buildApartmentsTab() {
+    if (apartmentErrorMessage != null) {
+      return Center(
+        child: RefreshIndicator(
+          key: _apartmentsRefreshKey,
+          onRefresh: _refreshApartments,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.7,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'حدث خطأ في تحميل العقارات',
+                    style: TextStyle(fontSize: 18, color: Colors.red),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    apartmentErrorMessage!,
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () => _apartmentsRefreshKey.currentState?.show(),
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'سيتم إضافة العقارات قريباً',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF6B7280),
+        ),
+      );
+    }
+
+    if (apartments.isEmpty) {
+      return RefreshIndicator(
+        key: _apartmentsRefreshKey,
+        onRefresh: _refreshApartments,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: Column(
+              children: [
+                if (showApartmentsNoDataMessage && !isLoadingApartments) ...[
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'لا توجد عقارات متاحة',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: () => _apartmentsRefreshKey.currentState?.show(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF633e3d),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text(
+                            'إعادة المحاولة',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Cairo',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
-            textAlign: TextAlign.center,
           ),
-        ],
-      ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      key: _apartmentsRefreshKey,
+      onRefresh: _refreshApartments,
+      child: _buildApartmentList(),
+    );
+  }
+
+  Widget _buildApartmentList() {
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: apartments.length + (hasMoreApartmentPages ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == apartments.length) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CustomSpinner(size: 32.0),
+            ),
+          );
+        }
+        
+        // Safety check to prevent range errors
+        if (index >= apartments.length) {
+          return const SizedBox.shrink();
+        }
+        
+        return _buildApartmentItem(apartments[index], index);
+      },
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+    );
+  }
+
+  Widget _buildApartmentItem(Apartment apartment, int index) {
+    final authStore = Provider.of<AuthStore>(context, listen: false);
+    final bool canShowOwner =
+        authStore.userPrivilege == 'admin' || authStore.userPrivilege == 'owner';
+
+    return PostCard(
+      key: ValueKey('apartment_${apartment.id}'),
+      postData: ApartmentPostAdapter(apartment, showOwner: canShowOwner),
+      scrollController: _scrollController,
+      onPostUpdated: (updatedPost) {
+        if (updatedPost is ApartmentPostAdapter) {
+          setState(() {
+            // Additional safety check before updating
+            if (index < apartments.length) {
+              apartments[index] = updatedPost.apartment;
+            }
+          });
+        }
+      },
     );
   }
 } 

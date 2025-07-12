@@ -1,12 +1,12 @@
-# Share Card Component
+# Post Card Component
 
-A comprehensive Flutter card component for displaying share information with interactive features like reactions, favorites, and sharing functionality.
+A comprehensive Flutter card component for displaying post information with interactive features like reactions, favorites, and sharing functionality. This component is designed to be generic and reusable for different types of content (shares, apartments, etc.).
 
 ## Features
 
 ### 🎨 Visual Design
 - **Exact Layout Structure**: 350px height with 8px rounded corners
-- **Background Image**: Sector cover image with fallback to placeholder
+- **Background Image**: Cover image with fallback to placeholder
 - **Gradient Badges**: Transaction type, ID, and approval status badges
 - **Semi-transparent Overlays**: Content overlay with 90% opacity
 - **Closed Deal Overlay**: Full-screen overlay for closed transactions
@@ -74,10 +74,11 @@ MultiProvider(
 
 ## Usage
 
-### Basic Usage
+### Basic Usage with Share Data
 
 ```dart
-import 'package:your_app/widgets/share_card.dart';
+import 'package:your_app/widgets/post_card.dart';
+import 'package:your_app/widgets/post_card_data.dart';
 import 'package:your_app/data/models/share_model.dart';
 
 class ShareListPage extends StatelessWidget {
@@ -87,11 +88,13 @@ class ShareListPage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            ShareCard(
-              share: yourShareObject,
-              onShareUpdated: (updatedShare) {
-                // Handle share updates (reactions, favorites)
-                print('Share updated: ${updatedShare.id}');
+            PostCard(
+              postData: SharePostAdapter(yourShareObject, showOwner: true),
+              onPostUpdated: (updatedPost) {
+                // Handle post updates (reactions, favorites)
+                if (updatedPost is SharePostAdapter) {
+                  print('Share updated: ${updatedPost.share.id}');
+                }
               },
             ),
           ],
@@ -106,7 +109,8 @@ class ShareListPage extends StatelessWidget {
 
 ```dart
 import 'package:flutter/material.dart';
-import 'package:your_app/widgets/share_card.dart';
+import 'package:your_app/widgets/post_card.dart';
+import 'package:your_app/widgets/post_card_data.dart';
 import 'package:your_app/data/models/share_model.dart';
 
 class ShareFeedPage extends StatefulWidget {
@@ -139,12 +143,14 @@ class _ShareFeedPageState extends State<ShareFeedPage> {
         padding: EdgeInsets.all(16),
         itemCount: shares.length,
         itemBuilder: (context, index) {
-          return ShareCard(
-            share: shares[index],
-            onShareUpdated: (updatedShare) {
-              setState(() {
-                shares[index] = updatedShare;
-              });
+          return PostCard(
+            postData: SharePostAdapter(shares[index], showOwner: true),
+            onPostUpdated: (updatedPost) {
+              if (updatedPost is SharePostAdapter) {
+                setState(() {
+                  shares[index] = updatedPost.share;
+                });
+              }
             },
           );
         },
@@ -155,6 +161,51 @@ class _ShareFeedPageState extends State<ShareFeedPage> {
 ```
 
 ## Data Model
+
+### PostCardData Interface
+
+```dart
+abstract class PostCardData {
+  int get id;
+  String get postType;
+  bool get isFavorited;
+  String? get currentUserReaction;
+  ReactionCounts get reactionCounts;
+  String get imageUrl;
+  String get transactionTypeText;
+  String get badgeId;
+  bool get isUnderReview;
+  bool get isClosed;
+  String get closedText;
+  String get title;
+  String get subtitle;
+  bool get isUserVerified;
+  List<InfoRowData> get infoRows;
+  int get views;
+  String get shareButtonText;
+  
+  // State update methods
+  PostCardData withFavorite(bool isFavorited);
+  PostCardData withReaction(String? reactionType, Map<String, dynamic> reactionSummary);
+  PostCardData withReactionCounts(Map<String, dynamic> counts);
+  PostCardData withManuallyDecrementedReaction(String reactionType);
+}
+```
+
+### SharePostAdapter
+
+```dart
+class SharePostAdapter implements PostCardData {
+  final Share _share;
+  final bool _showOwner;
+  
+  Share get share => _share; // Access underlying share object
+  
+  SharePostAdapter(this._share, {required bool showOwner});
+  
+  // All PostCardData methods implemented...
+}
+```
 
 ### Share Object Structure
 

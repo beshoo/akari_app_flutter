@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/models/share_model.dart';
-import '../widgets/share_card.dart';
+import '../widgets/post_card.dart';
+import '../widgets/post_card_data.dart';
 
 class ShareDemoPage extends StatelessWidget {
   const ShareDemoPage({super.key});
@@ -18,9 +19,9 @@ class ShareDemoPage extends StatelessWidget {
         child: Column(
           children: [
             // Sample share card
-            ShareCard(
-              share: _createSampleShare(),
-              onShareUpdated: (updatedShare) {
+            PostCard(
+              postData: SharePostAdapter(_createSampleShare(), showOwner: true),
+              onPostUpdated: (updatedPost) {
                 // Handle share updates
               },
             ),
@@ -28,9 +29,9 @@ class ShareDemoPage extends StatelessWidget {
             const SizedBox(height: 20),
             
             // Another sample with different data
-            ShareCard(
-              share: _createSampleShare2(),
-              onShareUpdated: (updatedShare) {
+            PostCard(
+              postData: SharePostAdapter(_createSampleShare2(), showOwner: true),
+              onPostUpdated: (updatedPost) {
                 // Handle share updates
               },
             ),

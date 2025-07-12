@@ -10,30 +10,31 @@ import '../stores/reaction_store.dart';
 import '../stores/auth_store.dart';
 import '../utils/toast_helper.dart';
 import 'custom_bottom_sheet.dart';
+import './post_card_data.dart';
 
-class ShareCard extends StatefulWidget {
-  final Share share;
-  final Function(Share)? onShareUpdated;
+class PostCard extends StatefulWidget {
+  final PostCardData postData;
+  final Function(PostCardData)? onPostUpdated;
   final ScrollController? scrollController;
 
-  const ShareCard({
+  const PostCard({
     super.key,
-    required this.share,
-    this.onShareUpdated,
+    required this.postData,
+    this.onPostUpdated,
     this.scrollController,
   });
 
   @override
-  State<ShareCard> createState() => _ShareCardState();
+  State<PostCard> createState() => _PostCardState();
 }
 
-class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
+class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   // === Action Button Size Controls ===
   static const double _actionButtonFontSize = 17;
   static const double _actionButtonIconSize = 20;
 
   bool _showReactions = false;
-  late Share _currentShare;
+  late PostCardData _currentPostData;
   late AnimationController _reactionAnimationController;
   late Animation<double> _reactionScaleAnimation;
 
@@ -57,7 +58,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _currentShare = widget.share;
+    _currentPostData = widget.postData;
     _reactionAnimationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
@@ -163,16 +164,16 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
                         _buildStatusBadges(authStore),
                         
                         // Content overlay
-                        _buildContentOverlay(authStore),
+                        _buildContentOverlay(),
                         
                         // Closed deal overlay (on top of everything)
-                        if (_currentShare.isClosed) _buildClosedOverlay(),
+                        if (_currentPostData.isClosed) _buildClosedOverlay(),
                       ],
                     ),
                   ),
                   
                   // Reaction summary section
-                  if (_currentShare.reactionCounts.totalCount > 0)
+                  if (_currentPostData.reactionCounts.totalCount > 0)
                     _buildReactionSummary(),
                   
                   // Action buttons row
@@ -194,9 +195,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: CachedNetworkImage(
-          imageUrl: _currentShare.sector.cover.img.isNotEmpty
-              ? _currentShare.sector.cover.img
-              : 'assets/images/no_photo.jpg',
+          imageUrl: _currentPostData.imageUrl,
           fit: BoxFit.cover,
           placeholder: (context, url) => Container(
             color: Colors.grey[300],
@@ -226,7 +225,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
         children: [
           // Transaction type badge
           _buildBadge(
-            _currentShare.transactionTypeText,
+            _currentPostData.transactionTypeText,
             _badgeGradient,
           ),
           
@@ -236,7 +235,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
             children: [
               // ID badge
               _buildBadge(
-                '#${_currentShare.id}',
+                _currentPostData.badgeId,
                 _badgeGradient,
               ),
               
@@ -291,7 +290,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
         ),
         child: Center(
           child: Text(
-            _currentShare.closedText,
+            _currentPostData.closedText,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 60,
@@ -310,15 +309,15 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildContentOverlay(AuthStore authStore) {
+  Widget _buildContentOverlay() {
     return Positioned(
       bottom: 0,
       left: 0,
       right: 0,
       child: Container(
-        constraints: const BoxConstraints(
+        constraints: BoxConstraints(
           minHeight: 80, // Minimum height
-          maxHeight: 160, // Maximum height to prevent overflow
+          maxHeight: _currentPostData.infoRows.length <= 4 ? 180 : 320, // Adaptive height
         ),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -341,7 +340,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
                 // Sector title
                 Expanded(
                   child: Text(
-                    '${_currentShare.sector.sectorName.name} - ${_currentShare.sector.sectorName.code}',
+                    _currentPostData.title,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
@@ -351,7 +350,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
                 ),
                 
                 // Verification icon
-                if (_currentShare.user.isAuthenticated)
+                if (_currentPostData.isUserVerified)
                   Image.asset(
                     'assets/images/icons/gold.png',
                     width: 28,
@@ -365,7 +364,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
             
             // Subtitle
             Text(
-              '${_currentShare.region.name} - أسهم تنظيمية / نية ${_currentShare.transactionTypeText}',
+              _currentPostData.subtitle,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,
@@ -375,19 +374,13 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
             
             const SizedBox(height: 6),
             
-            // Information rows
-            Flexible(
-              child: Column(
+            // Information rows - auto-adjustable height
+            Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildInfoRow('price.png', 'سعر السهم : ${_currentShare.price}'),
-                  _buildInfoRow('quantity.png', 'الأسهم المطروحة : ${_currentShare.quantity}'),
-                  _buildInfoRow('date.png', 'تاريخ النشر : ${_currentShare.since}'),
-                  if (_shouldShowOwnerRow(authStore))
-                    _buildInfoRow('user.png', 'الجهة العارضة : ${_currentShare.ownerName}'),
-                ],
-              ),
+              children: _currentPostData.infoRows
+                  .map((info) => _buildInfoRow(info.iconName, info.text))
+                  .toList(),
             ),
           ],
         ),
@@ -462,7 +455,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
               const SizedBox(width: 1), // Fixed flexible spacing after overlapped emojis
             // Small count
             Text(
-              '${_currentShare.reactionCounts.totalCount}',
+              '${_currentPostData.reactionCounts.totalCount}',
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -522,11 +515,11 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
           Expanded(
             child: _buildActionButton(
               icon: FaIcon(
-                _currentShare.isFavorited
+                _currentPostData.isFavorited
                     ? FontAwesomeIcons.solidStar
                     : FontAwesomeIcons.star,
                 size: _actionButtonIconSize,
-                color: _currentShare.isFavorited ? Colors.amber : _grayColor,
+                color: _currentPostData.isFavorited ? Colors.amber : _grayColor,
               ),
               text: 'مفضلة',
               onTap: () => _toggleFavorite(reactionStore),
@@ -541,7 +534,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
                 height: _actionButtonIconSize,
                 color: _grayColor,
               ),
-              text: '${_currentShare.views}',
+              text: '${_currentPostData.views}',
               onTap: null,
             ),
           ),
@@ -616,7 +609,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: _reactionEmojis.entries.map((entry) {
-              final isSelected = _currentShare.currentUserReaction == entry.key;
+              final isSelected = _currentPostData.currentUserReaction == entry.key;
               return GestureDetector(
                 onTap: () => _selectReaction(entry.key),
                 child: AnimatedBuilder(
@@ -658,7 +651,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
   bool _shouldShowApprovalBadge(AuthStore authStore) {
     final isAdminOrOwner = authStore.userPrivilege == 'admin' || 
                           authStore.userPrivilege == 'owner';
-    return isAdminOrOwner && _currentShare.approve == 0;
+    return isAdminOrOwner && _currentPostData.isUnderReview;
   }
 
   bool _shouldShowOwnerRow(AuthStore authStore) {
@@ -667,7 +660,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
   }
 
   List<String> _getVisibleReactions() {
-    final counts = _currentShare.reactionCounts;
+    final counts = _currentPostData.reactionCounts;
     final reactionCounts = <String, int>{
       'like': counts.likeCount,
       'love': counts.loveCount,
@@ -686,28 +679,28 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
   }
 
   Widget _getCurrentReactionIcon({double size = 16}) {
-    if (_currentShare.currentUserReaction != null) {
+    if (_currentPostData.currentUserReaction != null) {
       return Text(
-        _reactionEmojis[_currentShare.currentUserReaction!]!,
+        _reactionEmojis[_currentPostData.currentUserReaction!]!,
         style: TextStyle(fontSize: size),
       );
     }
     return FaIcon(
-      FontAwesomeIcons.solidThumbsUp,
+      FontAwesomeIcons.thumbsUp,
       size: size,
       color: _grayColor,
     );
   }
 
   String _getCurrentReactionText() {
-    if (_currentShare.currentUserReaction != null) {
-      return _reactionNames[_currentShare.currentUserReaction!]!;
+    if (_currentPostData.currentUserReaction != null) {
+      return _reactionNames[_currentPostData.currentUserReaction!]!;
     }
     return 'إعجاب';
   }
 
   void _handleReactionButtonTap() async {
-    if (_currentShare.currentUserReaction == 'like') {
+    if (_currentPostData.currentUserReaction == 'like') {
       // User already liked it, remove the like
       await _removeCurrentReaction();
     } else {
@@ -727,27 +720,21 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
     final reactionStore = Provider.of<ReactionStore>(context, listen: false);
     
     final result = await reactionStore.removeReaction(
-      postType: _currentShare.postType,
-      postId: _currentShare.id,
+      postType: _currentPostData.postType,
+      postId: _currentPostData.id,
     );
 
     if (result['success']) {
       // Update state based on API response
       if (result['data'] != null && result['data']['reaction_summary'] != null) {
-        _updateFromReactionSummary(result['data']['reaction_summary'], null);
+        _currentPostData = _currentPostData.withReaction(null, result['data']['reaction_summary']);
       } else {
         // Fallback: manually remove reaction
-        setState(() {
-          _currentShare = Share.fromJson({
-            ..._currentShare.toJson(),
-            'current_user_reaction': null,
-            'reaction_counts': _decrementReactionCounts(_currentShare.currentUserReaction!),
-          });
-        });
+        _currentPostData = _currentPostData.withManuallyDecrementedReaction(_currentPostData.currentUserReaction!);
       }
       
-      if (widget.onShareUpdated != null) {
-        widget.onShareUpdated!(_currentShare);
+      if (widget.onPostUpdated != null) {
+        widget.onPostUpdated!(_currentPostData);
       }
     } else {
       // Show error message if remove reaction failed
@@ -768,7 +755,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
     
     _hideReactionPanel(); // Hide panel immediately
 
-    if (reaction == _currentShare.currentUserReaction) {
+    if (reaction == _currentPostData.currentUserReaction) {
       _reactionAnimationController.forward().then((_) {
         _reactionAnimationController.reverse();
       });
@@ -781,8 +768,8 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
 
     final result = await reactionStore.addReaction(
       type: reaction,
-      postType: _currentShare.postType,
-      postId: _currentShare.id,
+      postType: _currentPostData.postType,
+      postId: _currentPostData.id,
     );
 
     if (kDebugMode) {
@@ -794,23 +781,17 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
     if (result['success']) {
       // Update state based on API response
       if (result['data'] != null && result['data']['reaction_summary'] != null) {
-        _updateFromReactionSummary(result['data']['reaction_summary'], reaction);
+        _currentPostData = _currentPostData.withReaction(reaction, result['data']['reaction_summary']);
       } else {
         if (kDebugMode) {
           print('⚠️ No reaction_summary found, using fallback');
         }
         // Fallback: manually update reaction
-        setState(() {
-          _currentShare = Share.fromJson({
-            ..._currentShare.toJson(),
-            'current_user_reaction': reaction,
-            'reaction_counts': _updateReactionCounts(reaction),
-          });
-        });
+        _currentPostData = _currentPostData.withReactionCounts(_updateReactionCounts(reaction));
       }
       
-      if (widget.onShareUpdated != null) {
-        widget.onShareUpdated!(_currentShare);
+      if (widget.onPostUpdated != null) {
+        widget.onPostUpdated!(_currentPostData);
       }
     } else {
       // Show error message if reaction failed
@@ -827,8 +808,8 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
   }
 
   Map<String, dynamic> _updateReactionCounts(String newReaction) {
-    final counts = _currentShare.reactionCounts;
-    final currentReaction = _currentShare.currentUserReaction;
+    final counts = _currentPostData.reactionCounts;
+    final currentReaction = _currentPostData.currentUserReaction;
     
     Map<String, int> newCounts = {
       'like_count': counts.likeCount,
@@ -853,7 +834,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
   }
 
   Map<String, dynamic> _decrementReactionCounts(String removedReaction) {
-    final counts = _currentShare.reactionCounts;
+    final counts = _currentPostData.reactionCounts;
     
     Map<String, int> newCounts = {
       'like_count': counts.likeCount,
@@ -878,42 +859,28 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
     }
     
     setState(() {
-      _currentShare = Share.fromJson({
-        ..._currentShare.toJson(),
-        'current_user_reaction': newUserReaction,
-        'reaction_counts': {
-          'like_count': reactionSummary['like_count'] ?? 0,
-          'love_count': reactionSummary['love_count'] ?? 0,
-          'wow_count': reactionSummary['wow_count'] ?? 0,
-          'sad_count': reactionSummary['sad_count'] ?? 0,
-          'angry_count': reactionSummary['angry_count'] ?? 0,
-          'total_count': reactionSummary['total_count'] ?? 0,
-        },
-      });
+      _currentPostData = _currentPostData.withReaction(newUserReaction, reactionSummary);
     });
     
     if (kDebugMode) {
-      print('✅ Share updated - Current user reaction: ${_currentShare.currentUserReaction}');
-      print('✅ Total reactions: ${_currentShare.reactionCounts.totalCount}');
+      print('✅ Share updated - Current user reaction: ${_currentPostData.currentUserReaction}');
+      print('✅ Total reactions: ${_currentPostData.reactionCounts.totalCount}');
     }
   }
 
   void _toggleFavorite(ReactionStore reactionStore) async {
     final result = await reactionStore.toggleFavorite(
-      postType: _currentShare.postType,
-      postId: _currentShare.id,
+      postType: _currentPostData.postType,
+      postId: _currentPostData.id,
     );
 
     if (result['success']) {
       setState(() {
-        _currentShare = Share.fromJson({
-          ..._currentShare.toJson(),
-          'is_favorited': !_currentShare.isFavorited,
-        });
+        _currentPostData = _currentPostData.withFavorite(!_currentPostData.isFavorited);
       });
       
-      if (widget.onShareUpdated != null) {
-        widget.onShareUpdated!(_currentShare);
+      if (widget.onPostUpdated != null) {
+        widget.onPostUpdated!(_currentPostData);
       }
     } else {
       if (mounted) {
@@ -927,7 +894,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
   }
 
   void _shareContent() {
-    share_plus.Share.share(_currentShare.shareButton);
+    share_plus.Share.share(_currentPostData.shareButtonText);
   }
 
   void _showReactionModal() {
@@ -971,7 +938,7 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
 
 
   int _getReactionCount(String reaction) {
-    final counts = _currentShare.reactionCounts;
+    final counts = _currentPostData.reactionCounts;
     switch (reaction) {
       case 'like':
         return counts.likeCount;
