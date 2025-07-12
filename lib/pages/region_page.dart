@@ -60,8 +60,14 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController!.addListener(_onTabChanged);
-    _loadShares(refresh: true); // Load shares by default
     _scrollController.addListener(_onScroll);
+
+    // Simulate pull-to-refresh to load initial data. This shows the loading spinner.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _sharesRefreshKey.currentState?.show();
+      }
+    });
   }
 
   @override
@@ -71,6 +77,34 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
     _tabController?.removeListener(_onTabChanged);
     _tabController?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant RegionPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.regionId != oldWidget.regionId) {
+      // When regionId changes, we should reload data.
+      // Move to the first tab.
+      _tabController?.animateTo(0);
+
+      // Clear the state for the apartments tab so it reloads when selected.
+      setState(() {
+        apartments.clear();
+        isLoadingApartments = false;
+        isLoadingMoreApartments = false;
+        hasMoreApartmentPages = true;
+        currentApartmentPage = 1;
+        apartmentErrorMessage = null;
+        isRefreshingApartments = false;
+        showApartmentsNoDataMessage = false;
+      });
+
+      // Show the refresh indicator on the shares tab to load new data.
+      // This will also handle clearing the old shares data via _loadShares(refresh: true).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _sharesRefreshKey.currentState?.show();
+      });
+    }
   }
 
   void _onScroll() {
