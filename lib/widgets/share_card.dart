@@ -587,14 +587,12 @@ class _ShareCardState extends State<ShareCard> with TickerProviderStateMixin {
     final cardMargin = 24.0; // Total horizontal margin of the card (12px each side)
     final availableWidth = screenWidth - cardMargin;
     final buttonWidth = availableWidth / 4; // 4 equal buttons
-    final reactionButtonCenter = (buttonWidth / 2) + 12; // Center of first button + left card margin
     final panelWidth = 200.0; // Approximate panel width
     
     // Calculate left position - you can try different values:
     //double leftPosition = 8.0;   // Far left edge
     // double leftPosition = 40.0;  // A bit more to the right
      double leftPosition = 150.0;  // Even more to the right
-    // double leftPosition = reactionButtonCenter - 100; // 100px left of button center
     
     return Positioned(
       bottom: 50, // Position above action buttons

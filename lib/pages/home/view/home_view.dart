@@ -57,10 +57,18 @@ class _HomeViewState extends State<HomeView> {
               appBar: CustomAppBar(
                 showBackButton: true,
                 onBackPressed: () => _showExitDialog(context),
-                onHelpPressed: () {},
-                onNotificationPressed: () {},
-                onSearchPressed: () {},
-                onFavoritesPressed: () {},
+                onFavoritesPressed: () {
+                  // TODO: Handle favorites press
+                },
+                onSearchPressed: () {
+                  // TODO: Handle search press
+                },
+                onNotificationPressed: () {
+                  // TODO: Handle notification press
+                },
+                onHelpPressed: () {
+                  // TODO: Handle help press
+                },
               ),
               body: BlocBuilder<HomeBloc, HomeState>(
                 builder: (context, state) {

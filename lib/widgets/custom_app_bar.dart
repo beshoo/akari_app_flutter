@@ -7,6 +7,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onSearchPressed,
     this.onFavoritesPressed,
     this.onHelpPressed,
+    this.onSortPressed,
+    this.showAddAdButton = false,
+    this.onAddAdPressed,
     this.showBackButton = true,
     this.onBackPressed,
     this.title,
@@ -16,6 +19,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onSearchPressed;
   final VoidCallback? onFavoritesPressed;
   final VoidCallback? onHelpPressed;
+  final VoidCallback? onSortPressed;
+  final bool showAddAdButton;
+  final VoidCallback? onAddAdPressed;
   final bool showBackButton;
   final VoidCallback? onBackPressed;
   final String? title;
@@ -49,19 +55,26 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               if (showBackButton) const SizedBox(width: 8),
-              if (title != null) 
-                Text(
-                  title!,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF8C7A6A),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/images/logo.png',
+                    height: 35,
                   ),
-                )
-              else
-              Image.asset(
-                'assets/images/logo.png',
-                height: 35,
+                  if (title != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      title!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF8C7A6A),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
@@ -70,44 +83,100 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.star_border_outlined,
-                  color: Color(0xFF8C7A6A),
-                ),
-                onPressed: onFavoritesPressed,
-              ),
-              IconButton(
-                icon: const Icon(
-                  Icons.search,
-                  color: Color(0xFF8C7A6A),
-                ),
-                onPressed: onSearchPressed,
-              ),
-              IconButton(
-                icon: const Icon(
-                  Icons.notifications_none_outlined,
-                  color: Color(0xFF8C7A6A),
-                ),
-                onPressed: onNotificationPressed,
-              ),
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEBE5DB),
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
+              if (onFavoritesPressed != null)
+                IconButton(
                   icon: const Icon(
-                    Icons.question_mark,
+                    Icons.star_border_outlined,
                     color: Color(0xFF8C7A6A),
-                    size: 20,
                   ),
-                  onPressed: onHelpPressed,
+                  onPressed: onFavoritesPressed,
                 ),
-              ),
+              if (onSearchPressed != null)
+                IconButton(
+                  icon: const Icon(
+                    Icons.search,
+                    color: Color(0xFF8C7A6A),
+                  ),
+                  onPressed: onSearchPressed,
+                ),
+              if (onSortPressed != null)
+                IconButton(
+                  icon: const Icon(
+                    Icons.sort,
+                    color: Color(0xFF8C7A6A),
+                  ),
+                  onPressed: onSortPressed,
+                ),
+              if (onNotificationPressed != null)
+                IconButton(
+                  icon: const Icon(
+                    Icons.notifications_none_outlined,
+                    color: Color(0xFF8C7A6A),
+                  ),
+                  onPressed: onNotificationPressed,
+                ),
+              if (onHelpPressed != null)
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEBE5DB),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(
+                      Icons.question_mark,
+                      color: Color(0xFF8C7A6A),
+                      size: 20,
+                    ),
+                    onPressed: onHelpPressed,
+                  ),
+                ),
+              if (showAddAdButton)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF633E3D),
+                          Color(0xFF774B46),
+                          Color(0xFF8D5E52),
+                          Color(0xFFA47764),
+                          Color(0xFFBDA28C),
+                        ],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: onAddAdPressed,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'أضف إعلانك الآن',
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ],

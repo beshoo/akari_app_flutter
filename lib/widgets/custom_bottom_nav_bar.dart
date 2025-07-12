@@ -52,9 +52,7 @@ class DefaultNavItems {
 }
 
 class _CustomNavBarShape extends ShapeBorder {
-  final double radius;
-
-  const _CustomNavBarShape({this.radius = 16});
+  const _CustomNavBarShape();
 
   @override
   EdgeInsetsGeometry get dimensions => EdgeInsets.zero;
@@ -67,7 +65,7 @@ class _CustomNavBarShape extends ShapeBorder {
   @override
   Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
     return Path()
-      ..addRRect(RRect.fromRectAndRadius(rect, Radius.circular(radius)));
+      ..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(16)));
   }
 
   @override

@@ -22,7 +22,6 @@ class ShareDemoPage extends StatelessWidget {
               share: _createSampleShare(),
               onShareUpdated: (updatedShare) {
                 // Handle share updates
-                print('Share updated: ${updatedShare.id}');
               },
             ),
             
@@ -33,7 +32,6 @@ class ShareDemoPage extends StatelessWidget {
               share: _createSampleShare2(),
               onShareUpdated: (updatedShare) {
                 // Handle share updates
-                print('Share updated: ${updatedShare.id}');
               },
             ),
           ],
