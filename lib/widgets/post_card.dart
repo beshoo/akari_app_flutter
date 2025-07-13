@@ -154,6 +154,14 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                         color: _toastColor.withValues(alpha: 0.5),
                         width: 1,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color.fromARGB(45, 0, 0, 0),
+                          offset: Offset(0, 5),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
                     ),
                     child: Stack(
                       children: [

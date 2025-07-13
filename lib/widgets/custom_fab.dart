@@ -17,6 +17,7 @@ class CustomFAB extends StatefulWidget {
 class _CustomFABState extends State<CustomFAB> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+  late Animation<Offset> _slideAnimation;
   bool _isOpen = false;
 
   @override
@@ -31,6 +32,16 @@ class _CustomFABState extends State<CustomFAB> with SingleTickerProviderStateMix
       curve: Curves.easeOut,
       reverseCurve: Curves.easeIn,
     );
+    
+    // Add slide animation for bottom-to-top movement
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 1), // Start from bottom (below visible area)
+      end: const Offset(0, 0),   // End at normal position
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutBack,
+      reverseCurve: Curves.easeInBack,
+    ));
   }
 
   @override
@@ -72,11 +83,12 @@ class _CustomFABState extends State<CustomFAB> with SingleTickerProviderStateMix
         ),
 
         // Menu items
-        if (_isOpen)
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 190,
+        Positioned(
+          left: 16,
+          right: 16,
+          bottom: 190,
+          child: IgnorePointer(
+            ignoring: !_isOpen && _controller.isDismissed,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -95,6 +107,7 @@ class _CustomFABState extends State<CustomFAB> with SingleTickerProviderStateMix
               ],
             ),
           ),
+        ),
 
         // Main FAB - Always positioned at the same spot
         Positioned(
@@ -139,10 +152,10 @@ class _CustomFABState extends State<CustomFAB> with SingleTickerProviderStateMix
     required String label,
     required Function()? onTap,
   }) {
-    return FadeTransition(
-      opacity: _animation,
-      child: ScaleTransition(
-        scale: _animation,
+    return SlideTransition(
+      position: _slideAnimation,
+      child: FadeTransition(
+        opacity: _animation,
         child: GestureDetector(
           onTap: () {
             _toggleFAB(); // Close the menu when an item is selected
@@ -158,7 +171,7 @@ class _CustomFABState extends State<CustomFAB> with SingleTickerProviderStateMix
                   label,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: 19,
                     fontFamily: 'Cairo',
                     fontWeight: FontWeight.bold,
                     decoration: TextDecoration.none,
@@ -166,16 +179,16 @@ class _CustomFABState extends State<CustomFAB> with SingleTickerProviderStateMix
                 ),
                 const SizedBox(width: 30), // Space between text and icon
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 60,
+                  height: 60,
                   decoration: const BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(4)),
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
                     color: Color(0xFF8E6756),
                   ),
                   child: Icon(
                     icon,
                     color: Colors.white,
-                    size: 24,
+                    size: 35,
                   ),
                 ),
               ],

@@ -136,13 +136,13 @@ class _HomeViewState extends State<HomeView> {
                             child: CustomScrollView(
                               slivers: [
                                 SliverPadding(
-                                  padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
+                                  padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 0),
                                   sliver: SliverGrid(
                                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                       crossAxisCount: 2,
-                                      crossAxisSpacing: 13,
-                                      mainAxisSpacing: 12,
-                                      childAspectRatio: 0.85,
+                                      crossAxisSpacing: 16,
+                                      mainAxisSpacing: 16,
+                                      childAspectRatio: 0.88,
                                     ),
                                     delegate: SliverChildBuilderDelegate(
                                       (context, index) {
@@ -161,36 +161,75 @@ class _HomeViewState extends State<HomeView> {
                                               ),
                                             );
                                           },
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(12.0),
-                                            child: Stack(
-                                              fit: StackFit.expand,
-                                              children: [
-                                                Image.asset(
-                                                  'assets/images/city_1.jpg',
-                                                  fit: BoxFit.cover,
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(18.0),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withValues(alpha: 0.15),
+                                                  blurRadius: 12,
+                                                  offset: const Offset(0, 4),
+                                                  spreadRadius: 0,
                                                 ),
-                                                Positioned(
-                                                  bottom: 0,
-                                                  left: 0,
-                                                  right: 0,
-                                                  child: Container(
-                                                    padding: const EdgeInsets.all(12.0),
+                                                BoxShadow(
+                                                  color: Colors.black.withValues(alpha: 0.08),
+                                                  blurRadius: 6,
+                                                  offset: const Offset(0, 2),
+                                                  spreadRadius: 0,
+                                                ),
+                                              ],
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius: BorderRadius.circular(18.0),
+                                              child: Stack(
+                                                fit: StackFit.expand,
+                                                children: [
+                                                  Image.asset(
+                                                    'assets/images/city_1.jpg',
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                                  // Subtle gradient overlay for better text readability
+                                                  Container(
                                                     decoration: BoxDecoration(
-                                                      color: const Color.fromARGB(153, 37, 37, 37),
-                                                    ),
-                                                    child: Text(
-                                                      region.name,
-                                                      textAlign: TextAlign.center,
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 16,
-                                                        fontWeight: FontWeight.bold,
+                                                      gradient: LinearGradient(
+                                                        begin: Alignment.topCenter,
+                                                        end: Alignment.bottomCenter,
+                                                        colors: [
+                                                          Colors.transparent,
+                                                          Colors.black.withValues(alpha: 0.3),
+                                                          Colors.black.withValues(alpha: 0.7),
+                                                        ],
+                                                        stops: const [0.0, 0.6, 1.0],
                                                       ),
                                                     ),
                                                   ),
-                                                ),
-                                              ],
+                                                  Positioned(
+                                                    bottom: 0,
+                                                    left: 0,
+                                                    right: 0,
+                                                    child: Container(
+                                                      padding: const EdgeInsets.all(16.0),
+                                                      child: Text(
+                                                        region.name,
+                                                        textAlign: TextAlign.center,
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 18,
+                                                          fontWeight: FontWeight.bold,
+                                                          letterSpacing: -0.2,
+                                                          shadows: [
+                                                            Shadow(
+                                                              color: Colors.black26,
+                                                              offset: Offset(0, 1),
+                                                              blurRadius: 2,
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         );
@@ -201,101 +240,233 @@ class _HomeViewState extends State<HomeView> {
                                 ),
                                 SliverToBoxAdapter(
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
                                     child: Column(
                                       children: [
-                                        const Image(
-                                          image: AssetImage('assets/images/stat.png'),
-                                          height: 96,
-                                          width: double.infinity,
-                                          fit: BoxFit.contain,
+                                        // Stats header image with iOS-style spacing
+                                        const SizedBox(height: 8),
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(16),
+                                          child: const Image(
+                                            image: AssetImage('assets/images/stat.png'),
+                                            height: 100,
+                                            width: double.infinity,
+                                            fit: BoxFit.contain,
+                                          ),
                                         ),
+                                       const SizedBox(height: 8),
+                                        
+                                        // Share statistics with iOS cards
                                         GridView.builder(
                                           shrinkWrap: true,
                                           physics: const NeverScrollableScrollPhysics(),
                                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                             crossAxisCount: 2,
-                                            crossAxisSpacing: 13,
-                                            mainAxisSpacing: 13,
-                                            childAspectRatio: 1.2,
+                                            crossAxisSpacing: 16,
+                                            mainAxisSpacing: 16,
+                                            childAspectRatio: 1.05,
                                           ),
                                           itemCount: state.shareStatistics.length,
                                           itemBuilder: (context, index) {
                                             final item = state.shareStatistics[index];
-                                            return _buildGradientCard(
+                                            return _buildIOSCard(
                                               child: Column(
                                                 mainAxisAlignment: MainAxisAlignment.center,
                                                 children: [
-                                                  Image.asset('assets/images/icons/building_1.png',
-                                                      height: 48, width: 48, color: Colors.white),
-                                                  Text('أسهم ${item.name}',
-                                                      style: const TextStyle(
-                                                          fontSize: 14,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: Colors.white)),
-                                                  Text('عدد إعلانات الشراء: ${item.buySharesCount}',
-                                                      style: const TextStyle(fontSize: 12, color: Colors.white)),
-                                                  Text('عدد إعلانات البيع: ${item.sellSharesCount}',
-                                                      style: const TextStyle(fontSize: 12, color: Colors.white)),
+                                                  Container(
+                                                    padding: const EdgeInsets.all(10),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white.withValues(alpha: 0.25),
+                                                      borderRadius: BorderRadius.circular(14),
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: Colors.black.withValues(alpha: 0.1),
+                                                          blurRadius: 4,
+                                                          offset: const Offset(0, 2),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    child: Image.asset(
+                                                      'assets/images/icons/building_1.png',
+                                                      height: 30,
+                                                      width: 30,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 12),
+                                                  Text(
+                                                    'أسهم ${item.name}',
+                                                    style: const TextStyle(
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.white,
+                                                      letterSpacing: -0.2,
+                                                      shadows: [
+                                                        Shadow(
+                                                          color: Colors.black26,
+                                                          offset: Offset(0, 1),
+                                                          blurRadius: 2,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 6),
+                                                  Text(
+                                                    'شراء: ${item.buySharesCount}',
+                                                    style: TextStyle(
+                                                      fontSize: 17,
+                                                      fontWeight: FontWeight.w500,
+                                                      color: Colors.white.withValues(alpha: 0.95),
+                                                      letterSpacing: -0.1,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 3),
+                                                  Text(
+                                                    'بيع: ${item.sellSharesCount}',
+                                                    style: TextStyle(
+                                                      fontSize: 17,
+                                                      fontWeight: FontWeight.w500,
+                                                      color: Colors.white.withValues(alpha: 0.95),
+                                                      letterSpacing: -0.1,
+                                                    ),
+                                                  ),
                                                 ],
                                               ),
                                             );
                                           },
                                         ),
-                                        const SizedBox(height: 16),
-                                        _buildGradientCard(
-                                          height: 100,
+                                        
+                                        const SizedBox(height: 24),
+                                        
+                                                                                // Section header card
+                                        _buildIOSHeaderCard(
                                           child: Column(
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              Image.asset('assets/images/icons/updates.png',
-                                                  height: 48, width: double.infinity, color: Colors.white),
-                                              const Text('عدد العقارات المتاحة حسب النوع',
-                                                  style: TextStyle(
-                                                      fontSize: 20,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: Colors.white)),
+                                              Container(
+                                                padding: const EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withValues(alpha: 0.25),
+                                                  borderRadius: BorderRadius.circular(14),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withValues(alpha: 0.1),
+                                                      blurRadius: 4,
+                                                      offset: const Offset(0, 2),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Image.asset(
+                                                  'assets/images/icons/updates.png',
+                                                  height: 26,
+                                                  width: 26,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              const Text(
+                                                'عدد العقارات المتاحة حسب النوع',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                  letterSpacing: -0.3,
+                                                  shadows: [
+                                                    Shadow(
+                                                      color: Colors.black26,
+                                                      offset: Offset(0, 1),
+                                                      blurRadius: 2,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),
-                                        const SizedBox(height: 16),
+                                        
+                                        const SizedBox(height: 20),
+                                        
+                                        // Apartment statistics with iOS cards
                                         GridView.builder(
                                           shrinkWrap: true,
                                           physics: const NeverScrollableScrollPhysics(),
                                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                             crossAxisCount: 2,
-                                            crossAxisSpacing: 13,
-                                            mainAxisSpacing: 13,
-                                            childAspectRatio: 1.2,
+                                            crossAxisSpacing: 16,
+                                            mainAxisSpacing: 16,
+                                            childAspectRatio: 1.05,
                                           ),
                                           itemCount: state.apartmentStatistics.length,
                                           itemBuilder: (context, index) {
                                             final item = state.apartmentStatistics[index];
-                                            return _buildGradientCard(
-                                              child: Column(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                children: [
-                                                  Image.asset('assets/images/icons/building_1.png',
-                                                      height: 48, width: 48, color: Colors.white),
-                                                  Text(item.name,
-                                                      textAlign: TextAlign.center,
-                                                      style: const TextStyle(
-                                                          fontSize: 14,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: Colors.white)),
-                                                  Text(item.apartmentsCount.toString(),
-                                                      textAlign: TextAlign.center,
-                                                      style: const TextStyle(
-                                                          fontSize: 20,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: Colors.white)),
-                                                ],
-                                              ),
-                                            );
+                                                                                         return _buildIOSCard(
+                                               child: Column(
+                                                 mainAxisAlignment: MainAxisAlignment.center,
+                                                 children: [
+                                                   Container(
+                                                     padding: const EdgeInsets.all(10),
+                                                     decoration: BoxDecoration(
+                                                       color: Colors.white.withValues(alpha: 0.25),
+                                                       borderRadius: BorderRadius.circular(14),
+                                                       boxShadow: [
+                                                         BoxShadow(
+                                                           color: Colors.black.withValues(alpha: 0.1),
+                                                           blurRadius: 4,
+                                                           offset: const Offset(0, 2),
+                                                         ),
+                                                       ],
+                                                     ),
+                                                     child: Image.asset(
+                                                       'assets/images/icons/building_1.png',
+                                                       height: 30,
+                                                       width: 30,
+                                                       color: Colors.white,
+                                                     ),
+                                                   ),
+                                                   const SizedBox(height: 12),
+                                                   Text(
+                                                     item.name,
+                                                     textAlign: TextAlign.center,
+                                                     style: const TextStyle(
+                                                       fontSize: 17,
+                                                       fontWeight: FontWeight.bold,
+                                                       color: Colors.white,
+                                                       letterSpacing: -0.2,
+                                                       shadows: [
+                                                         Shadow(
+                                                           color: Colors.black26,
+                                                           offset: Offset(0, 1),
+                                                           blurRadius: 2,
+                                                         ),
+                                                       ],
+                                                     ),
+                                                   ),
+                                                   const SizedBox(height: 6),
+                                                   Text(
+                                                     item.apartmentsCount.toString(),
+                                                     textAlign: TextAlign.center,
+                                                     style: const TextStyle(
+                                                       fontSize: 26,
+                                                      // fontWeight: FontWeight.w700,
+                                                       color: Colors.white,
+                                                       letterSpacing: -0.5,
+                                                       shadows: [
+                                                         Shadow(
+                                                           color: Colors.black26,
+                                                           offset: Offset(0, 1),
+                                                           blurRadius: 2,
+                                                         ),
+                                                       ],
+                                                     ),
+                                                   ),
+                                                 ],
+                                               ),
+                                             );
                                           },
                                         ),
 
-                                        const SizedBox(height: 16),
+                                        const SizedBox(height: 24),
                                         // Add extra bottom padding for FAB
                                         const SizedBox(height: 150),
                                       ],
@@ -382,6 +553,94 @@ class _HomeViewState extends State<HomeView> {
         ),
       ),
       child: child,
+    );
+  }
+
+  Widget _buildIOSCard({required Widget child, double? height}) {
+    const colors = [
+      Color(0xFF633e3d),
+      Color(0xFF774b46),
+      Color(0xFF8d5e52),
+      Color(0xFFa47764),
+      Color(0xFFbda28c)
+    ];
+
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: const LinearGradient(
+            colors: colors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildIOSHeaderCard({required Widget child, double? height}) {
+    const colors = [
+      Color(0xFF633e3d),
+      Color(0xFF774b46),
+      Color(0xFF8d5e52),
+      Color(0xFFa47764),
+      Color(0xFFbda28c)
+    ];
+
+    return Container(
+      width: double.infinity,
+      height: height ?? 120,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: colors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: child,
+      ),
     );
   }
 } 
