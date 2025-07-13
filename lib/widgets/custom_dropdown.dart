@@ -34,11 +34,37 @@ class CustomDropdown<T> extends StatefulWidget {
   State<CustomDropdown<T>> createState() => _CustomDropdownState<T>();
 }
 
-class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
+class _CustomDropdownState<T> extends State<CustomDropdown<T>> with SingleTickerProviderStateMixin {
   bool _isOpen = false;
   late OverlayEntry _overlayEntry;
   final GlobalKey _dropdownKey = GlobalKey();
   final ScrollController _scrollController = ScrollController();
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutBack,
+    ));
+    _opacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -171,139 +197,185 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
     setState(() {
       _isOpen = true;
     });
+    _animationController.forward();
   }
 
-  void _closeDropdown() {
-    _overlayEntry.remove();
-    setState(() {
-      _isOpen = false;
-    });
+  void _closeDropdown() async {
+    await _animationController.reverse();
+    if (mounted) {
+      _overlayEntry.remove();
+      setState(() {
+        _isOpen = false;
+      });
+    }
   }
 
   OverlayEntry _createOverlayEntry() {
-    final RenderBox renderBox =
-        _dropdownKey.currentContext!.findRenderObject() as RenderBox;
-    final size = renderBox.size;
-    final offset = renderBox.localToGlobal(Offset.zero);
-
     return OverlayEntry(
       builder: (context) => GestureDetector(
         onTap: _closeDropdown,
-        child: Container(
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height,
-          color: Colors.transparent,
-          child: Stack(
-            children: [
-              // Actual dropdown positioned where it should be
-              Positioned(
-                left: offset.dx,
-                top: offset.dy + size.height + 6,
-                width: size.width,
-                child: GestureDetector(
-                  onTap: () {}, // Prevent tap from bubbling up to parent
-                  child: Directionality(
-                    textDirection: TextDirection.rtl,
-                    child: Container(
-                      constraints: const BoxConstraints(maxHeight: 200),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFD4C4B0),
-                          width: 0.5,
+        child: AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) => Container(
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height,
+            color: Colors.black.withValues(alpha: 0.4 * _opacityAnimation.value), // Animated backdrop
+            child: Center(
+              child: Transform.scale(
+                scale: _scaleAnimation.value,
+                child: Opacity(
+                  opacity: _opacityAnimation.value,
+                  child: GestureDetector(
+                    onTap: () {}, // Prevent tap from bubbling up to parent
+                    child: Directionality(
+                      textDirection: TextDirection.rtl,
+                      child: Container(
+                        width: MediaQuery.of(context).size.width * 0.85, // 85% of screen width
+                        constraints: const BoxConstraints(
+                          maxHeight: 400,
+                          maxWidth: 400,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFD4C4B0),
+                            width: 0.5,
                           ),
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: widget.items.isEmpty
-                            ? Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Text(
-                                  widget.emptyMessage ?? 'لا توجد عناصر للاختيار',
-                                  style: TextStyle(
-                                    color: const Color(0xFF8C7A6A),
-                                    fontFamily: 'Cairo',
-                                    fontSize: 14,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                              spreadRadius: 2,
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.12),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: widget.items.isEmpty
+                              ? Padding(
+                                  padding: const EdgeInsets.all(32),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.inbox_outlined,
+                                        size: 48,
+                                        color: const Color(0xFF8C7A6A),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        widget.emptyMessage ?? 'لا توجد عناصر للاختيار',
+                                        style: const TextStyle(
+                                          color: Color(0xFF8C7A6A),
+                                          fontFamily: 'Cairo',
+                                          fontSize: 16,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
                                   ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              )
-                            : Scrollbar(
-                                controller: _scrollController,
-                                thumbVisibility: _shouldShowScrollbar(),
-                                radius: const Radius.circular(8),
-                                thickness: 3,
-                                child: MediaQuery.removePadding(
-                                  context: context,
-                                  removeTop: true,
-                                  removeBottom: true,
-                                  child: ListView.builder(
-                                    primary: false,
-                                    controller: _scrollController,
-                                    padding: EdgeInsets.zero,
-                                    shrinkWrap: true,
-                                    itemCount: widget.items.length,
-                                    itemBuilder: (context, index) {
-                                      final item = widget.items[index];
-                                      final isSelected = widget.value != null &&
-                                          widget.itemValue(widget.value as T) == widget.itemValue(item);
+                                )
+                              : Scrollbar(
+                                  controller: _scrollController,
+                                  thumbVisibility: _shouldShowScrollbar(),
+                                  radius: const Radius.circular(8),
+                                  thickness: 4,
+                                  child: MediaQuery.removePadding(
+                                    context: context,
+                                    removeTop: true,
+                                    removeBottom: true,
+                                    child: ListView.builder(
+                                      primary: false,
+                                      controller: _scrollController,
+                                      padding: EdgeInsets.zero,
+                                      shrinkWrap: true,
+                                      itemCount: widget.items.length,
+                                      itemBuilder: (context, index) {
+                                        final item = widget.items[index];
+                                        final isSelected = widget.value != null &&
+                                            widget.itemValue(widget.value as T) == widget.itemValue(item);
 
-                                      return Material(
-                                        color: Colors.transparent,
-                                        child: InkWell(
-                                          onTap: () {
-                                            widget.onChanged?.call(item);
-                                            _closeDropdown();
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 14,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: isSelected
-                                                  ? const Color(0xFFA47764).withValues(alpha: 0.08)
-                                                  : Colors.transparent,
-                                            ),
-                                            child: Text(
-                                              widget.itemLabel(item),
-                                              style: TextStyle(
-                                                fontSize: 16,
+                                        return Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            onTap: () {
+                                              widget.onChanged?.call(item);
+                                              _closeDropdown();
+                                            },
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: Container(
+                                              margin: const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 2,
+                                              ),
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 16,
+                                              ),
+                                              decoration: BoxDecoration(
                                                 color: isSelected
-                                                    ? const Color(0xFFA47764)
-                                                    : Colors.black87,
-                                                fontWeight: isSelected
-                                                    ? FontWeight.w600
-                                                    : FontWeight.w400,
-                                                fontFamily: 'Cairo',
+                                                    ? const Color(0xFFA47764).withValues(alpha: 0.15)
+                                                    : Colors.transparent,
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: isSelected
+                                                    ? Border.all(
+                                                        color: const Color(0xFFA47764).withValues(alpha: 0.3),
+                                                        width: 1,
+                                                      )
+                                                    : null,
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      widget.itemLabel(item),
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        color: isSelected
+                                                            ? const Color(0xFFA47764)
+                                                            : Colors.black87,
+                                                        fontWeight: isSelected
+                                                            ? FontWeight.w600
+                                                            : FontWeight.w400,
+                                                        fontFamily: 'Cairo',
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  if (isSelected)
+                                                    const Icon(
+                                                      Icons.check_circle,
+                                                      color: Color(0xFFA47764),
+                                                      size: 20,
+                                                    ),
+                                                ],
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      );
-                                    },
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
-                              ),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -316,6 +388,7 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
       _overlayEntry.remove();
     }
     _scrollController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 } 
