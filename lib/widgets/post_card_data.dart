@@ -220,7 +220,7 @@ class ApartmentPostAdapter implements PostCardData {
     
     // Always show price and equity
     rows.add(InfoRowData(iconName: 'price.png', text: 'السعر : ${_apartment.price}'));
-    rows.add(InfoRowData(iconName: 'quantity.png', text: 'الحصة السهمية : ${_apartment.equity}'));
+   // rows.add(InfoRowData(iconName: 'quantity.png', text: 'الحصة السهمية : ${_apartment.equity}'));
     
     // Show area if available
     if (_apartment.area > 0) {
@@ -242,7 +242,7 @@ class ApartmentPostAdapter implements PostCardData {
     final apartmentDetails = <String>[];
     
     if (_apartment.apartmentType.fields.contains('floor') && _apartment.floor > 0) {
-      apartmentDetails.add('الطابق: ${_apartment.floor}');
+     // apartmentDetails.add('الطابق: ${_apartment.floor}');
     }
     if (_apartment.apartmentType.fields.contains('rooms_count') && _apartment.roomsCount > 0) {
      // apartmentDetails.add('عدد الغرف: ${_apartment.roomsCount}');
