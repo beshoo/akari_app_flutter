@@ -1,5 +1,6 @@
 import 'package:akari_app/data/repositories/home_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:phone_form_field/phone_form_field.dart';
@@ -23,6 +24,12 @@ import 'package:firebase_core/firebase_core.dart';
 Future<void> main() async {
   // Ensure Flutter binding is initialized
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Set preferred orientations to portrait only
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   
   // Initialize Firebase
   await Firebase.initializeApp();
