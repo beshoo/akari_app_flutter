@@ -11,6 +11,8 @@ import '../widgets/custom_app_bar.dart';
 import '../widgets/post_card.dart';
 import '../widgets/post_card_data.dart';
 import '../widgets/custom_spinner.dart';
+import 'share_form_page.dart';
+import 'apartment_form_page.dart';
 
 class RegionPage extends StatefulWidget {
   final int? regionId;
@@ -481,7 +483,57 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         onBackPressed: () => Navigator.pop(context),
         showAddAdButton: true,
         onAddAdPressed: () {
-          // TODO: Handle "Add Ad" button press
+          // Check which tab is currently active and navigate accordingly
+          if (_tabController != null && _tabs.length > 1) {
+            // Multiple tabs - check current tab index
+            final currentTabIndex = _tabController!.index;
+            if (widget.hasShare && widget.hasApartment) {
+              if (currentTabIndex == 0) {
+                // Shares tab - navigate to share form
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ShareFormPage(
+                      mode: ShareFormMode.create,
+                    ),
+                  ),
+                );
+              } else {
+                // Apartments tab - navigate to apartment form
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ApartmentFormPage(
+                      mode: ApartmentFormMode.create,
+                    ),
+                  ),
+                );
+              }
+            }
+          } else if (_tabs.length == 1) {
+            // Single tab - check which type it is
+            if (widget.hasShare) {
+              // Only shares available - navigate to share form
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ShareFormPage(
+                    mode: ShareFormMode.create,
+                  ),
+                ),
+              );
+            } else if (widget.hasApartment) {
+              // Only apartments available - navigate to apartment form
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ApartmentFormPage(
+                    mode: ApartmentFormMode.create,
+                  ),
+                ),
+              );
+            }
+          }
         },
         onSearchPressed: () {
           // TODO: Handle search press
@@ -603,7 +655,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         alignment: Alignment.topCenter,
         child: Padding(
           padding: EdgeInsets.all(16.0),
-          child: CustomSpinner(size: 32.0),
+          child: CustomSpinner(size: 40.0),
         ),
       );
     }
@@ -713,7 +765,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         alignment: Alignment.topCenter,
         child: Padding(
           padding: EdgeInsets.all(16.0),
-          child: CustomSpinner(size: 32.0),
+          child: CustomSpinner(size: 40.0),
         ),
       );
     }

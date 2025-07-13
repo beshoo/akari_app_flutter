@@ -37,7 +37,7 @@ Future<void> showCustomDialog({
             fontSize: 18,
             color: Colors.black54,
           ),
-          textAlign: TextAlign.center,
+          textAlign: TextAlign.justify,
         ),
         actionsAlignment: MainAxisAlignment.center,
         actionsPadding: const EdgeInsets.fromLTRB(20, 10, 20, 20),

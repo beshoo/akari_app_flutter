@@ -87,7 +87,7 @@ class SpinnerPainter extends CustomPainter {
     // Active arc
     final activePaint = Paint()
       ..color = const Color(0xFF633e3d)
-      ..strokeWidth = 3.0
+      ..strokeWidth = 4.0
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 

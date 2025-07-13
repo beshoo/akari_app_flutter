@@ -31,7 +31,7 @@ class PostCard extends StatefulWidget {
 class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   // === Action Button Size Controls ===
   static const double _actionButtonFontSize = 17;
-  static const double _actionButtonIconSize = 20;
+  static const double _actionButtonIconSize = 22;
 
   bool _showReactions = false;
   late PostCardData _currentPostData;
@@ -48,11 +48,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   };
 
   final Map<String, String> _reactionNames = {
-    'like': 'إعجاب',
-    'love': 'حب',
-    'wow': 'واو',
-    'sad': 'حزن',
-    'angry': 'غضب',
+    'like': 'أعجبني',
+    'love': 'أحببته',
+    'wow': 'أدهشني',
+    'sad': 'أحزنني',
+    'angry': 'أغضبني',
   };
 
   @override
@@ -406,7 +406,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
               text,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 12,
+                fontSize: 15,
               ),
             ),
           ),
@@ -680,16 +680,21 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   Widget _getCurrentReactionIcon({double size = 16}) {
-    if (_currentPostData.currentUserReaction != null) {
-      return Text(
-        _reactionEmojis[_currentPostData.currentUserReaction!]!,
-        style: TextStyle(fontSize: size),
-      );
-    }
-    return FaIcon(
-      FontAwesomeIcons.thumbsUp,
-      size: size,
-      color: _grayColor,
+    return SizedBox(
+      width: size + 2, // Fixed width to prevent layout shifts
+      height: size + 2, // Fixed height to prevent layout shifts
+      child: Center(
+        child: _currentPostData.currentUserReaction != null
+            ? Text(
+                _reactionEmojis[_currentPostData.currentUserReaction!]!,
+                style: TextStyle(fontSize: size - 2), // Slightly smaller to fit better
+              )
+            : FaIcon(
+                FontAwesomeIcons.thumbsUp,
+                size: size,
+                color: _grayColor,
+              ),
+      ),
     );
   }
 

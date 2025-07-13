@@ -3,6 +3,8 @@ import 'package:akari_app/pages/home/bloc/home_bloc.dart';
 import 'package:akari_app/pages/home/bloc/home_event.dart';
 import 'package:akari_app/pages/home/bloc/home_state.dart';
 import 'package:akari_app/pages/region_page.dart';
+import 'package:akari_app/pages/share_form_page.dart';
+import 'package:akari_app/pages/apartment_form_page.dart';
 import 'package:akari_app/widgets/custom_app_bar.dart';
 import 'package:akari_app/widgets/custom_dialog.dart';
 import 'package:akari_app/widgets/custom_bottom_nav_bar.dart';
@@ -333,10 +335,24 @@ class _HomeViewState extends State<HomeView> {
             ),
             CustomFAB(
               onAddApartment: () {
-                // TODO: Navigate to add apartment page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ApartmentFormPage(
+                      mode: ApartmentFormMode.create,
+                    ),
+                  ),
+                );
               },
               onAddShare: () {
-                // TODO: Navigate to add share page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ShareFormPage(
+                      mode: ShareFormMode.create,
+                    ),
+                  ),
+                );
               },
             ),
           ],
