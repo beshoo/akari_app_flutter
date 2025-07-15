@@ -190,8 +190,8 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
     // Set sector info
     _selectedSector = SectorOption(
       id: apartment.sectorId,
-      name: apartment.sector.sectorName?.name ?? '',
-      code: apartment.sector.code?.code ?? '',
+      name: apartment.sector.sectorName.name ?? '',
+      code: apartment.sector.code.code ?? '',
     );
   }
 
@@ -734,6 +734,7 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
         backgroundColor: const Color(0xFFF7F5F2),
         appBar: CustomAppBar(
           onBackPressed: () => Navigator.of(context).pop(),
+          onLogoPressed: () => Navigator.of(context).pop(),
         ),
         body: _buildFormContent(),
       ),

@@ -1,16 +1,19 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart' as share_plus;
-import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../data/models/share_model.dart';
-import '../stores/reaction_store.dart';
+import 'package:shimmer/shimmer.dart';
+
 import '../stores/auth_store.dart';
+import '../stores/reaction_store.dart';
+import '../utils/logger.dart';
+import '../utils/navigation_helper.dart';
 import '../utils/toast_helper.dart';
-import 'custom_bottom_sheet.dart';
 import './post_card_data.dart';
+import 'custom_bottom_sheet.dart';
 
 class PostCard extends StatefulWidget {
   final PostCardData postData;
@@ -200,22 +203,33 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   Widget _buildBackgroundImage() {
     return Positioned.fill(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: CachedNetworkImage(
-          imageUrl: _currentPostData.imageUrl,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
-            color: Colors.grey[300],
-            child: const Center(
-              child: CircularProgressIndicator(),
+      child: GestureDetector(
+        onTap: () {
+          NavigationHelper.navigateToDetails(
+            context,
+            _currentPostData.id,
+            _currentPostData.postType,
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: CachedNetworkImage(
+            imageUrl: _currentPostData.imageUrl,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => Shimmer.fromColors(
+              baseColor: Colors.grey[400]!,
+              highlightColor: Colors.grey[100]!,
+              period: const Duration(milliseconds: 1500),
+              child: Container(
+                color: Colors.grey[400]!,
+              ),
             ),
-          ),
-          errorWidget: (context, url, error) => Container(
-            color: Colors.grey[300],
-            child: Image.asset(
-              'assets/images/no_photo.jpg',
-              fit: BoxFit.cover,
+            errorWidget: (context, url, error) => Container(
+              color: Colors.grey[300],
+              child: Image.asset(
+                'assets/images/no_photo.jpg',
+                fit: BoxFit.cover,
+              ),
             ),
           ),
         ),
@@ -323,7 +337,16 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       bottom: 0,
       left: 0,
       right: 0,
-      child: Container(
+      child: GestureDetector(
+        onTap: () {
+          // Navigate to details page
+          NavigationHelper.navigateToDetails(
+            context,
+            _currentPostData.id,
+            _currentPostData.postType,
+          );
+        },
+        child: Container(
         constraints: BoxConstraints(
           minHeight: 80, // Minimum height
           maxHeight: _currentPostData.infoRows.length <= 4 ? 180 : 320, // Adaptive height
@@ -394,7 +417,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildInfoRow(String iconName, String text) {
@@ -786,26 +810,23 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       postId: _currentPostData.id,
     );
 
-    if (kDebugMode) {
-      print('🎯 Reaction result: $result');
-      print('🎯 Result success: ${result['success']}');
-      print('🎯 Result data: ${result['data']}');
-    }
-
+    // Handle the result from the store
     if (result['success']) {
-      // Update state based on API response
-      if (result['data'] != null && result['data']['reaction_summary'] != null) {
-        _currentPostData = _currentPostData.withReaction(reaction, result['data']['reaction_summary']);
+      final reactionSummary = result['data']['reaction_summary'];
+      Logger.log('🎯 Reaction result: $result');
+      Logger.log('🎯 Result success: ${result['success']}');
+      Logger.log('🎯 Result data: ${result['data']}');
+
+      if (reactionSummary != null && reactionSummary is Map<String, dynamic>) {
+        // Update the post data with the new reaction summary
+        final newPostData =
+            _currentPostData.withReaction(reaction, reactionSummary);
+        _updatePostData(newPostData);
       } else {
-        if (kDebugMode) {
-          print('⚠️ No reaction_summary found, using fallback');
-        }
-        // Fallback: manually update reaction
-        _currentPostData = _currentPostData.withReactionCounts(_updateReactionCounts(reaction));
-      }
-      
-      if (widget.onPostUpdated != null) {
-        widget.onPostUpdated!(_currentPostData);
+        Logger.warn('⚠️ No reaction_summary found, using fallback');
+        // Fallback if reaction_summary is missing (should not happen)
+        final newPostData =
+            _currentPostData.withReaction(reaction, {'total_count': 0});
       }
     } else {
       // Show error message if reaction failed
@@ -818,7 +839,24 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         );
       }
     }
-    // Note: No toast message for successful reactions as requested
+  }
+
+  void _updatePostData(PostCardData newPostData) {
+    if (mounted) {
+      final newUserReaction = newPostData.currentUserReaction;
+      Logger.log('📊 Updating reaction summary: ${newPostData.reactionCounts.toJson()}');
+      Logger.log('🔄 New user reaction: $newUserReaction');
+      setState(() {
+        _currentPostData = newPostData;
+      });
+
+      // Notify parent widget
+      if (widget.onPostUpdated != null) {
+        widget.onPostUpdated!(_currentPostData);
+        Logger.log('✅ Share updated - Current user reaction: ${_currentPostData.currentUserReaction}');
+        Logger.log('✅ Total reactions: ${_currentPostData.reactionCounts.totalCount}');
+      }
+    }
   }
 
   Map<String, dynamic> _updateReactionCounts(String newReaction) {
@@ -868,8 +906,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   void _updateFromReactionSummary(Map<String, dynamic> reactionSummary, [String? newUserReaction]) {
     if (kDebugMode) {
-      print('📊 Updating reaction summary: $reactionSummary');
-      print('🔄 New user reaction: $newUserReaction');
+      Logger.log('📊 Updating reaction summary: $reactionSummary');
+      Logger.log('🔄 New user reaction: $newUserReaction');
     }
     
     setState(() {
@@ -877,8 +915,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     });
     
     if (kDebugMode) {
-      print('✅ Share updated - Current user reaction: ${_currentPostData.currentUserReaction}');
-      print('✅ Total reactions: ${_currentPostData.reactionCounts.totalCount}');
+      Logger.log('✅ Share updated - Current user reaction: ${_currentPostData.currentUserReaction}');
+      Logger.log('✅ Total reactions: ${_currentPostData.reactionCounts.totalCount}');
     }
   }
 
@@ -912,9 +950,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   void _showReactionModal() {
-    if (kDebugMode) {
-      print('🔥 Opening reaction modal bottom sheet');
-    }
+    Logger.log('🔥 Opening reaction modal bottom sheet');
     
     showMaterialModalBottomSheet(
       context: context,

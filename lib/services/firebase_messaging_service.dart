@@ -1,5 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import '../utils/logger.dart';
 
 class FirebaseMessagingService {
   static final FirebaseMessagingService instance = FirebaseMessagingService._internal();
@@ -27,20 +28,14 @@ class FirebaseMessagingService {
     );
 
     _token = await _firebaseMessaging.getToken();
-    if (kDebugMode) {
-      print('Firebase Messaging Token: $_token');
-    }
+    Logger.log('Firebase Messaging Token: $_token');
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      if (kDebugMode) {
-        print('Got a message whilst in the foreground!');
-        print('Message data: ${message.data}');
-      }
+      Logger.log('Got a message whilst in the foreground!');
+      Logger.log('Message data: ${message.data}');
 
       if (message.notification != null) {
-        if (kDebugMode) {
-          print('Message also contained a notification: ${message.notification}');
-        }
+        Logger.log('Message also contained a notification: ${message.notification}');
       }
     });
   }

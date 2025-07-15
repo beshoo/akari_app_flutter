@@ -5,6 +5,7 @@ import 'package:akari_app/pages/home/bloc/home_state.dart';
 import 'package:akari_app/pages/region_page.dart';
 import 'package:akari_app/pages/share_form_page.dart';
 import 'package:akari_app/pages/apartment_form_page.dart';
+import 'package:akari_app/pages/search_page.dart';
 import 'package:akari_app/widgets/custom_app_bar.dart';
 import 'package:akari_app/widgets/custom_dialog.dart';
 import 'package:akari_app/widgets/custom_bottom_nav_bar.dart';
@@ -63,7 +64,12 @@ class _HomeViewState extends State<HomeView> {
                   // TODO: Handle favorites press
                 },
                 onSearchPressed: () {
-                  // TODO: Handle search press
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SearchPage(),
+                    ),
+                  );
                 },
                 onNotificationPressed: () {
                   // TODO: Handle notification press
@@ -269,68 +275,84 @@ class _HomeViewState extends State<HomeView> {
                                           itemCount: state.shareStatistics.length,
                                           itemBuilder: (context, index) {
                                             final item = state.shareStatistics[index];
-                                            return _buildIOSCard(
-                                              child: Column(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                children: [
-                                                  Container(
-                                                    padding: const EdgeInsets.all(10),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.white.withValues(alpha: 0.25),
-                                                      borderRadius: BorderRadius.circular(14),
-                                                      boxShadow: [
-                                                        BoxShadow(
-                                                          color: Colors.black.withValues(alpha: 0.1),
-                                                          blurRadius: 4,
-                                                          offset: const Offset(0, 2),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    child: Image.asset(
-                                                      'assets/images/icons/building_1.png',
-                                                      height: 30,
-                                                      width: 30,
-                                                      color: Colors.white,
+                                            return GestureDetector(
+                                              onTap: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) => RegionPage(
+                                                      regionId: item.id, // Use id from ShareStatistic
+                                                      regionName: item.name,
+                                                      hasShare: true,
+                                                      hasApartment: true,
+                                                      initialTabIndex: 0, // Select shares tab
                                                     ),
                                                   ),
-                                                  const SizedBox(height: 12),
-                                                  Text(
-                                                    'أسهم ${item.name}',
-                                                    style: const TextStyle(
-                                                      fontSize: 15,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: Colors.white,
-                                                      letterSpacing: -0.2,
-                                                      shadows: [
-                                                        Shadow(
-                                                          color: Colors.black26,
-                                                          offset: Offset(0, 1),
-                                                          blurRadius: 2,
-                                                        ),
-                                                      ],
+                                                );
+                                              },
+                                              child: _buildIOSCard(
+                                                child: Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets.all(10),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white.withValues(alpha: 0.25),
+                                                        borderRadius: BorderRadius.circular(14),
+                                                        boxShadow: [
+                                                          BoxShadow(
+                                                            color: Colors.black.withValues(alpha: 0.1),
+                                                            blurRadius: 4,
+                                                            offset: const Offset(0, 2),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      child: Image.asset(
+                                                        'assets/images/icons/building_1.png',
+                                                        height: 30,
+                                                        width: 30,
+                                                        color: Colors.white,
+                                                      ),
                                                     ),
-                                                  ),
-                                                  const SizedBox(height: 6),
-                                                  Text(
-                                                    'شراء: ${item.buySharesCount}',
-                                                    style: TextStyle(
-                                                      fontSize: 17,
-                                                      fontWeight: FontWeight.w500,
-                                                      color: Colors.white.withValues(alpha: 0.95),
-                                                      letterSpacing: -0.1,
+                                                    const SizedBox(height: 12),
+                                                    Text(
+                                                      'أسهم ${item.name}',
+                                                      style: const TextStyle(
+                                                        fontSize: 15,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.white,
+                                                        letterSpacing: -0.2,
+                                                        shadows: [
+                                                          Shadow(
+                                                            color: Colors.black26,
+                                                            offset: Offset(0, 1),
+                                                            blurRadius: 2,
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ),
-                                                  ),
-                                                  const SizedBox(height: 3),
-                                                  Text(
-                                                    'بيع: ${item.sellSharesCount}',
-                                                    style: TextStyle(
-                                                      fontSize: 17,
-                                                      fontWeight: FontWeight.w500,
-                                                      color: Colors.white.withValues(alpha: 0.95),
-                                                      letterSpacing: -0.1,
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      'طلبات الشراء: ${item.buySharesCount}',
+                                                      style: TextStyle(
+                                                        fontSize: 17,
+                                                        fontWeight: FontWeight.w500,
+                                                        color: Colors.white.withValues(alpha: 0.95),
+                                                        letterSpacing: -0.1,
+                                                      ),
                                                     ),
-                                                  ),
-                                                ],
+                                                    const SizedBox(height: 3),
+                                                    Text(
+                                                      'عروض البيع: ${item.sellSharesCount}',
+                                                      style: TextStyle(
+                                                        fontSize: 17,
+                                                        fontWeight: FontWeight.w500,
+                                                        color: Colors.white.withValues(alpha: 0.95),
+                                                        letterSpacing: -0.1,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             );
                                           },
@@ -400,69 +422,85 @@ class _HomeViewState extends State<HomeView> {
                                           itemCount: state.apartmentStatistics.length,
                                           itemBuilder: (context, index) {
                                             final item = state.apartmentStatistics[index];
-                                                                                         return _buildIOSCard(
-                                               child: Column(
-                                                 mainAxisAlignment: MainAxisAlignment.center,
-                                                 children: [
-                                                   Container(
-                                                     padding: const EdgeInsets.all(10),
-                                                     decoration: BoxDecoration(
-                                                       color: Colors.white.withValues(alpha: 0.25),
-                                                       borderRadius: BorderRadius.circular(14),
-                                                       boxShadow: [
-                                                         BoxShadow(
-                                                           color: Colors.black.withValues(alpha: 0.1),
-                                                           blurRadius: 4,
-                                                           offset: const Offset(0, 2),
-                                                         ),
-                                                       ],
-                                                     ),
-                                                     child: Image.asset(
-                                                       'assets/images/icons/building_1.png',
-                                                       height: 30,
-                                                       width: 30,
-                                                       color: Colors.white,
-                                                     ),
-                                                   ),
-                                                   const SizedBox(height: 12),
-                                                   Text(
-                                                     item.name,
-                                                     textAlign: TextAlign.center,
-                                                     style: const TextStyle(
-                                                       fontSize: 17,
-                                                       fontWeight: FontWeight.bold,
-                                                       color: Colors.white,
-                                                       letterSpacing: -0.2,
-                                                       shadows: [
-                                                         Shadow(
-                                                           color: Colors.black26,
-                                                           offset: Offset(0, 1),
-                                                           blurRadius: 2,
-                                                         ),
-                                                       ],
-                                                     ),
-                                                   ),
-                                                   const SizedBox(height: 6),
-                                                   Text(
-                                                     item.apartmentsCount.toString(),
-                                                     textAlign: TextAlign.center,
-                                                     style: const TextStyle(
-                                                       fontSize: 26,
-                                                      // fontWeight: FontWeight.w700,
-                                                       color: Colors.white,
-                                                       letterSpacing: -0.5,
-                                                       shadows: [
-                                                         Shadow(
-                                                           color: Colors.black26,
-                                                           offset: Offset(0, 1),
-                                                           blurRadius: 2,
-                                                         ),
-                                                       ],
-                                                     ),
-                                                   ),
-                                                 ],
-                                               ),
-                                             );
+                                            return GestureDetector(
+                                              onTap: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) => RegionPage(
+                                                      regionId: item.id,
+                                                      regionName: item.name,
+                                                      hasShare: true,
+                                                      hasApartment: true,
+                                                      initialTabIndex: 1, // Select apartments tab (assuming shares tab is index 0)
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              child: _buildIOSCard(
+                                                child: Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets.all(10),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white.withValues(alpha: 0.25),
+                                                        borderRadius: BorderRadius.circular(14),
+                                                        boxShadow: [
+                                                          BoxShadow(
+                                                            color: Colors.black.withValues(alpha: 0.1),
+                                                            blurRadius: 4,
+                                                            offset: const Offset(0, 2),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      child: Image.asset(
+                                                        'assets/images/icons/building_1.png',
+                                                        height: 30,
+                                                        width: 30,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 12),
+                                                    Text(
+                                                      item.name,
+                                                      textAlign: TextAlign.center,
+                                                      style: const TextStyle(
+                                                        fontSize: 17,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.white,
+                                                        letterSpacing: -0.2,
+                                                        shadows: [
+                                                          Shadow(
+                                                            color: Colors.black26,
+                                                            offset: Offset(0, 1),
+                                                            blurRadius: 2,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      item.apartmentsCount.toString(),
+                                                      textAlign: TextAlign.center,
+                                                      style: const TextStyle(
+                                                        fontSize: 26,
+                                                       // fontWeight: FontWeight.w700,
+                                                        color: Colors.white,
+                                                        letterSpacing: -0.5,
+                                                        shadows: [
+                                                          Shadow(
+                                                            color: Colors.black26,
+                                                            offset: Offset(0, 1),
+                                                            blurRadius: 2,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
                                           },
                                         ),
 

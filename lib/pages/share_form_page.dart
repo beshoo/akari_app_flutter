@@ -121,8 +121,8 @@ class _ShareFormPageState extends State<ShareFormPage> {
     // Set sector info (this would need to be populated based on the loaded sectors)
     _selectedSector = SectorOption(
       id: share.sectorId,
-      name: share.sector.sectorName?.name ?? '',
-      code: share.sector.code?.code ?? '',
+      name: share.sector.sectorName.name ?? '',
+      code: share.sector.code.code ?? '',
     );
   }
 
@@ -418,6 +418,7 @@ class _ShareFormPageState extends State<ShareFormPage> {
         backgroundColor: const Color(0xFFF7F5F2),
         appBar: CustomAppBar(
           onBackPressed: () => Navigator.of(context).pop(),
+          onLogoPressed: () => Navigator.of(context).pop(),
         ),
         body: _buildFormContent(),
       ),

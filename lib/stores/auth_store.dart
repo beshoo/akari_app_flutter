@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../services/api_service.dart';
 import '../services/firebase_messaging_service.dart';
 import '../services/secure_storage.dart';
+import '../utils/logger.dart';
 
 class AuthStore extends ChangeNotifier {
   // Signup state
@@ -82,15 +83,14 @@ class AuthStore extends ChangeNotifier {
       }
     } on DioException catch (e) {
       _signupError = _handleDioError(e);
+      Logger.error('Signup DioException', e);
       return {
         'success': false,
         'message': _signupError,
       };
-    } catch (e) {
+    } catch (e, s) {
       _signupError = 'حدث خطأ غير متوقع';
-      if (kDebugMode) {
-        print('Signup error: $e');
-      }
+      Logger.error('Signup error', e, s);
       return {
         'success': false,
         'message': _signupError,
@@ -136,15 +136,14 @@ class AuthStore extends ChangeNotifier {
       }
     } on DioException catch (e) {
       _loginError = _handleDioError(e);
+      Logger.error('Login DioException', e);
       return {
         'success': false,
         'message': _loginError,
       };
-    } catch (e) {
+    } catch (e, s) {
       _loginError = 'حدث خطأ غير متوقع';
-      if (kDebugMode) {
-        print('Login error: $e');
-      }
+      Logger.error('Login error', e, s);
       return {
         'success': false,
         'message': _loginError,
@@ -181,15 +180,14 @@ class AuthStore extends ChangeNotifier {
       }
     } on DioException catch (e) {
       _otpError = _handleDioError(e);
+      Logger.error('Request OTP DioException', e);
       return {
         'success': false,
         'message': _otpError,
       };
-    } catch (e) {
+    } catch (e, s) {
       _otpError = 'حدث خطأ غير متوقع';
-      if (kDebugMode) {
-        print('OTP error: $e');
-      }
+      Logger.error('OTP error', e, s);
       return {
         'success': false,
         'message': _otpError,
@@ -255,15 +253,14 @@ class AuthStore extends ChangeNotifier {
       }
     } on DioException catch (e) {
       _otpError = _handleDioError(e);
+      Logger.error('Verify OTP DioException', e);
       return {
         'success': false,
         'message': _otpError,
       };
-    } catch (e) {
+    } catch (e, s) {
       _otpError = 'حدث خطأ غير متوقع';
-      if (kDebugMode) {
-        print('Verify OTP error: $e');
-      }
+      Logger.error('Verify OTP error', e, s);
       return {
         'success': false,
         'message': _otpError,
@@ -287,10 +284,12 @@ class AuthStore extends ChangeNotifier {
       _loginError = null;
       _otpError = null;
       notifyListeners();
-    } catch (e) {
-      if (kDebugMode) {
-        print('Logout error: $e');
-      }
+    } on DioException catch (e) {
+      // Handle or log error, but don't show to user
+      Logger.error('Logout DioException', e);
+    } catch (e, s) {
+      // Handle or log error, but don't show to user
+      Logger.error('Logout error', e, s);
     }
   }
   
@@ -311,14 +310,15 @@ class AuthStore extends ChangeNotifier {
       } else {
         _isAuthenticated = false;
       }
-    } catch (e) {
-      await SecureStorage.deleteToken();
+    } on DioException catch (e) {
       _isAuthenticated = false;
-      if (kDebugMode) {
-        print('Check auth status error: $e');
-      }
+      Logger.error('Check auth status DioException', e);
+    } catch (e, s) {
+      _isAuthenticated = false;
+      Logger.error('Check auth status error', e, s);
+    } finally {
+      notifyListeners();
     }
-    notifyListeners();
   }
   
   // Handle Dio errors

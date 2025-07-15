@@ -13,6 +13,7 @@ class CustomDropdown<T> extends StatefulWidget {
   final bool isLoading;
   final String? errorText;
   final bool hasError;
+  final Color? borderColor;
 
   const CustomDropdown({
     super.key,
@@ -28,6 +29,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.isLoading = false,
     this.errorText,
     this.hasError = false,
+    this.borderColor,
   });
 
   @override
@@ -95,9 +97,9 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> with SingleTicker
               decoration: BoxDecoration(
                 color: const Color(0xFFFAFAFA),
                 border: Border.all(
-                  color: widget.hasError
+                  color: widget.borderColor ?? (widget.hasError
                       ? Colors.red.withValues(alpha: 0.6)
-                      : const Color.fromARGB(255, 218, 218, 218),
+                      : const Color.fromARGB(255, 218, 218, 218)),
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(12),

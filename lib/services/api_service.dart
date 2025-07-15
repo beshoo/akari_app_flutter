@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart' hide Response;
 import '../config/environment.dart';
 import 'secure_storage.dart';
+import 'package:akari_app/utils/logger.dart';
 
 class ApiService {
   static late Dio dio;
@@ -43,32 +44,25 @@ class ApiService {
         options.queryParameters['rand'] = rand.toString();
         
         // Log request in debug mode
-        if (kDebugMode) {
-          print('🚀 REQUEST: ${options.method} ${options.uri}');
-          print('📤 Headers: ${options.headers}');
-          if (options.data != null) {
-            print('📦 Payload: ${options.data}');
-          }
+        Logger.log('🚀 REQUEST: ${options.method} ${options.uri}');
+        Logger.log('📤 Headers: ${options.headers}');
+        if (options.data != null) {
+          Logger.log('📦 Payload: ${options.data}');
         }
         
         handler.next(options);
       },
       onResponse: (response, handler) {
         // Log response in debug mode
-        if (kDebugMode) {
-          print('✅ RESPONSE: ${response.statusCode} ${response.requestOptions.uri}');
-          print('📨 Data: ${response.data}');
-        }
+        Logger.log('✅ RESPONSE: ${response.statusCode} ${response.requestOptions.uri}');
+        Logger.log('📨 Data: ${response.data}');
         
         handler.next(response);
       },
       onError: (error, handler) async {
         // Log error in debug mode
-        if (kDebugMode) {
-          print('❌ ERROR: ${error.response?.statusCode} ${error.requestOptions.uri}');
-          print('💥 Error: ${error.message}');
-          print('📝 Response: ${error.response?.data}');
-        }
+        Logger.error('❌ ERROR: ${error.response?.statusCode} ${error.requestOptions.uri}', error.message, StackTrace.current);
+        Logger.error('📝 Response: ${error.response?.data}');
 
         // --- Network Error Handling ---
         final isNetworkError = error.type == DioExceptionType.connectionTimeout ||
@@ -101,10 +95,7 @@ class ApiService {
                   Get.back(result: newResponse);
                 } catch (e) {
                   // If retry fails, print the error and stay on the error page
-                  if (kDebugMode) {
-                    print('--- RETRY FAILED ---');
-                    print(e);
-                  }
+                  Logger.error('--- RETRY FAILED ---', e);
                 }
               },
             ),
@@ -135,9 +126,7 @@ class ApiService {
               Get.offAllNamed('/login');
             } catch (e) {
               // Fallback: if named route fails, try to navigate to onboarding
-              if (kDebugMode) {
-                print('Failed to navigate to login, trying onboarding: $e');
-              }
+              Logger.error('Failed to navigate to login, trying onboarding', e);
               Get.offAllNamed('/onboarding');
             }
             // We return the error to prevent other interceptors from processing it
@@ -167,9 +156,7 @@ class ApiService {
   // Send error report for 500 errors
   static Future<void> _sendErrorReport(DioException error) async {
     try {
-      if (kDebugMode) {
-        print('📊 Sending error report for 500 error');
-      }
+      Logger.info('📊 Sending error report for 500 error');
       
       final errorData = {
         'timestamp': DateTime.now().toIso8601String(),
@@ -184,13 +171,9 @@ class ApiService {
       
       // You can implement your error reporting service here
       // For example, send to Firebase Crashlytics, Sentry, etc.
-      if (kDebugMode) {
-        print('📈 Error report data: $errorData');
-      }
+      Logger.log('📈 Error report data: $errorData');
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ Failed to send error report: $e');
-      }
+      Logger.error('❌ Failed to send error report', e);
     }
   }
   

@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../services/api_service.dart';
+import '../utils/logger.dart';
 
 class ReactionStore extends ChangeNotifier {
   // Loading states
@@ -22,6 +24,8 @@ class ReactionStore extends ChangeNotifier {
     required int postId,
   }) async {
     try {
+      Logger.log('🎯 ReactionStore: addReaction called with type=$type, postType=$postType, postId=$postId');
+      
       _addReactionLoading = true;
       _reactionError = null;
       notifyListeners();
@@ -32,14 +36,16 @@ class ReactionStore extends ChangeNotifier {
         'post_id': postId,
       };
       
+      Logger.log('📤 ReactionStore: Making API call with data: $data');
+      
       final response = await ApiService.instance.post('/react', data: data);
       
-      if (kDebugMode) {
-        print('Reaction API Response: ${response.data}');
-      }
+      Logger.log('📥 ReactionStore: API response received');
+      Logger.log('Reaction API Response: ${response.data}');
       
       // Check if response has the expected structure
       if (response.statusCode == 200 && response.data != null) {
+        Logger.log('✅ ReactionStore: API call successful');
         // The API returns: { message, reaction, reaction_summary }
         return {
           'success': true,
@@ -47,6 +53,7 @@ class ReactionStore extends ChangeNotifier {
           'data': response.data, // Pass the entire response as data
         };
       } else {
+        Logger.warn('❌ ReactionStore: API call failed with status ${response.statusCode}');
         _reactionError = response.data?['message'] ?? 'فشل في إضافة التفاعل';
         return {
           'success': false,
@@ -54,16 +61,15 @@ class ReactionStore extends ChangeNotifier {
         };
       }
     } on DioException catch (e) {
+      Logger.error('❌ ReactionStore: DioException occurred', e);
       _reactionError = _handleDioError(e);
       return {
         'success': false,
         'message': _reactionError,
       };
-    } catch (e) {
+    } catch (e, s) {
+      Logger.error('❌ ReactionStore: General exception occurred', e, s);
       _reactionError = 'حدث خطأ غير متوقع';
-      if (kDebugMode) {
-        print('Add reaction error: $e');
-      }
       return {
         'success': false,
         'message': _reactionError,
@@ -80,24 +86,30 @@ class ReactionStore extends ChangeNotifier {
     required int postId,
   }) async {
     try {
+      Logger.log('🗑️ ReactionStore: removeReaction called with postType=$postType, postId=$postId');
+      
       _removeReactionLoading = true;
       _reactionError = null;
       notifyListeners();
       
+      final queryParams = {
+        'post_type': postType,
+        'post_id': postId,
+      };
+      
+      Logger.log('📤 ReactionStore: Making DELETE API call with params: $queryParams');
+      
       final response = await ApiService.instance.delete(
         '/react',
-        queryParameters: {
-          'post_type': postType,
-          'post_id': postId,
-        },
+        queryParameters: queryParams,
       );
       
-      if (kDebugMode) {
-        print('Remove Reaction API Response: ${response.data}');
-      }
+      Logger.log('📥 ReactionStore: DELETE API response received');
+      Logger.log('Remove Reaction API Response: ${response.data}');
       
       // Check if response has the expected structure
       if (response.statusCode == 200 && response.data != null) {
+        Logger.log('✅ ReactionStore: DELETE API call successful');
         // The API returns: { message, reaction_summary }
         return {
           'success': true,
@@ -105,6 +117,7 @@ class ReactionStore extends ChangeNotifier {
           'data': response.data, // Pass the entire response as data
         };
       } else {
+        Logger.warn('❌ ReactionStore: DELETE API call failed with status ${response.statusCode}');
         _reactionError = response.data?['message'] ?? 'فشل في إزالة التفاعل';
         return {
           'success': false,
@@ -112,16 +125,15 @@ class ReactionStore extends ChangeNotifier {
         };
       }
     } on DioException catch (e) {
+      Logger.error('❌ ReactionStore: DioException occurred in removeReaction', e);
       _reactionError = _handleDioError(e);
       return {
         'success': false,
         'message': _reactionError,
       };
-    } catch (e) {
+    } catch (e, s) {
+      Logger.error('❌ ReactionStore: General exception occurred in removeReaction', e, s);
       _reactionError = 'حدث خطأ غير متوقع';
-      if (kDebugMode) {
-        print('Remove reaction error: $e');
-      }
       return {
         'success': false,
         'message': _reactionError,
@@ -138,19 +150,23 @@ class ReactionStore extends ChangeNotifier {
     required int postId,
   }) async {
     try {
+      Logger.log('⭐ ReactionStore: toggleFavorite called with postType=$postType, postId=$postId');
+      
       final data = {
         'type': postType,
         'id': postId,
       };
       
+      Logger.log('📤 ReactionStore: Making API call to /favorites/toggle with data: $data');
+      
       final response = await ApiService.instance.post('/favorites/toggle', data: data);
       
-      if (kDebugMode) {
-        print('Toggle Favorite API Response: ${response.data}');
-      }
+      Logger.log('📥 ReactionStore: Favorite toggle API response received');
+      Logger.log('Toggle Favorite API Response: ${response.data}');
       
       // Check if response has the expected structure
       if (response.statusCode == 200 && response.data != null) {
+        Logger.log('✅ ReactionStore: Favorite toggle API call successful');
         // Handle both success formats
         if (response.data['success'] == true) {
           return {
@@ -167,20 +183,20 @@ class ReactionStore extends ChangeNotifier {
           };
         }
       } else {
+        Logger.warn('❌ ReactionStore: Favorite toggle API call failed with status ${response.statusCode}');
         return {
           'success': false,
           'message': response.data?['message'] ?? 'فشل في تحديث المفضلة',
         };
       }
     } on DioException catch (e) {
+      Logger.error('❌ ReactionStore: DioException occurred in toggleFavorite', e);
       return {
         'success': false,
         'message': _handleDioError(e),
       };
-    } catch (e) {
-      if (kDebugMode) {
-        print('Toggle favorite error: $e');
-      }
+    } catch (e, s) {
+      Logger.error('❌ ReactionStore: General exception occurred in toggleFavorite', e, s);
       return {
         'success': false,
         'message': 'حدث خطأ غير متوقع',

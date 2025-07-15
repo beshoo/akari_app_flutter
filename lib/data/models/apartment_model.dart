@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'share_model.dart'; // For shared models like User, Region, Sector, ReactionCounts
 
 class PaymentMethod {
@@ -325,7 +326,7 @@ class Apartment {
     String? shareButton,
     String? postType,
     ReactionCounts? reactionCounts,
-    String? currentUserReaction,
+    ValueGetter<String?>? currentUserReaction,
     bool? isFavorited,
     PaymentMethod? paymentMethod,
     User? user,
@@ -367,7 +368,7 @@ class Apartment {
       shareButton: shareButton ?? this.shareButton,
       postType: postType ?? this.postType,
       reactionCounts: reactionCounts ?? this.reactionCounts,
-      currentUserReaction: currentUserReaction ?? this.currentUserReaction,
+      currentUserReaction: currentUserReaction != null ? currentUserReaction() : this.currentUserReaction,
       isFavorited: isFavorited ?? this.isFavorited,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       user: user ?? this.user,

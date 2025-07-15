@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../services/api_service.dart';
+import '../utils/logger.dart';
 
 class EnumsStore extends ChangeNotifier {
   // Job titles state
@@ -34,12 +35,11 @@ class EnumsStore extends ChangeNotifier {
       }
     } on DioException catch (e) {
       _jobTitlesError = _handleDioError(e);
+      Logger.error('Get job titles DioException', e);
       return null;
-    } catch (e) {
+    } catch (e, s) {
       _jobTitlesError = 'حدث خطأ غير متوقع';
-      if (kDebugMode) {
-        print('Get job titles error: $e');
-      }
+      Logger.error('Get job titles error', e, s);
       return null;
     } finally {
       _jobTitlesLoading = false;

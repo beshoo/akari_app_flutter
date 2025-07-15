@@ -1,9 +1,9 @@
 ---
-description: No deprecated memebers
-globs: true
 alwaysApply: true
 ---
 - Do not use deprecated flutter members , eg 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss Try replacing the use of the deprecated member with the replacement.dartdeprecated_member_use
 
 - Use a 'SizedBox' to add whitespace to a layout.
 Try using a 'SizedBox' rather than a 'Container'.dartsized_box_for_whitespace
+- Do not use print or debugPrint , use Logger.log()
+- Do not create example or Demo pages at all

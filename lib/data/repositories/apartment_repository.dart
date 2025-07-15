@@ -21,7 +21,7 @@ class ApartmentRepository {
   }
 
   Future<Apartment?> fetchApartmentById(int apartmentId) async {
-    final response = await ApiService.instance.get('/apartment/$apartmentId');
+    final response = await ApiService.instance.get('/apartment/view/$apartmentId');
 
     if (response.statusCode == 200) {
       return Apartment.fromJson(response.data);

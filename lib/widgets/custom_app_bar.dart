@@ -13,6 +13,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showBackButton = true,
     this.onBackPressed,
     this.title,
+    this.showLogo = true,
+    this.titleStyle,
+    this.onLogoPressed,
   });
 
   final VoidCallback? onNotificationPressed;
@@ -25,6 +28,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBackButton;
   final VoidCallback? onBackPressed;
   final String? title;
+  final bool showLogo;
+  final TextStyle? titleStyle;
+  final VoidCallback? onLogoPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -59,15 +65,19 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset(
-                    'assets/images/logo.png',
-                    height: 35,
-                  ),
+                  if (showLogo)
+                    GestureDetector(
+                      onTap: onLogoPressed,
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        height: 35,
+                      ),
+                    ),
                   if (title != null) ...[
-                    const SizedBox(height: 2),
+                    if (showLogo) const SizedBox(height: 2),
                     Text(
                       title!,
-                      style: const TextStyle(
+                      style: titleStyle ?? const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: Color(0xFF8C7A6A),

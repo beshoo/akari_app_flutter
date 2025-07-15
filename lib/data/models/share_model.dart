@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 
 class Share extends Equatable {
   final int id;
@@ -131,6 +132,65 @@ class Share extends Equatable {
   bool get isApproved => approve == 1;
   bool get isClosed => closed == 1;
   bool get isOwner => user.id == userId;
+
+  // Create a copy with updated values (for state management)
+  Share copyWith({
+    int? id,
+    int? userId,
+    int? regionId,
+    int? sectorId,
+    String? quantity,
+    String? createdAt,
+    String? updatedAt,
+    String? ownerName,
+    String? transactionType,
+    String? price,
+    int? views,
+    int? approve,
+    int? closed,
+    int? priceKey,
+    String? since,
+    bool? userSentOrder,
+    String? shareButton,
+    String? postType,
+    ReactionCounts? reactionCounts,
+    ValueGetter<String?>? currentUserReaction,
+    bool? isFavorited,
+    User? user,
+    Region? region,
+    Sector? sector,
+    dynamic orderable,
+    List<dynamic>? media,
+  }) {
+    return Share(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      regionId: regionId ?? this.regionId,
+      sectorId: sectorId ?? this.sectorId,
+      quantity: quantity ?? this.quantity,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      ownerName: ownerName ?? this.ownerName,
+      transactionType: transactionType ?? this.transactionType,
+      price: price ?? this.price,
+      views: views ?? this.views,
+      approve: approve ?? this.approve,
+      closed: closed ?? this.closed,
+      priceKey: priceKey ?? this.priceKey,
+      since: since ?? this.since,
+      userSentOrder: userSentOrder ?? this.userSentOrder,
+      shareButton: shareButton ?? this.shareButton,
+      postType: postType ?? this.postType,
+      reactionCounts: reactionCounts ?? this.reactionCounts,
+      currentUserReaction: currentUserReaction != null ? currentUserReaction() : this.currentUserReaction,
+      isFavorited: isFavorited ?? this.isFavorited,
+      user: user ?? this.user,
+      region: region ?? this.region,
+      sector: sector ?? this.sector,
+      orderable: orderable ?? this.orderable,
+      media: media ?? this.media,
+    );
+  }
 
   @override
   List<Object?> get props => [
@@ -295,6 +355,7 @@ class Sector extends Equatable {
   final String updatedAt;
   final SectorName sectorName;
   final Cover cover;
+  final List<dynamic> photos;
 
   const Sector({
     required this.id,
@@ -318,6 +379,7 @@ class Sector extends Equatable {
     required this.updatedAt,
     required this.sectorName,
     required this.cover,
+    required this.photos,
   });
 
   factory Sector.fromJson(Map<String, dynamic> json) {
@@ -343,6 +405,7 @@ class Sector extends Equatable {
       updatedAt: json['updated_at'] ?? '',
       sectorName: SectorName.fromJson(json['sector_name'] ?? {}),
       cover: Cover.fromJson(json['cover'] ?? {}),
+      photos: json['photos'] ?? [],
     );
   }
 
@@ -369,6 +432,7 @@ class Sector extends Equatable {
       'updated_at': updatedAt,
       'sector_name': sectorName.toJson(),
       'cover': cover.toJson(),
+      'photos': photos,
     };
   }
 
@@ -392,10 +456,11 @@ class Sector extends Equatable {
         description,
         active,
         createdAt,
-        updatedAt,
-        sectorName,
-        cover,
-      ];
+            updatedAt,
+    sectorName,
+    cover,
+    photos,
+  ];
 }
 
 class SectorCode extends Equatable {

@@ -13,12 +13,14 @@ import '../widgets/post_card_data.dart';
 import '../widgets/custom_spinner.dart';
 import 'share_form_page.dart';
 import 'apartment_form_page.dart';
+import 'search_page.dart';
 
 class RegionPage extends StatefulWidget {
   final int? regionId;
   final String? regionName;
   final bool hasShare;
   final bool hasApartment;
+  final int initialTabIndex;
 
   const RegionPage({
     super.key,
@@ -26,6 +28,7 @@ class RegionPage extends StatefulWidget {
     this.regionName,
     required this.hasShare,
     required this.hasApartment,
+    this.initialTabIndex = 0,
   });
 
   @override
@@ -70,7 +73,11 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
     _buildTabs();
     
     if (_tabs.isNotEmpty) {
-      _tabController = TabController(length: _tabs.length, vsync: this);
+      _tabController = TabController(
+        length: _tabs.length, 
+        vsync: this,
+        initialIndex: widget.initialTabIndex < _tabs.length ? widget.initialTabIndex : 0,
+      );
       _tabController!.addListener(_onTabChanged);
     }
     
@@ -114,36 +121,40 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   void didUpdateWidget(covariant RegionPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.regionId != oldWidget.regionId) {
-      setState(() {
-        _buildTabs();
+      if (mounted) {
+        setState(() {
+          _buildTabs();
         
-        if (_tabs.isNotEmpty) {
-          _tabController?.dispose();
-          _tabController = TabController(length: _tabs.length, vsync: this);
-          _tabController!.addListener(_onTabChanged);
-        }
-      });
-      
+          if (_tabs.isNotEmpty) {
+            _tabController?.dispose();
+            _tabController = TabController(length: _tabs.length, vsync: this);
+            _tabController!.addListener(_onTabChanged);
+          }
+        });
+      }
+
       // Clear the state for both tabs
-      setState(() {
-        shares.clear();
-        isLoadingShares = false;
-        isLoadingMoreShares = false;
-        hasMoreSharePages = true;
-        currentSharePage = 1;
-        shareErrorMessage = null;
-        isRefreshingShares = false;
-        hasLoadedShares = false;
-        
-        apartments.clear();
-        isLoadingApartments = false;
-        isLoadingMoreApartments = false;
-        hasMoreApartmentPages = true;
-        currentApartmentPage = 1;
-        apartmentErrorMessage = null;
-        isRefreshingApartments = false;
-        hasLoadedApartments = false;
-      });
+      if (mounted) {
+        setState(() {
+          shares.clear();
+          isLoadingShares = false;
+          isLoadingMoreShares = false;
+          hasMoreSharePages = true;
+          currentSharePage = 1;
+          shareErrorMessage = null;
+          isRefreshingShares = false;
+          hasLoadedShares = false;
+          
+          apartments.clear();
+          isLoadingApartments = false;
+          isLoadingMoreApartments = false;
+          hasMoreApartmentPages = true;
+          currentApartmentPage = 1;
+          apartmentErrorMessage = null;
+          isRefreshingApartments = false;
+          hasLoadedApartments = false;
+        });
+      }
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -238,15 +249,17 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   Future<void> _loadShares({bool refresh = false}) async {
     if (widget.regionId == null) return;
 
-    setState(() {
-      if (refresh) {
-        isLoadingShares = true;
-        shareErrorMessage = null;
-        shares.clear();
-        currentSharePage = 1;
-        hasMoreSharePages = true;
-      }
-    });
+    if (mounted) {
+      setState(() {
+        if (refresh) {
+          isLoadingShares = true;
+          shareErrorMessage = null;
+          shares.clear();
+          currentSharePage = 1;
+          hasMoreSharePages = true;
+        }
+      });
+    }
 
     try {
       // Log auth data before making the request
@@ -285,9 +298,11 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   Future<void> _loadMoreShares() async {
     if (widget.regionId == null || !hasMoreSharePages || isLoadingMoreShares) return;
 
-    setState(() {
-      isLoadingMoreShares = true;
-    });
+    if (mounted) {
+      setState(() {
+        isLoadingMoreShares = true;
+      });
+    }
 
     try {
       currentSharePage++;
@@ -329,29 +344,35 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
 
   Future<void> _refreshShares() async {
     if (widget.regionId == null) return;
-    setState(() {
-      isRefreshingShares = true;
-      isLoadingShares = true;
-    });
+    if (mounted) {
+      setState(() {
+        isRefreshingShares = true;
+        isLoadingShares = true;
+      });
+    }
     await _loadShares(refresh: true);
-    setState(() {
-      isRefreshingShares = false;
-    });
+    if (mounted) {
+      setState(() {
+        isRefreshingShares = false;
+      });
+    }
   }
 
   // Apartment methods
   Future<void> _loadApartments({bool refresh = false}) async {
     if (widget.regionId == null) return;
 
-    setState(() {
-      if (refresh) {
-        isLoadingApartments = true;
-        apartmentErrorMessage = null;
-        apartments.clear();
-        currentApartmentPage = 1;
-        hasMoreApartmentPages = true;
-      }
-    });
+    if (mounted) {
+      setState(() {
+        if (refresh) {
+          isLoadingApartments = true;
+          apartmentErrorMessage = null;
+          apartments.clear();
+          currentApartmentPage = 1;
+          hasMoreApartmentPages = true;
+        }
+      });
+    }
 
     try {
       // Log auth data before making the request
@@ -390,9 +411,11 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   Future<void> _loadMoreApartments() async {
     if (widget.regionId == null || !hasMoreApartmentPages || isLoadingMoreApartments) return;
 
-    setState(() {
-      isLoadingMoreApartments = true;
-    });
+    if (mounted) {
+      setState(() {
+        isLoadingMoreApartments = true;
+      });
+    }
 
     try {
       currentApartmentPage++;
@@ -434,14 +457,18 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
 
   Future<void> _refreshApartments() async {
     if (widget.regionId == null) return;
-    setState(() {
-      isRefreshingApartments = true;
-      isLoadingApartments = true;
-    });
+    if (mounted) {
+      setState(() {
+        isRefreshingApartments = true;
+        isLoadingApartments = true;
+      });
+    }
     await _loadApartments(refresh: true);
-    setState(() {
-      isRefreshingApartments = false;
-    });
+    if (mounted) {
+      setState(() {
+        isRefreshingApartments = false;
+      });
+    }
   }
 
 
@@ -462,6 +489,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         appBar: CustomAppBar(
           showBackButton: true,
           onBackPressed: () => Navigator.pop(context),
+          onLogoPressed: () => Navigator.pop(context),
         ),
         body: Center(
           child: Text(
@@ -481,6 +509,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
       appBar: CustomAppBar(
         showBackButton: true,
         onBackPressed: () => Navigator.pop(context),
+        onLogoPressed: () => Navigator.pop(context),
         showAddAdButton: true,
         onAddAdPressed: () {
           // Check which tab is currently active and navigate accordingly
@@ -536,7 +565,30 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
           }
         },
         onSearchPressed: () {
-          // TODO: Handle search press
+          // Determine which tab to open based on available services
+          String? currentTab;
+          if (widget.hasShare && widget.hasApartment) {
+            // Both services available - check current tab
+            if (_tabController != null) {
+              currentTab = _tabController!.index == 0 ? 'shares' : 'apartments';
+            } else {
+              currentTab = 'shares'; // Default to shares
+            }
+          } else if (widget.hasShare) {
+            currentTab = 'shares';
+          } else if (widget.hasApartment) {
+            currentTab = 'apartments';
+          }
+          
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SearchPage(
+                regionId: widget.regionId,
+                currentTab: currentTab,
+              ),
+            ),
+          );
         },
         onSortPressed: () {
           // TODO: Handle sort press
@@ -588,8 +640,11 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
                     onTap: (index) {
                       if (_tabController?.index == index) {
                         if (widget.hasShare && widget.hasApartment) {
-                          if (index == 0) _sharesRefreshKey.currentState?.show();
-                          else _apartmentsRefreshKey.currentState?.show();
+                          if (index == 0) {
+                            _sharesRefreshKey.currentState?.show();
+                          } else {
+                            _apartmentsRefreshKey.currentState?.show();
+                          }
                         } else if (widget.hasShare) {
                            _sharesRefreshKey.currentState?.show();
                         } else if (widget.hasApartment) {
@@ -666,41 +721,45 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
       return RefreshIndicator(
         key: _sharesRefreshKey,
         onRefresh: _refreshShares,
-        child: SingleChildScrollView(
+        child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height * 0.7,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'لا توجد أسهم متاحة',
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () => _sharesRefreshKey.currentState?.show(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF633e3d),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+          slivers: [
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'لا توجد أسهم متاحة في هذه المنطقة',
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-                  child: const Text(
-                    'إعادة المحاولة',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.w600,
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () => _sharesRefreshKey.currentState?.show(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF633e3d),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'إعادة المحاولة',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       );
     }
@@ -748,12 +807,14 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
       scrollController: _scrollController,
       onPostUpdated: (updatedPost) {
         if (updatedPost is SharePostAdapter) {
-          setState(() {
-            // Additional safety check before updating
-            if (index < shares.length) {
-              shares[index] = updatedPost.share;
-            }
-          });
+          if (mounted) {
+            setState(() {
+              // Additional safety check before updating
+              if (index < shares.length) {
+                shares[index] = updatedPost.share;
+              }
+            });
+          }
         }
       },
     );
@@ -776,41 +837,45 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
       return RefreshIndicator(
         key: _apartmentsRefreshKey,
         onRefresh: _refreshApartments,
-        child: SingleChildScrollView(
+        child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height * 0.7,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'لا توجد عقارات متاحة',
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () => _apartmentsRefreshKey.currentState?.show(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF633e3d),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+          slivers: [
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'لا توجد عقارات متاحة في هذه المنطقة',
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-                  child: const Text(
-                    'إعادة المحاولة',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.w600,
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () => _apartmentsRefreshKey.currentState?.show(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF633e3d),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'إعادة المحاولة',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       );
     }
@@ -858,12 +923,14 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
       scrollController: _scrollController,
       onPostUpdated: (updatedPost) {
         if (updatedPost is ApartmentPostAdapter) {
-          setState(() {
-            // Additional safety check before updating
-            if (index < apartments.length) {
-              apartments[index] = updatedPost.apartment;
-            }
-          });
+          if (mounted) {
+            setState(() {
+              // Additional safety check before updating
+              if (index < apartments.length) {
+                apartments[index] = updatedPost.apartment;
+              }
+            });
+          }
         }
       },
     );

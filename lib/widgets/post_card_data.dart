@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../data/models/share_model.dart';
 import '../data/models/apartment_model.dart';
+import '../utils/logger.dart';
 
 class InfoRowData {
   final String iconName;
@@ -112,9 +113,7 @@ class SharePostAdapter implements PostCardData {
   @override
   PostCardData withReaction(
       String? reactionType, Map<String, dynamic> reactionSummary) {
-    if (kDebugMode) {
-      print('📊 Updating reaction summary from adapter: $reactionSummary');
-    }
+    Logger.log('📊 Updating reaction summary from adapter: $reactionSummary');
     final newShare = Share.fromJson({
       ..._share.toJson(),
       'current_user_reaction': reactionType,
@@ -288,9 +287,7 @@ class ApartmentPostAdapter implements PostCardData {
   @override
   PostCardData withReaction(
       String? reactionType, Map<String, dynamic> reactionSummary) {
-    if (kDebugMode) {
-      print('📊 Updating apartment reaction summary: $reactionSummary');
-    }
+    Logger.log('📊 Updating apartment reaction summary: $reactionSummary');
     final newApartment = Apartment.fromJson({
       ..._apartment.toJson(),
       'current_user_reaction': reactionType,

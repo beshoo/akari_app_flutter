@@ -8,105 +8,213 @@ Future<void> showCustomDialog({
   String? cancelButtonText, // If null, only OK button is shown
   VoidCallback? onOkPressed,
 }) async {
-  await showDialog<void>(
+  return showGeneralDialog<void>(
     context: context,
-    barrierDismissible: false,
-    builder: (context) => Directionality(
-      textDirection: TextDirection.rtl,
-      child: AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-        titlePadding: const EdgeInsets.only(top: 30),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontFamily: 'Cairo',
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-            color: Colors.black,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        content: Text(
-          message,
-          style: const TextStyle(
-            fontFamily: 'Cairo',
-            fontSize: 18,
-            color: Colors.black54,
-          ),
-          textAlign: TextAlign.justify,
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actionsPadding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-        actions: <Widget>[
-          SizedBox(
-            width: 120,
-            height: 45,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFbfa98d),
-                    Color(0xFFa47764),
-                  ],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                borderRadius: BorderRadius.circular(5),
-              ),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+    barrierDismissible: true,
+    barrierLabel: '',
+    barrierColor: Colors.black.withValues(alpha: 0.4),
+    transitionDuration: const Duration(milliseconds: 300),
+    pageBuilder: (context, animation1, animation2) => const SizedBox.shrink(),
+    transitionBuilder: (context, animation1, animation2, child) {
+      final scaleAnimation = Tween<double>(
+        begin: 0.8,
+        end: 1.0,
+      ).animate(CurvedAnimation(
+        parent: animation1,
+        curve: Curves.easeOutBack,
+      ));
+
+      final opacityAnimation = Tween<double>(
+        begin: 0.0,
+        end: 1.0,
+      ).animate(CurvedAnimation(
+        parent: animation1,
+        curve: Curves.easeOut,
+      ));
+
+      return AnimatedBuilder(
+        animation: animation1,
+        builder: (context, child) => Container(
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height,
+          color: Colors.black.withValues(alpha: 0.4 * opacityAnimation.value),
+          child: Center(
+            child: Transform.scale(
+              scale: scaleAnimation.value,
+              child: Opacity(
+                opacity: opacityAnimation.value,
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.85,
+                    constraints: const BoxConstraints(
+                      maxWidth: 400,
+                    ),
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFFD4C4B0),
+                        width: 0.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                          spreadRadius: 2,
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.12),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Title
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                fontFamily: 'Cairo',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                                color: Colors.black87,
+                                decoration: TextDecoration.none,
+                                backgroundColor: Colors.transparent,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // Message
+                            Text(
+                              message,
+                              style: const TextStyle(
+                                fontFamily: 'Cairo',
+                                fontSize: 19,
+                                fontWeight: FontWeight.normal,
+                                color: Color(0xFF8C7A6A),
+                                height: 1.4,
+                                decoration: TextDecoration.none,
+                                backgroundColor: Colors.transparent,
+                              ),
+                              textAlign: TextAlign.justify,
+                            ),
+                            
+                            const SizedBox(height: 24),
+                            
+                            // Buttons
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // OK Button
+                                Expanded(
+                                  child: Container(
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFFbfa98d),
+                                          Color(0xFFa47764),
+                                        ],
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFFa47764).withValues(alpha: 0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(12),
+                                        onTap: () {
+                                          Navigator.of(context).pop();
+                                          onOkPressed?.call();
+                                        },
+                                        child: Center(
+                                          child: Text(
+                                            okButtonText,
+                                            style: const TextStyle(
+                                              fontFamily: 'Cairo',
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                
+                                // Cancel Button (if provided)
+                                if (cancelButtonText != null) ...[
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Container(
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF5F5F5),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: const Color(0xFFE0E0E0),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(12),
+                                          onTap: () => Navigator.of(context).pop(),
+                                          child: Center(
+                                            child: Text(
+                                              cancelButtonText,
+                                              style: const TextStyle(
+                                                fontFamily: 'Cairo',
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 16,
+                                                color: Color(0xFF8C7A6A),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                child: Text(
-                  okButtonText,
-                  style: const TextStyle(
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.white),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  onOkPressed?.call();
-                },
               ),
             ),
           ),
-          if (cancelButtonText != null) ...[
-            const SizedBox(width: 12),
-            SizedBox(
-              width: 120,
-              height: 45,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFe2e3e7),
-                  foregroundColor: Colors.black54,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                ),
-                child: Text(
-                  cancelButtonText,
-                  style: const TextStyle(
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16),
-                ),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-          ]
-        ],
-      ),
-    ),
+        ),
+      );
+    },
   );
 } 

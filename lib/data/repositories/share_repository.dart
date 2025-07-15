@@ -2,6 +2,7 @@ import 'package:akari_app/data/models/share_model.dart';
 import 'package:akari_app/services/api_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:akari_app/utils/logger.dart';
 
 // Response model for sectors grouped by region
 class SectorResponse {
@@ -101,15 +102,13 @@ class ShareRepository {
       'page': page,
     });
 
-    if (kDebugMode) {
-      print("------- Share API Response -------");
-      print("Status Code: ${response.statusCode}");
-      print("URL: ${response.requestOptions.uri}");
-      print("Current Page: ${response.data?['current_page']}");
-      print("Total Items: ${response.data?['total']}");
-      print("Data Count: ${response.data?['data']?.length ?? 0}");
-      print("---------------------------------");
-    }
+    Logger.log("------- Share API Response -------");
+    Logger.log("Status Code: ${response.statusCode}");
+    Logger.log("URL: ${response.requestOptions.uri}");
+    Logger.log("Current Page: ${response.data?['current_page']}");
+    Logger.log("Total Items: ${response.data?['total']}");
+    Logger.log("Data Count: ${response.data?['data']?.length ?? 0}");
+    Logger.log("---------------------------------");
 
     if (response.statusCode == 200 && response.data != null) {
       return SharePaginatedResponse.fromJson(response.data);
@@ -123,6 +122,23 @@ class ShareRepository {
   }) async {
     // Force refresh by always starting from page 1
     return fetchShares(regionId: regionId, page: 1);
+  }
+
+  /// Fetch a single share by ID
+  Future<Share?> fetchShareById(int shareId) async {
+    final response = await _dio.get('/share/view/$shareId');
+
+    Logger.log("------- Share Details API Response -------");
+    Logger.log("Status Code: ${response.statusCode}");
+    Logger.log("URL: ${response.requestOptions.uri}");
+    Logger.log("Share ID: $shareId");
+    Logger.log("-----------------------------------------");
+
+    if (response.statusCode == 200 && response.data != null) {
+      return Share.fromJson(response.data);
+    } else {
+      throw Exception('Failed to fetch share details: ${response.statusCode}');
+    }
   }
 
   /// Create a new buy share request
@@ -141,12 +157,10 @@ class ShareRepository {
       'price': price,
     });
 
-    if (kDebugMode) {
-      print("------- Create Buy Share Response -------");
-      print("Status Code: ${response.statusCode}");
-      print("Response: ${response.data}");
-      print("-----------------------------------------");
-    }
+    Logger.log("------- Create Buy Share Response -------");
+    Logger.log("Status Code: ${response.statusCode}");
+    Logger.log("Response: ${response.data}");
+    Logger.log("-----------------------------------------");
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return response.data ?? {};
@@ -173,12 +187,10 @@ class ShareRepository {
 
     final response = await _dio.post('/share/sell', data: formData);
 
-    if (kDebugMode) {
-      print("------- Create Sell Share Response -------");
-      print("Status Code: ${response.statusCode}");
-      print("Response: ${response.data}");
-      print("------------------------------------------");
-    }
+    Logger.log("------- Create Sell Share Response -------");
+    Logger.log("Status Code: ${response.statusCode}");
+    Logger.log("Response: ${response.data}");
+    Logger.log("------------------------------------------");
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return response.data ?? {};
@@ -204,8 +216,67 @@ class ShareRepository {
       'price': price,
     });
 
+    Logger.log("------- Update Share Response -------");
+    Logger.log("Status Code: ${response.statusCode}");
+    Logger.log("Response: ${response.data}");
+    Logger.log("-------------------------------------");
+
+    if (response.statusCode == 200) {
+      return response.data ?? {};
+    } else {
+      throw Exception('API returned status code ${response.statusCode}');
+    }
+  }
+
+  /// Search for shares with filters
+  Future<SharePaginatedResponse> searchShares({
+    String? id,
+    int? regionId,
+    int? sectorId,
+    String? quantity,
+    String? quantityOperator,
+    int? transactionType, // 1 for sell, 2 for buy
+    String? price,
+    String? priceOperator,
+    String? ownerName,
+    int page = 1,
+  }) async {
+    final Map<String, dynamic> queryParameters = {'page': page};
+
+    // Add filters to query parameters if they exist
+    if (id != null && id.isNotEmpty) queryParameters['id'] = id;
+    if (regionId != null) queryParameters['region_id'] = regionId;
+    if (sectorId != null) queryParameters['sector_id'] = sectorId;
+    if (quantity != null && quantity.isNotEmpty) queryParameters['quantity'] = quantity;
+    if (quantityOperator != null && quantityOperator.isNotEmpty) queryParameters['quantity_operator'] = quantityOperator;
+    if (transactionType != null) queryParameters['transaction_type'] = transactionType;
+    if (price != null && price.isNotEmpty) queryParameters['price'] = price;
+    if (priceOperator != null && priceOperator.isNotEmpty) queryParameters['price_operator'] = priceOperator;
+    if (ownerName != null && ownerName.isNotEmpty) queryParameters['owner_name'] = ownerName;
+
+    final response = await _dio.get('/share/search', queryParameters: queryParameters);
+
+    Logger.log("------- Search Share Response -------");
+    Logger.log("Status Code: ${response.statusCode}");
+    Logger.log("URL: ${response.requestOptions.uri}");
+    Logger.log("Query: $queryParameters");
+    Logger.log("Total Items: ${response.data?['total']}");
+    Logger.log("Data Count: ${response.data?['data']?.length ?? 0}");
+    Logger.log("-------------------------------------");
+
+    if (response.statusCode == 200 && response.data != null) {
+      return SharePaginatedResponse.fromJson(response.data);
+    } else {
+      throw Exception('API returned status code ${response.statusCode}');
+    }
+  }
+
+  /// Delete a share
+  Future<Map<String, dynamic>> deleteShare(int shareId) async {
+    final response = await _dio.post('/share/delete/$shareId');
+
     if (kDebugMode) {
-      print("------- Update Share Response -------");
+      print("------- Delete Share Response -------");
       print("Status Code: ${response.statusCode}");
       print("Response: ${response.data}");
       print("-------------------------------------");
@@ -218,82 +289,77 @@ class ShareRepository {
     }
   }
 
-  /// Search for shares with filters
-  Future<SharePaginatedResponse> searchShares({
-    int? regionId,
-    int? sectorId,
-    String? transactionType,
-    double? minPrice,
-    double? maxPrice,
-    int? minQuantity,
-    int? maxQuantity,
-    int page = 1,
-  }) async {
-    final queryParameters = <String, dynamic>{
-      'page': page,
-    };
-
-    if (regionId != null) queryParameters['region_id'] = regionId;
-    if (sectorId != null) queryParameters['sector_id'] = sectorId;
-    if (transactionType != null) queryParameters['transaction_type'] = transactionType;
-    if (minPrice != null) queryParameters['min_price'] = minPrice;
-    if (maxPrice != null) queryParameters['max_price'] = maxPrice;
-    if (minQuantity != null) queryParameters['min_quantity'] = minQuantity;
-    if (maxQuantity != null) queryParameters['max_quantity'] = maxQuantity;
-
-    final response = await _dio.get('/share/search', queryParameters: queryParameters);
+  /// Close a share
+  Future<Map<String, dynamic>> closeShare(int shareId) async {
+    final response = await _dio.post('/share/close/$shareId');
 
     if (kDebugMode) {
-      print("------- Search Shares Response -------");
+      print("------- Close Share Response -------");
       print("Status Code: ${response.statusCode}");
-      print("URL: ${response.requestOptions.uri}");
-      print("Data Count: ${response.data?['data']?.length ?? 0}");
-      print("--------------------------------------");
+      print("Response: ${response.data}");
+      print("------------------------------------");
     }
 
-    if (response.statusCode == 200 && response.data != null) {
-      return SharePaginatedResponse.fromJson(response.data);
+    if (response.statusCode == 200) {
+      return response.data ?? {};
     } else {
       throw Exception('API returned status code ${response.statusCode}');
     }
   }
 
-  /// Fetch sectors grouped by region
-  Future<SectorResponse> fetchSectorsByRegion(int regionId) async {
-    final response = await _dio.get('/sector/list/$regionId');
+  /// Get sectors grouped by region
+  Future<Map<String, List<SectorOption>>> getSectorsGroupedByRegion() async {
+    final response = await _dio.get('/sectors/grouped');
 
-    if (kDebugMode) {
-      print("------- Fetch Sectors Response -------");
-      print("Status Code: ${response.statusCode}");
-      print("URL: ${response.requestOptions.uri}");
-      print("Response: ${response.data}");
-      print("--------------------------------------");
+    if (response.statusCode == 200 && response.data != null) {
+      final responseData = response.data['data'] as Map<String, dynamic>;
+      final groupedSectors = responseData.map<String, List<SectorOption>>(
+        (regionName, sectors) {
+          final sectorList = (sectors as List)
+              .map((sector) => SectorOption.fromJson(sector as Map<String, dynamic>))
+              .toList();
+          return MapEntry(regionName, sectorList);
+        },
+      );
+      return groupedSectors;
+    } else {
+      throw Exception('Failed to load sectors');
     }
+  }
+
+  /// Get sector types
+  Future<List<SectorTypeOption>> getSectorTypes() async {
+    final response = await _dio.get('/sector-types');
+
+    if (response.statusCode == 200 && response.data != null) {
+      final responseData = response.data['data'] as List;
+      return responseData
+          .map((type) => SectorTypeOption.fromJson(type as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception('Failed to load sector types');
+    }
+  }
+
+  /// Fetch sectors for a specific region
+  Future<SectorResponse> fetchSectorsByRegion(int regionId) async {
+    // Add a random query parameter to prevent caching
+    final rand = DateTime.now().millisecondsSinceEpoch;
+    final response = await _dio.get(
+      '/sector/list/$regionId',
+      queryParameters: {'rand': rand},
+    );
+
+    Logger.log("------- Sectors by Region API Response -------");
+    Logger.log("Status Code: ${response.statusCode}");
+    Logger.log("URL: ${response.requestOptions.uri}");
+    Logger.log("Region ID: $regionId");
+    Logger.log("---------------------------------------------");
 
     if (response.statusCode == 200 && response.data != null) {
       return SectorResponse.fromJson(response.data);
     } else {
-      throw Exception('API returned status code ${response.statusCode}');
+      throw Exception('Failed to load sectors for region $regionId');
     }
   }
-
-  /// Get a specific share by ID (for editing)
-  Future<Share?> getShareById(int shareId) async {
-    final response = await _dio.get('/share/$shareId');
-
-    if (kDebugMode) {
-      print("------- Get Share By ID Response -------");
-      print("Status Code: ${response.statusCode}");
-      print("Response: ${response.data}");
-      print("----------------------------------------");
-    }
-
-    if (response.statusCode == 200 && response.data != null) {
-      return Share.fromJson(response.data);
-    } else if (response.statusCode == 404) {
-      return null;
-    } else {
-      throw Exception('API returned status code ${response.statusCode}');
-    }
-  }
-} 
+}
