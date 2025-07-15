@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:share_plus/share_plus.dart' as share_plus;
+import 'package:shimmer/shimmer.dart';
 import '../data/models/apartment_model.dart';
 import '../data/models/share_model.dart';
 import '../data/repositories/apartment_repository.dart';
@@ -261,8 +262,21 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                       : CachedNetworkImage(
                           imageUrl: photos[index],
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(
-                            child: CustomSpinner(size: 40),
+                          placeholder: (context, url) => Stack(
+                            children: [
+                              Shimmer.fromColors(
+                                baseColor: Colors.grey[300]!,
+                                highlightColor: Colors.grey[100]!,
+                                child: Container(
+                                  width: double.infinity,
+                                  height: 300,
+                                  color: Colors.grey[300],
+                                ),
+                              ),
+                              const Center(
+                                child: CustomSpinner(size: 40),
+                              ),
+                            ],
                           ),
                           errorWidget: (context, url, error) => Image.asset(
                             'assets/images/no_photo.jpg',
@@ -1839,8 +1853,21 @@ class _FullScreenPhotoViewerState extends State<FullScreenPhotoViewer> {
                       : CachedNetworkImage(
                           imageUrl: widget.photos[index],
                           fit: BoxFit.contain,
-                          placeholder: (context, url) => const Center(
-                            child: CustomSpinner(size: 40),
+                          placeholder: (context, url) => Stack(
+                            children: [
+                              Shimmer.fromColors(
+                                baseColor: Colors.grey[700]!,
+                                highlightColor: Colors.grey[500]!,
+                                child: Container(
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                              const Center(
+                                child: CustomSpinner(size: 40),
+                              ),
+                            ],
                           ),
                           errorWidget: (context, url, error) => Image.asset(
                             'assets/images/no_photo.jpg',
