@@ -174,7 +174,7 @@ Future<void> showCustomDialog({
                                     child: Container(
                                       height: 48,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFF5F5F5),
+                                        color: const Color(0xFFF7F5F2),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
                                           color: const Color(0xFFE0E0E0),

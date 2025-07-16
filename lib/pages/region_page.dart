@@ -165,7 +165,8 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.95) {
+    // Trigger pagination when user is about 3 cards away from the end (85% of scroll)
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.85) {
       if (_tabController == null) {
         if (widget.hasShare) {
           if (!isLoadingMoreShares && hasMoreSharePages) _loadMoreShares();
@@ -621,72 +622,98 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
                   color: Color(0xFFd7c1c0),
                 ),
                 if (_tabs.length > 1)
-                  TabBar(
-                    controller: _tabController!,
-                    labelColor: const Color(0xFF633e3d),
-                    unselectedLabelColor: const Color(0xFF8C7A6A),
-                    indicatorColor: const Color(0xFF633e3d),
-                    indicatorWeight: 3,
-                    labelStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Cairo',
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                        color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.05),
+                        blurRadius: 5,
+                        offset: Offset(0, 5), // Only bottom
+                        spreadRadius: 0,
+                        ),
+                      ],
                     ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Cairo',
-                    ),
-                    onTap: (index) {
-                      if (_tabController?.index == index) {
-                        if (widget.hasShare && widget.hasApartment) {
-                          if (index == 0) {
-                            _sharesRefreshKey.currentState?.show();
-                          } else {
-                            _apartmentsRefreshKey.currentState?.show();
-                          }
-                        } else if (widget.hasShare) {
-                           _sharesRefreshKey.currentState?.show();
-                        } else if (widget.hasApartment) {
-                          _apartmentsRefreshKey.currentState?.show();
-                        }
-                      }
-                    },
-                    tabs: _tabs,
-                  )
-                else if (_tabs.length == 1)
-                  Column(
-                    children: [
-                      // Single tab - show it as a header with tap-to-refresh functionality
-                      GestureDetector(
-                        onTap: () {
-                          if (widget.hasShare) {
-                            _sharesRefreshKey.currentState?.show();
+                    child: TabBar(
+                      controller: _tabController!,
+                      labelColor: const Color(0xFF633e3d),
+                      unselectedLabelColor: const Color(0xFF8C7A6A),
+                      indicatorColor: const Color(0xFF633e3d),
+                      indicatorWeight: 3,
+                      labelStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Cairo',
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Cairo',
+                      ),
+                      onTap: (index) {
+                        if (_tabController?.index == index) {
+                          if (widget.hasShare && widget.hasApartment) {
+                            if (index == 0) {
+                              _sharesRefreshKey.currentState?.show();
+                            } else {
+                              _apartmentsRefreshKey.currentState?.show();
+                            }
+                          } else if (widget.hasShare) {
+                             _sharesRefreshKey.currentState?.show();
                           } else if (widget.hasApartment) {
                             _apartmentsRefreshKey.currentState?.show();
                           }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12.0),
-                          child: Center(
-                            child: Text(
-                              widget.hasShare ? 'الأسهم التنظيمية' : 'العقارات',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Cairo',
-                                color: Color(0xFF633e3d),
+                        }
+                      },
+                      tabs: _tabs,
+                    ),
+                  )
+                else if (_tabs.length == 1)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.16),
+                          blurRadius: 18,
+                          offset: Offset(0, 8), // Only bottom
+                          spreadRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // Single tab - show it as a header with tap-to-refresh functionality
+                        GestureDetector(
+                          onTap: () {
+                            if (widget.hasShare) {
+                              _sharesRefreshKey.currentState?.show();
+                            } else if (widget.hasApartment) {
+                              _apartmentsRefreshKey.currentState?.show();
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12.0),
+                            child: Center(
+                              child: Text(
+                                widget.hasShare ? 'الأسهم التنظيمية' : 'العقارات',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Cairo',
+                                  color: Color(0xFF633e3d),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      const Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: Color(0xFFd7c1c0),
-                      ),
-                    ],
+                        const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Color(0xFFd7c1c0),
+                        ),
+                      ],
+                    ),
                   ),
               ],
             ),

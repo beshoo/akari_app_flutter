@@ -435,4 +435,22 @@ class ApartmentResponse {
   }
 
   bool get hasNextPage => nextPageUrl != null;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'data': apartments.map((apartment) => apartment.toJson()).toList(),
+      'current_page': currentPage,
+      'last_page': lastPage,
+      'per_page': perPage,
+      'total': total,
+      'next_page_url': nextPageUrl,
+      'prev_page_url': prevPageUrl,
+      'first_page_url': firstPageUrl,
+      'from': from,
+      'last_page_url': lastPageUrl,
+      'links': links,
+      'path': path,
+      'to': to,
+    };
+  }
 } 

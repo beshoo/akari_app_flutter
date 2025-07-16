@@ -13,6 +13,8 @@ import '../widgets/custom_radio_buttons.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_dialog.dart';
 import '../utils/toast_helper.dart';
+import '../services/secure_storage.dart';
+import '../utils/logger.dart';
 
 enum ApartmentFormMode { create, update }
 
@@ -255,12 +257,27 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
     });
 
     try {
-      final apartmentTypes = await _apartmentRepository.fetchApartmentTypes();
-      setState(() {
-        _apartmentTypes = apartmentTypes;
-        _isLoadingApartmentTypes = false;
-      });
+      // Try to load from cache first
+      List<Map<String, dynamic>>? cachedTypes = await SecureStorage.getApartmentDropdownData('types');
+      
+      if (cachedTypes != null && cachedTypes.isNotEmpty) {
+        Logger.log('Loading apartment types from cache');
+        final types = cachedTypes.map((json) => ApartmentType.fromJson(json)).toList();
+        setState(() {
+          _apartmentTypes = types;
+          _isLoadingApartmentTypes = false;
+        });
+      } else {
+        Logger.log('Loading apartment types from API');
+        final apartmentTypes = await _apartmentRepository.fetchApartmentTypes();
+        await SecureStorage.setApartmentDropdownData('types', apartmentTypes.map((t) => t.toJson()).toList());
+        setState(() {
+          _apartmentTypes = apartmentTypes;
+          _isLoadingApartmentTypes = false;
+        });
+      }
     } catch (e) {
+      Logger.log('Error loading apartment types: $e');
       setState(() {
         _isLoadingApartmentTypes = false;
       });
@@ -273,12 +290,27 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
     });
 
     try {
-      final directions = await _apartmentRepository.fetchDirections();
-      setState(() {
-        _directions = directions;
-        _isLoadingDirections = false;
-      });
+      // Try to load from cache first
+      List<Map<String, dynamic>>? cachedDirections = await SecureStorage.getApartmentDropdownData('directions');
+      
+      if (cachedDirections != null && cachedDirections.isNotEmpty) {
+        Logger.log('Loading directions from cache');
+        final directions = cachedDirections.map((json) => Direction.fromJson(json)).toList();
+        setState(() {
+          _directions = directions;
+          _isLoadingDirections = false;
+        });
+      } else {
+        Logger.log('Loading directions from API');
+        final directions = await _apartmentRepository.fetchDirections();
+        await SecureStorage.setApartmentDropdownData('directions', directions.map((d) => d.toJson()).toList());
+        setState(() {
+          _directions = directions;
+          _isLoadingDirections = false;
+        });
+      }
     } catch (e) {
+      Logger.log('Error loading directions: $e');
       setState(() {
         _isLoadingDirections = false;
       });
@@ -291,12 +323,27 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
     });
 
     try {
-      final apartmentStatuses = await _apartmentRepository.fetchApartmentStatuses();
-      setState(() {
-        _apartmentStatuses = apartmentStatuses;
-        _isLoadingApartmentStatuses = false;
-      });
+      // Try to load from cache first
+      List<Map<String, dynamic>>? cachedStatuses = await SecureStorage.getApartmentDropdownData('statuses');
+      
+      if (cachedStatuses != null && cachedStatuses.isNotEmpty) {
+        Logger.log('Loading apartment statuses from cache');
+        final statuses = cachedStatuses.map((json) => ApartmentStatus.fromJson(json)).toList();
+        setState(() {
+          _apartmentStatuses = statuses;
+          _isLoadingApartmentStatuses = false;
+        });
+      } else {
+        Logger.log('Loading apartment statuses from API');
+        final apartmentStatuses = await _apartmentRepository.fetchApartmentStatuses();
+        await SecureStorage.setApartmentDropdownData('statuses', apartmentStatuses.map((s) => s.toJson()).toList());
+        setState(() {
+          _apartmentStatuses = apartmentStatuses;
+          _isLoadingApartmentStatuses = false;
+        });
+      }
     } catch (e) {
+      Logger.log('Error loading apartment statuses: $e');
       setState(() {
         _isLoadingApartmentStatuses = false;
       });
@@ -309,12 +356,27 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
     });
 
     try {
-      final paymentMethods = await _apartmentRepository.fetchPaymentMethods();
-      setState(() {
-        _paymentMethods = paymentMethods;
-        _isLoadingPaymentMethods = false;
-      });
+      // Try to load from cache first
+      List<Map<String, dynamic>>? cachedPaymentMethods = await SecureStorage.getApartmentDropdownData('payment_methods');
+      
+      if (cachedPaymentMethods != null && cachedPaymentMethods.isNotEmpty) {
+        Logger.log('Loading payment methods from cache');
+        final paymentMethods = cachedPaymentMethods.map((json) => PaymentMethod.fromJson(json)).toList();
+        setState(() {
+          _paymentMethods = paymentMethods;
+          _isLoadingPaymentMethods = false;
+        });
+      } else {
+        Logger.log('Loading payment methods from API');
+        final paymentMethods = await _apartmentRepository.fetchPaymentMethods();
+        await SecureStorage.setApartmentDropdownData('payment_methods', paymentMethods.map((p) => p.toJson()).toList());
+        setState(() {
+          _paymentMethods = paymentMethods;
+          _isLoadingPaymentMethods = false;
+        });
+      }
     } catch (e) {
+      Logger.log('Error loading payment methods: $e');
       setState(() {
         _isLoadingPaymentMethods = false;
       });

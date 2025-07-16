@@ -3,12 +3,17 @@ import 'package:flutter/services.dart';
 import '../data/models/region_model.dart' as region_model;
 import '../data/repositories/home_repository.dart';
 import '../data/repositories/share_repository.dart';
+import '../data/repositories/apartment_repository.dart';
+import '../data/models/apartment_model.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_dropdown.dart';
 import '../widgets/custom_radio_buttons.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_dialog.dart';
+import '../services/secure_storage.dart';
+import '../utils/logger.dart';
+import 'search_results_page.dart';
 
 // Helper classes for dropdown options
 class SectorTypeOption {
@@ -51,6 +56,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
   late TabController _tabController;
   final HomeRepository _homeRepository = HomeRepository();
   final ShareRepository _shareRepository = ShareRepository();
+  final ApartmentRepository _apartmentRepository = ApartmentRepository();
 
   // Current search type
   String _currentSearchType = 'share';
@@ -65,7 +71,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
   };
 
   // Transaction type for shares (buy/sell)
-  String _transactionType = 'sell'; // 'buy' or 'sell'
+  String _shareTransactionType = '1'; // '1' for sell, '2' for buy
 
   // Operators
   String _priceOperator = '=';
@@ -109,6 +115,46 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
   Map<String, dynamic>? _apartmentMainSectors;
   bool _apartmentIsLoadingSectors = false;
 
+  // 1. Add Apartment Search State Variables and Stores
+  String _apartmentTransactionType = '1';
+  List<ApartmentType> _apartmentTypes = [];
+  List<Direction> _directions = [];
+  List<ApartmentStatus> _apartmentStatuses = [];
+  List<PaymentMethod> _paymentMethods = [];
+  bool _apartmentIsLoadingTypes = false;
+  bool _apartmentIsLoadingDirections = false;
+  bool _apartmentIsLoadingStatuses = false;
+  bool _apartmentIsLoadingPayments = false;
+  ApartmentType? _apartmentSelectedType;
+  Direction? _apartmentSelectedDirection;
+  ApartmentStatus? _apartmentSelectedStatus;
+  PaymentMethod? _apartmentSelectedPayment;
+  List<String> _apartmentFieldsToShow = [];
+
+  String _apartmentPriceOperator = '=';
+  String _apartmentEquityOperator = '=';
+  PriceOperatorOption? _selectedApartmentPriceOperator;
+  PriceOperatorOption? _selectedApartmentEquityOperator;
+
+  // Apartment search form data
+  final Map<String, String> _apartmentFormData = {
+    'owner_name': '',
+    'region_id': '',
+    'sector_id': '',
+    'direction_id': '',
+    'apartment_type_id': '',
+    'payment_method_id': '',
+    'apartment_status_id': '',
+    'area': '',
+    'floor': '',
+    'rooms_count': '',
+    'salons_count': '',
+    'balcony_count': '',
+    'is_taras': '0',
+    'equity': '',
+    'price': '',
+  };
+
   @override
   void initState() {
     super.initState();
@@ -126,8 +172,18 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
     // Set initial operators
     _selectedPriceOperator = _priceOperators.first;
     _selectedQuantityOperator = _priceOperators.first;
+    _selectedApartmentPriceOperator = _priceOperators.first;
+    _selectedApartmentEquityOperator = _priceOperators.first;
+
 
     _loadInitialData();
+    _loadApartmentDropdowns();
+    _tabController.addListener(() {
+      if (_tabController.index == 1) {
+        // Apartment tab selected
+        _loadApartmentDropdowns();
+      }
+    });
   }
 
   @override
@@ -281,11 +337,23 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
       _selectedSectorType = null;
       _selectedSector = null;
 
-      // TODO: Reset apartment form data once implemented
+      // Reset apartment dropdowns and reload them for the new region
+      _apartmentSelectedType = null;
+      _apartmentSelectedDirection = null;
+      _apartmentSelectedStatus = null;
+      _apartmentSelectedPayment = null;
+      _apartmentTypes.clear();
+      _directions.clear();
+      _apartmentStatuses.clear();
+      _paymentMethods.clear();
+      _apartmentFieldsToShow.clear();
     });
 
     if (_currentSearchType == 'share' && isShareAvailable) {
       _loadSectorsForRegion(region.id);
+    }
+    if (_currentSearchType == 'apartment' && isApartmentAvailable) {
+      _loadApartmentDropdowns();
     }
   }
   
@@ -358,16 +426,13 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
       });
 
       try {
-        // Convert transaction type
-        final transactionTypeValue = _transactionType == 'sell' ? 1 : 2;
-        
         final searchResult = await _shareRepository.searchShares(
           id: _shareFormData['id']?.isNotEmpty == true ? _shareFormData['id'] : null,
           regionId: _shareFormData['region_id']?.isNotEmpty == true ? int.tryParse(_shareFormData['region_id']!) : null,
           sectorId: _shareFormData['sector_id']?.isNotEmpty == true ? int.tryParse(_shareFormData['sector_id']!) : null,
           quantity: _shareFormData['quantity']?.isNotEmpty == true ? _shareFormData['quantity'] : null,
           quantityOperator: _quantityOperator,
-          transactionType: transactionTypeValue,
+          transactionType: int.tryParse(_shareTransactionType),
           price: _shareFormData['price']?.isNotEmpty == true ? _shareFormData['price'] : null,
           priceOperator: _priceOperator,
         );
@@ -376,14 +441,27 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
           _isSearching = false;
         });
 
-        // TODO: Navigate to search results page with the results
-        // For now, show a dialog with the count
         if (mounted) {
-          await showCustomDialog(
-            context: context,
-            title: 'نتائج البحث',
-            message: 'تم العثور على ${searchResult.total} نتيجة',
-            okButtonText: 'موافق',
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SearchResultsPage(
+                searchType: 'share',
+                searchData: searchResult.toJson(),
+                searchQuery: 'بحث الأسهم',
+                originalSearchParams: {
+                  'id': _shareFormData['id']?.isNotEmpty == true ? _shareFormData['id'] : null,
+                  'regionId': _shareFormData['region_id']?.isNotEmpty == true ? int.tryParse(_shareFormData['region_id']!) : null,
+                  'sectorId': _shareFormData['sector_id']?.isNotEmpty == true ? int.tryParse(_shareFormData['sector_id']!) : null,
+                  'quantity': _shareFormData['quantity']?.isNotEmpty == true ? _shareFormData['quantity'] : null,
+                  'quantityOperator': _quantityOperator,
+                  'transactionType': int.tryParse(_shareTransactionType),
+                  'price': _shareFormData['price']?.isNotEmpty == true ? _shareFormData['price'] : null,
+                  'priceOperator': _priceOperator,
+                  'ownerName': null,
+                },
+              ),
+            ),
           );
         }
       } catch (e) {
@@ -401,13 +479,108 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
         }
       }
     } else {
-      // TODO: Implement apartment search
-      await showCustomDialog(
-        context: context,
-        title: 'قريباً',
-        message: 'سيتم إضافة البحث في العقارات قريباً',
-        okButtonText: 'موافق',
-      );
+      setState(() {
+        _isSearching = true;
+      });
+
+      try {
+        final searchResult = await _apartmentRepository.searchApartments(
+          regionId: _apartmentFormData['region_id']?.isNotEmpty == true
+              ? int.tryParse(_apartmentFormData['region_id']!)
+              : null,
+          sectorId: _apartmentFormData['sector_id']?.isNotEmpty == true
+              ? int.tryParse(_apartmentFormData['sector_id']!)
+              : null,
+          directionId: _apartmentFormData['direction_id']?.isNotEmpty == true
+              ? int.tryParse(_apartmentFormData['direction_id']!)
+              : null,
+          apartmentTypeId:
+              _apartmentFormData['apartment_type_id']?.isNotEmpty == true
+                  ? int.tryParse(_apartmentFormData['apartment_type_id']!)
+                  : null,
+          paymentMethodId:
+              _apartmentFormData['payment_method_id']?.isNotEmpty == true
+                  ? int.tryParse(_apartmentFormData['payment_method_id']!)
+                  : null,
+          apartmentStatusId:
+              _apartmentFormData['apartment_status_id']?.isNotEmpty == true
+                  ? int.tryParse(_apartmentFormData['apartment_status_id']!)
+                  : null,
+          area: _apartmentFormData['area'],
+          floor: _apartmentFormData['floor'],
+          roomsCount: _apartmentFormData['rooms_count'],
+          salonsCount: _apartmentFormData['salons_count'],
+          balconyCount: _apartmentFormData['balcony_count'],
+          isTaras: _apartmentFormData['is_taras'],
+          equity: _apartmentFormData['equity'],
+          price: _apartmentFormData['price'],
+          transactionType: _apartmentTransactionType,
+          priceOperator: _apartmentPriceOperator,
+          equityOperator: _apartmentEquityOperator,
+          ownerName: _apartmentFormData['owner_name'],
+        );
+
+        setState(() {
+          _isSearching = false;
+        });
+
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SearchResultsPage(
+                searchType: 'apartment',
+                searchData: searchResult.toJson(),
+                searchQuery: 'بحث العقارات',
+                originalSearchParams: {
+                  'regionId': _apartmentFormData['region_id']?.isNotEmpty == true
+                      ? int.tryParse(_apartmentFormData['region_id']!)
+                      : null,
+                  'sectorId': _apartmentFormData['sector_id']?.isNotEmpty == true
+                      ? int.tryParse(_apartmentFormData['sector_id']!)
+                      : null,
+                  'directionId': _apartmentFormData['direction_id']?.isNotEmpty == true
+                      ? int.tryParse(_apartmentFormData['direction_id']!)
+                      : null,
+                  'apartmentTypeId': _apartmentFormData['apartment_type_id']?.isNotEmpty == true
+                      ? int.tryParse(_apartmentFormData['apartment_type_id']!)
+                      : null,
+                  'paymentMethodId': _apartmentFormData['payment_method_id']?.isNotEmpty == true
+                      ? int.tryParse(_apartmentFormData['payment_method_id']!)
+                      : null,
+                  'apartmentStatusId': _apartmentFormData['apartment_status_id']?.isNotEmpty == true
+                      ? int.tryParse(_apartmentFormData['apartment_status_id']!)
+                      : null,
+                  'area': _apartmentFormData['area'],
+                  'floor': _apartmentFormData['floor'],
+                  'roomsCount': _apartmentFormData['rooms_count'],
+                  'salonsCount': _apartmentFormData['salons_count'],
+                  'balconyCount': _apartmentFormData['balcony_count'],
+                  'isTaras': _apartmentFormData['is_taras'],
+                  'equity': _apartmentFormData['equity'],
+                  'price': _apartmentFormData['price'],
+                  'priceOperator': _apartmentPriceOperator,
+                  'equityOperator': _apartmentEquityOperator,
+                  'ownerName': _apartmentFormData['owner_name'],
+                },
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        setState(() {
+          _isSearching = false;
+        });
+
+        if (mounted) {
+          await showCustomDialog(
+            context: context,
+            title: 'خطأ في البحث',
+            message: 'حدث خطأ أثناء البحث: ${e.toString()}',
+            okButtonText: 'موافق',
+          );
+        }
+      }
     }
   }
 
@@ -490,14 +663,143 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _performApartmentSearch() async {
-    // TODO: Implement apartment search
-    await showCustomDialog(
-      context: context,
-      title: 'قريباً',
-      message: 'سيتم إضافة البحث في العقارات قريباً',
-      okButtonText: 'موافق',
-    );
+  // 2. Add fetch methods for dropdowns (call in initState)
+  Future<void> _loadApartmentDropdowns() async {
+    setState(() {
+      _apartmentIsLoadingTypes = true;
+      _apartmentIsLoadingDirections = true;
+      _apartmentIsLoadingStatuses = true;
+      _apartmentIsLoadingPayments = true;
+    });
+
+    try {
+      // Try to load from cache first
+      List<Map<String, dynamic>>? cachedDirections = await SecureStorage.getApartmentDropdownData('directions');
+      List<Map<String, dynamic>>? cachedTypes = await SecureStorage.getApartmentDropdownData('types');
+      List<Map<String, dynamic>>? cachedStatuses = await SecureStorage.getApartmentDropdownData('statuses');
+      List<Map<String, dynamic>>? cachedPaymentMethods = await SecureStorage.getApartmentDropdownData('payment_methods');
+
+      List<Direction> directions = [];
+      List<ApartmentType> types = [];
+      List<ApartmentStatus> statuses = [];
+      List<PaymentMethod> paymentMethods = [];
+
+      // Load directions
+      if (cachedDirections != null && cachedDirections.isNotEmpty) {
+        Logger.log('Loading directions from cache');
+        directions = cachedDirections.map((json) => Direction.fromJson(json)).toList();
+        setState(() {
+          _directions = directions;
+          _apartmentIsLoadingDirections = false;
+        });
+      } else {
+        Logger.log('Loading directions from API');
+        directions = await _apartmentRepository.fetchDirections();
+        await SecureStorage.setApartmentDropdownData('directions', directions.map((d) => d.toJson()).toList());
+        setState(() {
+          _directions = directions;
+          _apartmentIsLoadingDirections = false;
+        });
+      }
+
+      // Load apartment types
+      if (cachedTypes != null && cachedTypes.isNotEmpty) {
+        Logger.log('Loading apartment types from cache');
+        types = cachedTypes.map((json) => ApartmentType.fromJson(json)).toList();
+        setState(() {
+          _apartmentTypes = types;
+          _apartmentIsLoadingTypes = false;
+        });
+      } else {
+        Logger.log('Loading apartment types from API');
+        types = await _apartmentRepository.fetchApartmentTypes();
+        await SecureStorage.setApartmentDropdownData('types', types.map((t) => t.toJson()).toList());
+        setState(() {
+          _apartmentTypes = types;
+          _apartmentIsLoadingTypes = false;
+        });
+      }
+
+      // Load apartment statuses
+      if (cachedStatuses != null && cachedStatuses.isNotEmpty) {
+        Logger.log('Loading apartment statuses from cache');
+        statuses = cachedStatuses.map((json) => ApartmentStatus.fromJson(json)).toList();
+        setState(() {
+          _apartmentStatuses = statuses;
+          _apartmentIsLoadingStatuses = false;
+        });
+      } else {
+        Logger.log('Loading apartment statuses from API');
+        statuses = await _apartmentRepository.fetchApartmentStatuses();
+        await SecureStorage.setApartmentDropdownData('statuses', statuses.map((s) => s.toJson()).toList());
+        setState(() {
+          _apartmentStatuses = statuses;
+          _apartmentIsLoadingStatuses = false;
+        });
+      }
+
+      // Load payment methods
+      if (cachedPaymentMethods != null && cachedPaymentMethods.isNotEmpty) {
+        Logger.log('Loading payment methods from cache');
+        paymentMethods = cachedPaymentMethods.map((json) => PaymentMethod.fromJson(json)).toList();
+        setState(() {
+          _paymentMethods = paymentMethods;
+          _apartmentIsLoadingPayments = false;
+        });
+      } else {
+        Logger.log('Loading payment methods from API');
+        paymentMethods = await _apartmentRepository.fetchPaymentMethods();
+        await SecureStorage.setApartmentDropdownData('payment_methods', paymentMethods.map((p) => p.toJson()).toList());
+        setState(() {
+          _paymentMethods = paymentMethods;
+          _apartmentIsLoadingPayments = false;
+        });
+      }
+
+    } catch (e) {
+      Logger.log('Error loading apartment dropdowns: $e');
+      setState(() {
+        _apartmentIsLoadingTypes = false;
+        _apartmentIsLoadingDirections = false;
+        _apartmentIsLoadingStatuses = false;
+        _apartmentIsLoadingPayments = false;
+      });
+    }
+  }
+
+  // 3. Add handlers for dropdowns and fields
+  void _onApartmentTypeChanged(ApartmentType? type) {
+    if (type != null) {
+      setState(() {
+        _apartmentSelectedType = type;
+        _apartmentFormData['apartment_type_id'] = type.id.toString();
+        _apartmentFieldsToShow = type.fields;
+      });
+    }
+  }
+  void _onApartmentDirectionChanged(Direction? dir) {
+    if (dir != null) {
+      setState(() {
+        _apartmentSelectedDirection = dir;
+        _apartmentFormData['direction_id'] = dir.id.toString();
+      });
+    }
+  }
+  void _onApartmentStatusChanged(ApartmentStatus? status) {
+    if (status != null) {
+      setState(() {
+        _apartmentSelectedStatus = status;
+        _apartmentFormData['apartment_status_id'] = status.id.toString();
+      });
+    }
+  }
+  void _onApartmentPaymentChanged(PaymentMethod? pay) {
+    if (pay != null) {
+      setState(() {
+        _apartmentSelectedPayment = pay;
+        _apartmentFormData['payment_method_id'] = pay.id.toString();
+      });
+    }
   }
 
   @override
@@ -540,41 +842,54 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                             // Tab bar
             Column(
               children: [
-                TabBar(
-                  controller: _tabController,
-                  labelColor: const Color(0xFF633e3d),
-                  unselectedLabelColor: const Color(0xFF8C7A6A),
-                  indicatorColor: const Color(0xFF633e3d),
-                  indicatorWeight: 3,
-                  labelStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Cairo',
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.05),
+                        blurRadius: 5,
+                        offset: Offset(0, 5), // Only bottom
+                        spreadRadius: 0,
+                      ),
+                    ],
                   ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Cairo',
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: const Color(0xFF633e3d),
+                    unselectedLabelColor: const Color(0xFF8C7A6A),
+                    indicatorColor: const Color(0xFF633e3d),
+                    indicatorWeight: 3,
+                    labelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Cairo',
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Cairo',
+                    ),
+                    onTap: (index) {
+                      if (index == 0) {
+                        if (_selectedRegion?.hasShare == true || _selectedRegion == null) {
+                          setState(() {
+                            _currentSearchType = 'share';
+                          });
+                        }
+                      } else {
+                        if (_selectedRegion?.hasApartment == true || _selectedRegion == null) {
+                          setState(() {
+                            _currentSearchType = 'apartment';
+                          });
+                        }
+                      }
+                    },
+                    tabs: const [
+                      Tab(text: 'أسهم تنظيمية'),
+                      Tab(text: 'عقارات'),
+                    ],
                   ),
-                  onTap: (index) {
-                    if (index == 0) {
-                      if (_selectedRegion?.hasShare == true || _selectedRegion == null) {
-                        setState(() {
-                          _currentSearchType = 'share';
-                        });
-                      }
-                    } else {
-                      if (_selectedRegion?.hasApartment == true || _selectedRegion == null) {
-                        setState(() {
-                          _currentSearchType = 'apartment';
-                        });
-                      }
-                    }
-                  },
-                  tabs: const [
-                    Tab(text: 'أسهم تنظيمية'),
-                    Tab(text: 'عقارات'),
-                  ],
                 ),
                 const Divider(
                   height: 1,
@@ -727,7 +1042,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'نوع العملية',
+                      'الإعلانات التي ترغب في البحث عنها',
                       style: TextStyle(
                         fontSize: 16,
                        // fontWeight: FontWeight.bold,
@@ -737,17 +1052,17 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 16),
                     CustomDropdown<String>(
-                      value: _transactionType,
+                      value: _shareTransactionType,
                       items: const [
                         '1',
                         '2',
                       ],
-                      itemLabel: (value) => value == '1' ? 'عروض بيع' : 'طلبات شراء',
+                      itemLabel: (value) => value == '1' ? 'إعلانات بيع' : 'إعلانات شراء',
                       itemValue: (value) => value,
                       onChanged: (disableOtherFields || disableForServiceUnavailable) ? null : (value) {
                         if (value != null) {
                           setState(() {
-                            _transactionType = value;
+                            _shareTransactionType = value;
                           });
                         }
                       },
@@ -907,11 +1222,8 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
 
   Widget _buildApartmentSearchForm() {
     final availableSearchTypes = _availableSearchTypes;
-    // Disable all fields except Reference ID if Reference ID is filled
-    bool disableOtherFields = _shareFormData['id'] != null && _shareFormData['id']!.isNotEmpty;
-    // Disable all fields except region if apartment service is not available
+    bool disableOtherFields = false;
     bool disableForServiceUnavailable = !availableSearchTypes.any((option) => option.id == 'apartment') && _selectedRegion != null;
-    
     return Column(
       children: [
         Expanded(
@@ -919,7 +1231,6 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Service availability message
                 if (availableSearchTypes.isEmpty)
                   Container(
                     width: double.infinity,
@@ -960,24 +1271,8 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                     ),
                   ),
 
-                // Reference ID input (disabled if service unavailable)
-                CustomTextField(
-                  labelText: 'الرقم المرجعي',
-                  hintText: 'أدخل الرقم المرجعي',
-                  value: _shareFormData['id'],
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  onChanged: (value) {
-                    setState(() {
-                      _shareFormData['id'] = value;
-                    });
-                  },
-                  enabled: !disableForServiceUnavailable,
-                ),
-
                 const SizedBox(height: 16),
-
-                // Region dropdown (always enabled)
+                // Region dropdown
                 CustomDropdown<region_model.Region>(
                   labelText: 'المنطقة',
                   value: _selectedRegion,
@@ -987,7 +1282,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   onChanged: (region) {
                     _handleRegionChange(region);
                     if (region != null) {
-                      _loadApartmentSectorsForRegion(region.id);
+                      _loadApartmentDropdowns();
                       setState(() {
                         _apartmentSectorTypes.clear();
                         _apartmentSectors.clear();
@@ -1002,10 +1297,8 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   isEnabled: true,
                   borderColor: disableForServiceUnavailable ? const Color(0xFFA47764) : null,
                 ),
-
                 const SizedBox(height: 16),
-
-                // Sector type dropdown (disabled if Reference ID is filled or service unavailable)
+                // Sector type dropdown
                 CustomDropdown<SectorTypeOption>(
                   labelText: 'نوع المقسم',
                   value: _apartmentSelectedSectorType,
@@ -1018,10 +1311,8 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   isLoading: _apartmentIsLoadingSectors,
                   isEnabled: !(disableOtherFields || disableForServiceUnavailable) && _selectedRegion != null && !_apartmentIsLoadingSectors,
                 ),
-
                 const SizedBox(height: 16),
-
-                // Sector dropdown (disabled if Reference ID is filled or service unavailable)
+                // Sector dropdown
                 CustomDropdown<SectorOption>(
                   labelText: 'المقسم',
                   value: _apartmentSelectedSector,
@@ -1033,25 +1324,300 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   emptyMessage: 'يرجى اختيار نوع المقسم أولاً',
                   isEnabled: !(disableOtherFields || disableForServiceUnavailable) && _apartmentSelectedSectorType != null,
                 ),
-
                 const SizedBox(height: 16),
 
-                // Apartment search specific fields will be added here later
-                const Text(
-                  'سيتم إضافة حقول البحث الخاصة بالعقارات قريباً',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Cairo',
-                    color: Colors.grey,
-                  ),
-                  textAlign: TextAlign.center,
+                // Transaction type select menu (disabled if Reference ID is filled or service unavailable)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'الإعلانات التي ترغب في البحث عنها',
+                      style: TextStyle(
+                        fontSize: 16,
+                       // fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    CustomDropdown<String>(
+                      value: _apartmentTransactionType,
+                      items: const [
+                        '1',
+                        '2',
+                      ],
+                      itemLabel: (value) => value == '1' ? 'إعلانات بيع' : 'إعلانات شراء',
+                      itemValue: (value) => value,
+                      onChanged: (disableOtherFields || disableForServiceUnavailable) ? null : (value) {
+                        if (value != null) {
+                          setState(() {
+                            _apartmentTransactionType = value;
+                          });
+                        }
+                      },
+                      hintText: 'اختر نوع العملية',
+                      isEnabled: !(disableOtherFields || disableForServiceUnavailable),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
+                const SizedBox(height: 16),
+                // Direction dropdown
+                CustomDropdown<Direction>(
+                  labelText: 'اتجاه العقار',
+                  value: _apartmentSelectedDirection,
+                  items: _directions,
+                  itemLabel: (direction) => direction.name,
+                  itemValue: (direction) => direction.id.toString(),
+                  onChanged: _onApartmentDirectionChanged,
+                  hintText: 'اختر اتجاه العقار',
+                  emptyMessage: 'لا توجد اتجاهات متاحة',
+                  isLoading: _apartmentIsLoadingDirections,
+                ),
+                const SizedBox(height: 16),
+                // Apartment type dropdown
+                CustomDropdown<ApartmentType>(
+                  labelText: 'نوع العقار',
+                  value: _apartmentSelectedType,
+                  items: _apartmentTypes,
+                  itemLabel: (apartmentType) => apartmentType.name,
+                  itemValue: (apartmentType) => apartmentType.id.toString(),
+                  onChanged: _onApartmentTypeChanged,
+                  hintText: 'اختر نوع العقار',
+                  emptyMessage: 'لا توجد أنواع عقارات متاحة',
+                  isLoading: _apartmentIsLoadingTypes,
+                ),
+                const SizedBox(height: 16),
+                // Apartment status dropdown
+                CustomDropdown<ApartmentStatus>(
+                  labelText: 'حالة العقار',
+                  value: _apartmentSelectedStatus,
+                  items: _apartmentStatuses,
+                  itemLabel: (apartmentStatus) => apartmentStatus.name,
+                  itemValue: (apartmentStatus) => apartmentStatus.id.toString(),
+                  onChanged: _onApartmentStatusChanged,
+                  hintText: 'اختر حالة العقار',
+                  emptyMessage: 'لا توجد حالات عقارات متاحة',
+                  isLoading: _apartmentIsLoadingStatuses,
+                ),
+                const SizedBox(height: 16),
+                // Area input
+                CustomTextField(
+                  labelText: 'المساحة',
+                  hintText: 'أدخل المساحة',
+                  value: _apartmentFormData['area'],
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged: (value) {
+                    _apartmentFormData['area'] = value;
+                  },
+                ),
+                const SizedBox(height: 16),
+                // Conditional fields
+                if (_apartmentFieldsToShow.contains('floor')) ...[
+                  CustomTextField(
+                    labelText: 'الطابق',
+                    hintText: 'أدخل الطابق',
+                    value: _apartmentFormData['floor'],
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (value) {
+                      _apartmentFormData['floor'] = value;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (_apartmentFieldsToShow.contains('rooms_count')) ...[
+                  CustomTextField(
+                    labelText: 'عدد الغرف',
+                    hintText: 'أدخل عدد الغرف',
+                    value: _apartmentFormData['rooms_count'],
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (value) {
+                      _apartmentFormData['rooms_count'] = value;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (_apartmentFieldsToShow.contains('salons_count')) ...[
+                  CustomTextField(
+                    labelText: 'عدد الصالونات',
+                    hintText: 'أدخل عدد الصالونات',
+                    value: _apartmentFormData['salons_count'],
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (value) {
+                      _apartmentFormData['salons_count'] = value;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (_apartmentFieldsToShow.contains('balcony_count')) ...[
+                  CustomTextField(
+                    labelText: 'عدد البلكونات',
+                    hintText: 'أدخل عدد البلكونات',
+                    value: _apartmentFormData['balcony_count'],
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (value) {
+                      _apartmentFormData['balcony_count'] = value;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                // Owner name input
+                CustomTextField(
+                  labelText: 'صاحب العلاقة',
+                  hintText: 'أدخل اسم صاحب العلاقة',
+                  value: _apartmentFormData['owner_name'],
+                  onChanged: (value) {
+                    _apartmentFormData['owner_name'] = value;
+                  },
+                ),
+                const SizedBox(height: 16),
+                // Equity input
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'عدد الأسهم',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 1,
+                          child: CustomDropdown<PriceOperatorOption>(
+                            value: _selectedApartmentEquityOperator,
+                            items: _priceOperators,
+                            itemLabel: (operator) => operator.name,
+                            itemValue: (operator) => operator.id,
+                            onChanged: (operator) {
+                              if (operator != null) {
+                                setState(() {
+                                  _selectedApartmentEquityOperator = operator;
+                                  _apartmentEquityOperator = operator.id;
+                                });
+                              }
+                            },
+                            hintText: '',
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 2,
+                          child: CustomTextField(
+                            hintText: 'عدد الأسهم',
+                            value: _apartmentFormData['equity'],
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
+                            onChanged: (value) {
+                              _apartmentFormData['equity'] = value;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Price input
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'السعر',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 1,
+                          child: CustomDropdown<PriceOperatorOption>(
+                            value: _selectedApartmentPriceOperator,
+                            items: _priceOperators,
+                            itemLabel: (operator) => operator.name,
+                            itemValue: (operator) => operator.id,
+                            onChanged: (operator) {
+                              if (operator != null) {
+                                setState(() {
+                                  _selectedApartmentPriceOperator = operator;
+                                  _apartmentPriceOperator = operator.id;
+                                });
+                              }
+                            },
+                            hintText: '',
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 2,
+                          child: CustomTextField(
+                            hintText: 'السعر',
+                            value: _apartmentFormData['price'],
+                            keyboardType:
+                                const TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d*\.?\d*'))
+                            ],
+                            onChanged: (value) {
+                              _apartmentFormData['price'] = value;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Payment method dropdown
+                CustomDropdown<PaymentMethod>(
+                  labelText: 'طريقة الدفع',
+                  value: _apartmentSelectedPayment,
+                  items: _paymentMethods,
+                  itemLabel: (paymentMethod) => paymentMethod.name,
+                  itemValue: (paymentMethod) => paymentMethod.id.toString(),
+                  onChanged: _onApartmentPaymentChanged,
+                  hintText: 'اختر طريقة الدفع',
+                  emptyMessage: 'لا توجد طرق دفع متاحة',
+                  isLoading: _apartmentIsLoadingPayments,
+                ),
+                const SizedBox(height: 16),
+                // Taras radio buttons
+                if (_apartmentFieldsToShow.contains('is_taras')) ...[
+                  CustomRadioButtons(
+                    radioButtons: [
+                      RadioOption(id: '1', label: 'يحتوي على تراس', value: '1'),
+                      RadioOption(id: '0', label: 'لا يحتوي على تراس', value: '0'),
+              ],
+                    selectedId: _apartmentFormData['is_taras'] ?? '0',
+                    onChanged: (value) {
+                      setState(() {
+                        _apartmentFormData['is_taras'] = value;
+                      });
+                    },
+          ),
+                  const SizedBox(height: 16),
+                ],
               ],
             ),
           ),
         ),
-
-        // Search button
+        // Search button (keep as is, or update to use new form data)
         Container(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -1062,7 +1628,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                     : !availableSearchTypes.any((option) => option.id == 'apartment')
                         ? 'العقارات غير متوفرة'
                         : 'بحث',
-                onPressed: availableSearchTypes.any((option) => option.id == 'apartment') ? _performApartmentSearch : null,
+                onPressed: availableSearchTypes.any((option) => option.id == 'apartment') ? _performSearch : null,
                 hasGradient: true,
                 gradientColors: const [
                   Color(0xFF633E3D),

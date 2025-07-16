@@ -89,6 +89,18 @@ class SharePaginatedResponse {
 
   bool get hasNextPage => nextPageUrl != null;
   bool get isLastPage => currentPage >= lastPage;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'data': shares.map((share) => share.toJson()).toList(),
+      'current_page': currentPage,
+      'last_page': lastPage,
+      'per_page': perPage,
+      'total': total,
+      'next_page_url': nextPageUrl,
+      'prev_page_url': prevPageUrl,
+    };
+  }
 }
 
 class ShareRepository {

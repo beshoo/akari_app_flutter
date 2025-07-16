@@ -166,6 +166,83 @@ class ApartmentRepository {
     }
   }
 
+  Future<ApartmentResponse> searchApartments({
+    int? id,
+    int? regionId,
+    int? sectorId,
+    String? ownerName,
+    int? directionId,
+    int? apartmentTypeId,
+    int? paymentMethodId,
+    int? apartmentStatusId,
+    String? area,
+    String? floor,
+    String? roomsCount,
+    String? salonsCount,
+    String? balconyCount,
+    String? isTaras,
+    String? equity,
+    String? price,
+    String? transactionType,
+    String? priceOperator,
+    String? equityOperator,
+    int page = 1,
+  }) async {
+    final Map<String, dynamic> queryParameters = {
+      'page': page,
+    };
+    if (id != null) queryParameters['id'] = id;
+    if (regionId != null) queryParameters['region_id'] = regionId;
+    if (sectorId != null) queryParameters['sector_id'] = sectorId;
+    if (ownerName != null && ownerName.isNotEmpty) {
+      queryParameters['owner_name'] = ownerName;
+    }
+    if (directionId != null) queryParameters['direction_id'] = directionId;
+    if (apartmentTypeId != null) {
+      queryParameters['apartment_type_id'] = apartmentTypeId;
+    }
+    if (paymentMethodId != null) {
+      queryParameters['payment_method_id'] = paymentMethodId;
+    }
+    if (apartmentStatusId != null) {
+      queryParameters['apartment_status_id'] = apartmentStatusId;
+    }
+    if (area != null && area.isNotEmpty) queryParameters['area'] = area;
+    if (floor != null && floor.isNotEmpty) queryParameters['floor'] = floor;
+    if (roomsCount != null && roomsCount.isNotEmpty) {
+      queryParameters['rooms_count'] = roomsCount;
+    }
+    if (salonsCount != null && salonsCount.isNotEmpty) {
+      queryParameters['salons_count'] = salonsCount;
+    }
+    if (balconyCount != null && balconyCount.isNotEmpty) {
+      queryParameters['balcony_count'] = balconyCount;
+    }
+    if (isTaras != null && isTaras.isNotEmpty) {
+      queryParameters['is_taras'] = isTaras;
+    }
+    if (equity != null && equity.isNotEmpty) queryParameters['equity'] = equity;
+    if (price != null && price.isNotEmpty) queryParameters['price'] = price;
+    if (transactionType != null && transactionType.isNotEmpty) {
+      queryParameters['transaction_type'] = transactionType;
+    }
+    if (priceOperator != null) queryParameters['price_operator'] = priceOperator;
+    if (equityOperator != null) {
+      queryParameters['equity_operator'] = equityOperator;
+    }
+
+    final response = await ApiService.instance.get(
+      '/apartment/search',
+      queryParameters: queryParameters,
+    );
+
+    if (response.statusCode == 200) {
+      return ApartmentResponse.fromJson(response.data);
+    } else {
+      throw Exception('Failed to search apartments: ${response.statusCode}');
+    }
+  }
+
   Future<List<ApartmentType>> fetchApartmentTypes() async {
     final response = await ApiService.instance.get('/apartment/types');
 
