@@ -10,6 +10,7 @@ import 'package:akari_app/widgets/custom_app_bar.dart';
 import 'package:akari_app/widgets/custom_dialog.dart';
 import 'package:akari_app/widgets/custom_bottom_nav_bar.dart';
 import 'package:akari_app/widgets/custom_fab.dart';
+import 'package:akari_app/widgets/custom_spinner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -81,7 +82,7 @@ class _HomeViewState extends State<HomeView> {
               body: BlocBuilder<HomeBloc, HomeState>(
                 builder: (context, state) {
                   if (state is HomeInitial || state is HomeLoading) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(child: CustomSpinner(size: 50.0));
                   }
                   if (state is HomeFailure) {
                     return Center(
