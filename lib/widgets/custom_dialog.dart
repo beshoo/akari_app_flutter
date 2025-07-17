@@ -7,12 +7,13 @@ Future<void> showCustomDialog({
   String okButtonText = 'موافق',
   String? cancelButtonText, // If null, only OK button is shown
   VoidCallback? onOkPressed,
+  bool isWarning = false,
 }) async {
   return showGeneralDialog<void>(
     context: context,
     barrierDismissible: true,
     barrierLabel: '',
-    barrierColor: Colors.black.withValues(alpha: 0.4),
+    barrierColor: Colors.black.withOpacity(0.4),
     transitionDuration: const Duration(milliseconds: 300),
     pageBuilder: (context, animation1, animation2) => const SizedBox.shrink(),
     transitionBuilder: (context, animation1, animation2, child) {
@@ -37,7 +38,7 @@ Future<void> showCustomDialog({
         builder: (context, child) => Container(
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
-          color: Colors.black.withValues(alpha: 0.4 * opacityAnimation.value),
+          color: Colors.black.withOpacity(0.4 * opacityAnimation.value),
           child: Center(
             child: Transform.scale(
               scale: scaleAnimation.value,
@@ -60,18 +61,18 @@ Future<void> showCustomDialog({
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
+                          color: Colors.black.withOpacity(0.25),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                           spreadRadius: 2,
                         ),
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.12),
+                          color: Colors.black.withOpacity(0.12),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
+                          color: Colors.black.withOpacity(0.08),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -126,18 +127,28 @@ Future<void> showCustomDialog({
                                   child: Container(
                                     height: 48,
                                     decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [
-                                          Color(0xFFbfa98d),
-                                          Color(0xFFa47764),
-                                        ],
-                                        begin: Alignment.centerLeft,
-                                        end: Alignment.centerRight,
-                                      ),
+                                      gradient: isWarning
+                                          ? const LinearGradient(
+                                              colors: [
+                                                Color(0xFFD32F2F),
+                                                Color(0xFFB71C1C),
+                                              ],
+                                              begin: Alignment.centerLeft,
+                                              end: Alignment.centerRight,
+                                            )
+                                          : const LinearGradient(
+                                              colors: [
+                                                Color(0xFFbfa98d),
+                                                Color(0xFFa47764),
+                                              ],
+                                              begin: Alignment.centerLeft,
+                                              end: Alignment.centerRight,
+                                            ),
                                       borderRadius: BorderRadius.circular(12),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: const Color(0xFFa47764).withValues(alpha: 0.3),
+                                          color: (isWarning ? Colors.red : const Color(0xFFa47764))
+                                              .withOpacity(0.3),
                                           blurRadius: 8,
                                           offset: const Offset(0, 4),
                                         ),

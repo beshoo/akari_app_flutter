@@ -135,8 +135,11 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
       _formData['salons_count'] = apartment.salonsCount.toString();
       _formData['balcony_count'] = apartment.balconyCount.toString();
       _formData['is_taras'] = apartment.isTaras.toString();
-      _formData['equity'] = apartment.equity;
-      _formData['price'] = apartment.price;
+      // Use equity_key (clean number like "2400") for display and editing
+      _formData['equity'] = apartment.equityKey.toString();
+      
+      // Use price_key (clean number like "30000000") for display and editing
+      _formData['price'] = apartment.priceKey.toString();
     }
   }
 
@@ -187,6 +190,40 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
     final foundPaymentMethod = _paymentMethods.where((method) => method.id == apartment.paymentMethodId).toList();
     if (foundPaymentMethod.isNotEmpty) {
       _selectedPaymentMethod = foundPaymentMethod.first;
+    }
+    
+    // Set sector type based on existing apartment data
+    if (_mainSectors != null && _mainSectors!['data'] != null) {
+      final data = _mainSectors!['data'] as List;
+      for (int index = 0; index < data.length; index++) {
+        final sectorItem = data[index] as Map<String, dynamic>;
+        final sectorKey = sectorItem['key'] ?? '';
+        
+        if (sectorKey == apartment.sector.codeType) {
+          _selectedSectorType = SectorTypeOption(
+            id: index.toString(),
+            name: sectorKey,
+          );
+          
+          // Also load sectors for this sector type
+          final sectorCodes = sectorItem['code'] as List?;
+          if (sectorCodes != null) {
+            final sectorOptions = sectorCodes.map((code) {
+              final codeMap = code as Map<String, dynamic>;
+              return SectorOption(
+                id: codeMap['id'] ?? 0,
+                name: codeMap['name'] ?? '',
+                code: codeMap['code'] ?? '',
+              );
+            }).toList();
+            
+            setState(() {
+              _sectors = sectorOptions;
+            });
+          }
+          break;
+        }
+      }
     }
     
     // Set sector info
@@ -670,6 +707,8 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
       final apartmentStatusId = int.tryParse(_formData['apartment_status_id'] ?? '') ?? 0;
       final paymentMethodId = int.tryParse(_formData['payment_method_id'] ?? '') ?? 0;
       final area = int.tryParse(_formData['area'] ?? '') ?? 0;
+      
+      // Use form data directly since we're working with clean numbers
       final price = _formData['price']!;
       final equity = _formData['equity']!;
       final ownerName = _formData['owner_name']!;
@@ -734,6 +773,7 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
           ownerName: ownerName,
           price: price,
           equity: equity,
+          transactionType: _currentType, // Add transaction_type for update
           floor: floor,
           roomsCount: roomsCount,
           salonsCount: salonsCount,
@@ -755,10 +795,16 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
                 ? 'تم إنشاء الإعلان بنجاح'
                 : 'تم تحديث الإعلان بنجاح',
             onOkPressed: () {
-              Navigator.of(context).pop(); // Pop the form page
-              // Optionally navigate to specific apartment page
-              if (response.containsKey('id')) {
-                // Navigate to apartment details page with ID: response['id']
+              if (widget.mode == ApartmentFormMode.update) {
+                // For update mode, return a result to trigger reload
+                Navigator.of(context).pop(true); // Return true to indicate successful update
+              } else {
+                // For create mode, just pop back
+                Navigator.of(context).pop();
+                // Optionally navigate to specific apartment page
+                if (response.containsKey('id')) {
+                  // Navigate to apartment details page with ID: response['id']
+                }
               }
             },
           );
@@ -957,11 +1003,22 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
                   onChanged: (value) {
                     _formData['area'] = value;
                     if (value.isNotEmpty && (int.tryParse(value) ?? 0) > 0) {
-                      setState(() {
-                        _errors.remove('area');
-                        _hasErrors.remove('area');
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() {
+                            _errors.remove('area');
+                            _hasErrors.remove('area');
+                          });
+                        }
                       });
                     }
+                  },
+                  onClear: () {
+                    setState(() {
+                      _formData['area'] = '';
+                      _errors.remove('area');
+                      _hasErrors.remove('area');
+                    });
                   },
                   hasError: _hasErrors['area'] ?? false,
                 ),
@@ -979,11 +1036,22 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
                     onChanged: (value) {
                       _formData['floor'] = value;
                       if (value.isNotEmpty && (int.tryParse(value) ?? -1) >= 0) {
-                        setState(() {
-                          _errors.remove('floor');
-                          _hasErrors.remove('floor');
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            setState(() {
+                              _errors.remove('floor');
+                              _hasErrors.remove('floor');
+                            });
+                          }
                         });
                       }
+                    },
+                    onClear: () {
+                      setState(() {
+                        _formData['floor'] = '';
+                        _errors.remove('floor');
+                        _hasErrors.remove('floor');
+                      });
                     },
                     hasError: _hasErrors['floor'] ?? false,
                   ),
@@ -1000,11 +1068,22 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
                     onChanged: (value) {
                       _formData['rooms_count'] = value;
                       if (value.isNotEmpty && (int.tryParse(value) ?? 0) > 0) {
-                        setState(() {
-                          _errors.remove('rooms_count');
-                          _hasErrors.remove('rooms_count');
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            setState(() {
+                              _errors.remove('rooms_count');
+                              _hasErrors.remove('rooms_count');
+                            });
+                          }
                         });
                       }
+                    },
+                    onClear: () {
+                      setState(() {
+                        _formData['rooms_count'] = '';
+                        _errors.remove('rooms_count');
+                        _hasErrors.remove('rooms_count');
+                      });
                     },
                     hasError: _hasErrors['rooms_count'] ?? false,
                   ),
@@ -1021,11 +1100,22 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
                     onChanged: (value) {
                       _formData['salons_count'] = value;
                       if (value.isNotEmpty && (int.tryParse(value) ?? -1) >= 0) {
-                        setState(() {
-                          _errors.remove('salons_count');
-                          _hasErrors.remove('salons_count');
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            setState(() {
+                              _errors.remove('salons_count');
+                              _hasErrors.remove('salons_count');
+                            });
+                          }
                         });
                       }
+                    },
+                    onClear: () {
+                      setState(() {
+                        _formData['salons_count'] = '';
+                        _errors.remove('salons_count');
+                        _hasErrors.remove('salons_count');
+                      });
                     },
                     hasError: _hasErrors['salons_count'] ?? false,
                   ),
@@ -1042,11 +1132,22 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
                     onChanged: (value) {
                       _formData['balcony_count'] = value;
                       if (value.isNotEmpty && (int.tryParse(value) ?? -1) >= 0) {
-                        setState(() {
-                          _errors.remove('balcony_count');
-                          _hasErrors.remove('balcony_count');
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            setState(() {
+                              _errors.remove('balcony_count');
+                              _hasErrors.remove('balcony_count');
+                            });
+                          }
                         });
                       }
+                    },
+                    onClear: () {
+                      setState(() {
+                        _formData['balcony_count'] = '';
+                        _errors.remove('balcony_count');
+                        _hasErrors.remove('balcony_count');
+                      });
                     },
                     hasError: _hasErrors['balcony_count'] ?? false,
                   ),
@@ -1061,11 +1162,22 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
                   onChanged: (value) {
                     _formData['owner_name'] = value;
                     if (value.isNotEmpty) {
-                      setState(() {
-                        _errors.remove('owner_name');
-                        _hasErrors.remove('owner_name');
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() {
+                            _errors.remove('owner_name');
+                            _hasErrors.remove('owner_name');
+                          });
+                        }
                       });
                     }
+                  },
+                  onClear: () {
+                    setState(() {
+                      _formData['owner_name'] = '';
+                      _errors.remove('owner_name');
+                      _hasErrors.remove('owner_name');
+                    });
                   },
                   hasError: _hasErrors['owner_name'] ?? false,
                 ),
@@ -1082,11 +1194,22 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
                   onChanged: (value) {
                     _formData['equity'] = value;
                     if (value.isNotEmpty && (int.tryParse(value) ?? 0) > 0) {
-                      setState(() {
-                        _errors.remove('equity');
-                        _hasErrors.remove('equity');
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() {
+                            _errors.remove('equity');
+                            _hasErrors.remove('equity');
+                          });
+                        }
                       });
                     }
+                  },
+                  onClear: () {
+                    setState(() {
+                      _formData['equity'] = '';
+                      _errors.remove('equity');
+                      _hasErrors.remove('equity');
+                    });
                   },
                   hasError: _hasErrors['equity'] ?? false,
                 ),
@@ -1105,11 +1228,22 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
                   onChanged: (value) {
                     _formData['price'] = value;
                     if (value.isNotEmpty && (double.tryParse(value) ?? 0) > 0) {
-                      setState(() {
-                        _errors.remove('price');
-                        _hasErrors.remove('price');
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() {
+                            _errors.remove('price');
+                            _hasErrors.remove('price');
+                          });
+                        }
                       });
                     }
+                  },
+                  onClear: () {
+                    setState(() {
+                      _formData['price'] = '';
+                      _errors.remove('price');
+                      _hasErrors.remove('price');
+                    });
                   },
                   hasError: _hasErrors['price'] ?? false,
                 ),

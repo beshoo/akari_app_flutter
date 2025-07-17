@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:akari_app/services/secure_storage.dart';
+import 'package:akari_app/stores/auth_store.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -18,14 +20,19 @@ class _SplashPageState extends State<SplashPage> {
 
   Future<void> _checkAuthAndNavigate() async {
     // Wait for a few seconds on the splash screen
-    await Future.delayed(const Duration(seconds: 4));
-
-    final token = await SecureStorage.getToken();
+    await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
 
-    if (token != null) {
-      // If token exists, go to home
+    final authStore = Provider.of<AuthStore>(context, listen: false);
+    
+    // Check authentication status and refresh user data from server
+    await authStore.checkAuthStatus();
+
+    if (!mounted) return;
+
+    if (authStore.isAuthenticated) {
+      // If user is authenticated, go to home
       Navigator.pushReplacementNamed(context, '/home');
     } else {
       // Otherwise, go to onboarding

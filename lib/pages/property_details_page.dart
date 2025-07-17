@@ -16,6 +16,7 @@ import '../utils/toast_helper.dart';
 import 'apartment_form_page.dart';
 import 'share_form_page.dart';
 import '../widgets/custom_bottom_sheet.dart';
+import '../widgets/custom_dialog.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import '../utils/logger.dart';
 
@@ -107,12 +108,21 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
         _errorMessage = null;
       });
 
+      // Log auth information on API call
+      final authStore = Provider.of<AuthStore>(context, listen: false);
+      Logger.log('🔐 Auth Info - User ID: ${authStore.userId ?? 'null'}');
+      Logger.log('🔐 Auth Info - User Privilege: ${authStore.userPrivilege ?? 'null'}');
+      Logger.log('🔐 Auth Info - User Name: ${authStore.userName ?? 'null'}');
+      Logger.log('🔐 Auth Info - Is Authenticated: ${authStore.isAuthenticated}');
+
       if (widget.itemType == "apartment") {
         final response = await _apartmentRepository.fetchApartmentById(widget.id);
         _itemData = response;
+        Logger.log('🏠 Apartment data loaded - Item User ID: ${_itemData.userId}');
       } else if (widget.itemType == "share") {
         final response = await _shareRepository.fetchShareById(widget.id);
         _itemData = response;
+        Logger.log('📈 Share data loaded - Item User ID: ${_itemData.userId}');
       } else {
         throw Exception('نوع العنصر غير صحيح');
       }
@@ -138,11 +148,11 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     
     if (widget.itemType == "apartment") {
       final equity = _itemData.equity;
-      final price = _itemData.price;
+      final price = '${_formatNumber(_itemData.priceKey.toString())} ل.س';
       return "نرغب ب$transactionType $baseText في $sectorCode بكمية $equity حصة سهمية بسعر $price في منطقة $regionName";
     } else {
       final quantity = _itemData.quantity;
-      final price = _itemData.price;
+      final price = '${_formatNumber(_itemData.priceKey.toString())} ل.س';
       return "نرغب ب$transactionType $baseText في $sectorCode بكمية $quantity سهم بسعر $price بالسهم في منطقة $regionName";
     }
   }
@@ -765,7 +775,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
             child: _buildGridBox(
               iconPath: 'price.png',
               title: 'سعر العقار',
-              value: apartment.price,
+              value: '${_formatNumber(apartment.priceKey.toString())} ل.س',
               textAlign: TextAlign.right,
             ),
           ),
@@ -964,7 +974,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
             child: _buildGridBox(
               iconPath: 'price.png',
               title: 'سعر السهم المطروح',
-              value: share.price,
+              value: '${_formatNumber(share.priceKey.toString())} ل.س',
               textAlign: TextAlign.right,
             ),
           ),
@@ -1009,19 +1019,52 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     final sector = _itemData.sector;
     final sectorCode = sector.code?.code ?? '';
     
-    // Check if we have any sector details worth showing
-    final hasDetails = sector.outerArea != null ||
-        sector.residentialArea != null ||
-        sector.commercialArea != null ||
-        sector.buildingArea != null ||
-        sector.floorsNumber != null ||
-        sector.totalFloorArea != null ||
-        sector.contractor != null ||
-        sector.engineers != null ||
-        sector.description != null ||
-        sector.owners != null;
+    // Helper function to check if a value should be shown (not null and not 0)
+    bool shouldShowValue(dynamic value) {
+      if (value == null) return false;
+      if (value is int && value == 0) return false;
+      if (value is double && value == 0.0) return false;
+      if (value is String) {
+        final trimmed = value.trim();
+        if (trimmed.isEmpty) return false;
+        // Check if string represents zero
+        final parsed = double.tryParse(trimmed);
+        if (parsed != null && parsed == 0.0) return false;
+      }
+      return true;
+    }
     
-    if (!hasDetails) return const SizedBox.shrink();
+    // Check which values should be shown
+    final showOuterArea = shouldShowValue(sector.outerArea);
+    final showResidentialArea = shouldShowValue(sector.residentialArea);
+    final showCommercialArea = shouldShowValue(sector.commercialArea);
+    final showBuildingArea = shouldShowValue(sector.buildingArea);
+    final showFloorsNumber = shouldShowValue(sector.floorsNumber);
+    final showTotalFloorArea = shouldShowValue(sector.totalFloorArea);
+    
+    // Debug logging for building area
+    Logger.log('🏗️ Sector Building Area Debug:');
+    Logger.log('   - Raw value: ${sector.buildingArea}');
+    Logger.log('   - Value type: ${sector.buildingArea.runtimeType}');
+    Logger.log('   - Should show: $showBuildingArea');
+    final showContractor = shouldShowValue(sector.contractor);
+    final showEngineers = shouldShowValue(sector.engineers);
+    final showDescription = shouldShowValue(sector.description);
+    final showOwners = shouldShowValue(sector.owners);
+    
+    // Check if we have any area details worth showing (first row)
+    final hasAreaDetails = showOuterArea || showResidentialArea || showCommercialArea;
+    
+    // Check if we have any building details worth showing (second row)
+    final hasBuildingDetails = showBuildingArea || showFloorsNumber || showTotalFloorArea;
+    
+    // Check if we have any text details worth showing
+    final hasTextDetails = showContractor || showEngineers || showDescription || showOwners;
+    
+    // If no details should be shown, hide the entire section
+    if (!hasAreaDetails && !hasBuildingDetails && !hasTextDetails) {
+      return const SizedBox.shrink();
+    }
     
     return Column(
       children: [
@@ -1053,9 +1096,10 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
         // Sector details in grid format
         Column(
           children: [
-            if (sector.outerArea != null || sector.residentialArea != null || sector.commercialArea != null)
+            // First row - Area details (only show if at least one area value exists)
+            if (hasAreaDetails) ...[
               _buildEqualHeightGridRow([
-                if (sector.outerArea != null)
+                if (showOuterArea)
                   Expanded(
                     child: _buildGridBox(
                       iconPath: 'area.png',
@@ -1064,9 +1108,9 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                       textAlign: TextAlign.right,
                     ),
                   ),
-                if (sector.outerArea != null && sector.residentialArea != null)
+                if (showOuterArea && showResidentialArea)
                   const SizedBox(width: 8),
-                if (sector.residentialArea != null)
+                if (showResidentialArea)
                   Expanded(
                     child: _buildGridBox(
                       iconPath: 'building_1.png',
@@ -1075,9 +1119,9 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                       textAlign: TextAlign.right,
                     ),
                   ),
-                if (sector.residentialArea != null && sector.commercialArea != null)
+                if (showResidentialArea && showCommercialArea)
                   const SizedBox(width: 8),
-                if (sector.commercialArea != null)
+                if (showCommercialArea)
                   Expanded(
                     child: _buildGridBox(
                       iconPath: 'building_type.png',
@@ -1087,14 +1131,16 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                     ),
                   ),
               ]),
+            ],
               
-            if ((sector.outerArea != null || sector.residentialArea != null || sector.commercialArea != null) &&
-                (sector.buildingArea != null || sector.floorsNumber != null))
+            // Spacing between rows (only if both rows will be shown)
+            if (hasAreaDetails && hasBuildingDetails)
               const SizedBox(height: 8),
               
-            if (sector.buildingArea != null || sector.floorsNumber != null || sector.totalFloorArea != null)
+            // Second row - Building details (only show if at least one building value exists)
+            if (hasBuildingDetails) ...[
               _buildEqualHeightGridRow([
-                if (sector.buildingArea != null)
+                if (showBuildingArea)
                   Expanded(
                     child: _buildGridBox(
                       iconPath: 'area.png',
@@ -1103,9 +1149,9 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                       textAlign: TextAlign.right,
                     ),
                   ),
-                if (sector.buildingArea != null && sector.floorsNumber != null)
+                if (showBuildingArea && showFloorsNumber)
                   const SizedBox(width: 8),
-                if (sector.floorsNumber != null)
+                if (showFloorsNumber)
                   Expanded(
                     child: _buildGridBox(
                       iconPath: 'floor.png',
@@ -1114,9 +1160,9 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                       textAlign: TextAlign.right,
                     ),
                   ),
-                if (sector.floorsNumber != null && sector.totalFloorArea != null)
+                if (showFloorsNumber && showTotalFloorArea)
                   const SizedBox(width: 8),
-                if (sector.totalFloorArea != null)
+                if (showTotalFloorArea)
                   Expanded(
                     child: _buildGridBox(
                       iconPath: 'area.png',
@@ -1126,14 +1172,15 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                     ),
                   ),
               ]),
+            ],
           ],
         ),
         
         // Additional text details
-        if (sector.contractor != null || sector.engineers != null || sector.description != null || sector.owners != null)
+        if (hasTextDetails && (hasAreaDetails || hasBuildingDetails))
           const SizedBox(height: 16),
           
-        if (sector.description != null)
+        if (showDescription)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -1185,33 +1232,65 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     );
   }
 
+  double _getBottomButtonsHeight() {
+    final authStore = Provider.of<AuthStore>(context, listen: false);
+    final isOwner = authStore.userId == _itemData?.userId.toString();
+    final isAdmin = authStore.userPrivilege == 'admin' || authStore.userPrivilege == 'owner';
+    final canEditDelete = isOwner || isAdmin;
+    
+    final buttonHeight = 50.0;
+    final padding = 20.0;
+    final spacing = 12.0;
+    final numberOfRows = canEditDelete ? 2 : 1;
+    return (numberOfRows * buttonHeight) + ((numberOfRows - 1) * spacing) + (padding * 2);
+  }
+
   Widget _buildBottomActionButtons() {
     if (_itemData == null) return const SizedBox.shrink();
     
     final authStore = Provider.of<AuthStore>(context);
     final isOwner = authStore.userId == _itemData.userId.toString();
+    final isAdmin = authStore.userPrivilege == 'admin' || authStore.userPrivilege == 'owner';
+    final canEditDelete = isOwner || isAdmin;
+    
+    // Calculate proper height based on number of button rows
+    final buttonHeight = 50.0;
+    final padding = 20.0;
+    final spacing = 12.0;
+    final numberOfRows = canEditDelete ? 2 : 1;
+    final totalHeight = (numberOfRows * buttonHeight) + ((numberOfRows - 1) * spacing) + (padding * 2);
+    final backgroundHeight = totalHeight * 0.6; // Cover more area to hide content
+    
+    // Log the permission check
+    Logger.log('🔒 Permission Check:');
+    Logger.log('   - Current User ID: ${authStore.userId}');
+    Logger.log('   - Item User ID: ${_itemData.userId}');
+    Logger.log('   - User Privilege: ${authStore.userPrivilege}');
+    Logger.log('   - Is Owner: $isOwner');
+    Logger.log('   - Is Admin: $isAdmin');
+    Logger.log('   - Can Edit/Delete: $canEditDelete');
     
     return Stack(
       children: [
-        // Background container that covers half the height
+        // Background container that covers content underneath
         Positioned(
           bottom: 0,
           left: 0,
           right: 0,
-          height: 55, // Half height of the total container (110/2)
+          height: backgroundHeight,
           child: Container(
             color: const Color(0xFFF7F5F2),
           ),
         ),
         // Buttons container
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(padding),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Contact owner button (always visible)
               Container(
-                height: 50,
+                height: buttonHeight,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [
@@ -1250,56 +1329,92 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                 ),
               ),
               
-              // Owner-specific buttons
-              if (isOwner) ...[
-                const SizedBox(height: 12),
+              // Owner/Admin-specific buttons
+              if (canEditDelete) ...[
+                SizedBox(height: spacing),
                 Row(
                   children: [
                     Expanded(
-                      child: SizedBox(
-                        height: 50,
-                        child: OutlinedButton(
-                          onPressed: _navigateToEdit,
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF8B6F47)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                      child: Container(
+                        height: buttonHeight,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFFECB03D), // Gold
+                              Color(0xFFC49000), // Darker Gold
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
                           ),
-                          child: const Text(
-                            'تعديل',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Cairo',
-                              color: Color(0xFF8B6F47),
-                              fontWeight: FontWeight.w600,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFECB03D).withOpacity(0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
                             ),
-                            textAlign: TextAlign.right,
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: _navigateToEdit,
+                            child: const Center(
+                              child: Text(
+                                'تعديل',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Cairo',
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.right,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: SizedBox(
-                        height: 50,
-                        child: OutlinedButton(
-                          onPressed: _showDeleteDialog,
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.red),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                      child: Container(
+                        height: buttonHeight,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFFE53E3E),
+                              Color(0xFFC53030),
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
                           ),
-                          child: const Text(
-                            'حذف',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Cairo',
-                              color: Colors.red,
-                              fontWeight: FontWeight.w600,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
                             ),
-                            textAlign: TextAlign.right,
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: _showDeleteDialog,
+                            child: const Center(
+                              child: Text(
+                                'حذف',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Cairo',
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.right,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -1352,7 +1467,12 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
 
   Future<void> _handleReactionSelected(String reaction) async {
     final reactionStore = Provider.of<ReactionStore>(context, listen: false);
+    final authStore = Provider.of<AuthStore>(context, listen: false);
     final isRemoving = reaction == _itemData.currentUserReaction;
+    
+    // Log auth info before reaction action
+    Logger.log('🔐 Auth Info for Reaction - User ID: ${authStore.userId ?? 'null'}');
+    Logger.log('🔐 Auth Info for Reaction - User Privilege: ${authStore.userPrivilege ?? 'null'}');
 
     if (isRemoving) {
       Logger.log('🗑️ Removing current reaction: ${_itemData.currentUserReaction}');
@@ -1458,6 +1578,11 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
 
   Future<void> _handleFavoriteToggle() async {
     final reactionStore = Provider.of<ReactionStore>(context, listen: false);
+    final authStore = Provider.of<AuthStore>(context, listen: false);
+    
+    // Log auth info before favorite action
+    Logger.log('🔐 Auth Info for Favorite - User ID: ${authStore.userId ?? 'null'}');
+    Logger.log('🔐 Auth Info for Favorite - User Privilege: ${authStore.userPrivilege ?? 'null'}');
     Logger.log('⭐ Toggling favorite for ${widget.itemType} ID: ${_itemData.id}');
 
     final result = await reactionStore.toggleFavorite(
@@ -1570,9 +1695,9 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     );
   }
 
-  void _navigateToEdit() {
+  void _navigateToEdit() async {
     if (widget.itemType == "apartment") {
-      Navigator.push(
+      final result = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => ApartmentFormPage(
@@ -1581,8 +1706,13 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
           ),
         ),
       );
+      
+      // If update was successful, reload the details
+      if (result == true) {
+        _loadItemDetails();
+      }
     } else {
-      Navigator.push(
+      final result = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => ShareFormPage(
@@ -1591,50 +1721,68 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
           ),
         ),
       );
+      
+      // If update was successful, reload the details
+      if (result == true) {
+        _loadItemDetails();
+      }
     }
   }
 
   void _showDeleteDialog() {
-    showDialog(
+    showCustomDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          'تأكيد الحذف',
-          style: TextStyle(fontFamily: 'Cairo'),
-          textAlign: TextAlign.right,
-        ),
-        content: Text(
-          'هل أنت متأكد من حذف هذا ${widget.itemType == "apartment" ? "العقار" : "السهم"}؟',
-          style: const TextStyle(fontFamily: 'Cairo'),
-          textAlign: TextAlign.right,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'إلغاء',
-              style: TextStyle(fontFamily: 'Cairo'),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteItem();
-            },
-            child: const Text(
-              'حذف',
-              style: TextStyle(fontFamily: 'Cairo', color: Colors.red),
-            ),
-          ),
-        ],
-      ),
+      title: 'تأكيد الحذف',
+      message: 'هل أنت متأكد من حذف هذا ${widget.itemType == "apartment" ? "العقار" : "السهم"}؟',
+      okButtonText: 'حذف',
+      cancelButtonText: 'إلغاء',
+      isWarning: true,
+      onOkPressed: () {
+        _deleteItem();
+      },
     );
   }
 
   Future<void> _deleteItem() async {
-    // TODO: Implement delete API call
-    ToastHelper.showToast(context, 'تم حذف العنصر بنجاح', isError: false);
-    Navigator.pop(context);
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Log auth info before delete action
+    final authStore = Provider.of<AuthStore>(context, listen: false);
+    Logger.log('🔐 Auth Info for Delete - User ID: ${authStore.userId ?? 'null'}');
+    Logger.log('🔐 Auth Info for Delete - User Privilege: ${authStore.userPrivilege ?? 'null'}');
+    Logger.log('🗑️ Attempting to delete ${widget.itemType} ID: ${_itemData.id}');
+
+    Map<String, dynamic> result;
+    try {
+      if (widget.itemType == "apartment") {
+        result = await _apartmentRepository.deleteApartment(_itemData.id);
+      } else {
+        result = await _shareRepository.deleteShare(_itemData.id);
+      }
+
+      if (result['success']) {
+        ToastHelper.showToast(context, result['message'], isError: false);
+        // Pop with detailed result to indicate successful deletion
+        Navigator.pop(context, {
+          'action': 'deleted',
+          'itemType': widget.itemType,
+          'itemId': _itemData.id,
+          'regionId': _itemData.region.id,
+        });
+      } else {
+        ToastHelper.showToast(context, result['message'], isError:true);
+      }
+    } catch (e) {
+      ToastHelper.showToast(context, 'An unexpected error occurred.', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _contactOwner() {
@@ -1644,6 +1792,14 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
         : _itemData.questionMessage;
     
    // ToastHelper.showToast(context, 'جاري فتح WhatsApp...', isError: false);
+  }
+
+  String _formatNumber(String number) {
+    if (number.isEmpty) return '';
+    return number.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (match) => ',',
+    );
   }
 
   void _showFullScreenPhotoViewer(int initialIndex) {
@@ -1759,7 +1915,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(height: 120), // Space for bottom buttons
+                                  SizedBox(height: _getBottomButtonsHeight() + 20), // Dynamic space for bottom buttons with extra gap
                                 ],
                               ),
                             ),

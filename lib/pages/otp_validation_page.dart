@@ -355,52 +355,43 @@ class OtpValidationPageState extends State<OtpValidationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
-          child: SingleChildScrollView(
-            child: Container(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildHeader(),
+                          SizedBox(height: 12),
+                          _buildTitle(),
+                          SizedBox(height: 12),
+                          _buildOtpInput(),
+                          SizedBox(height: 10),
+                          Flexible(child: _buildNumberPad()),
+                          SizedBox(height: 10),
+                          _buildVerifyButton(),
+                          SizedBox(height: 8),
+                          _buildResendButton(),
+                          SizedBox(height: 8),
+                          _buildFooter(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              padding: EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // Header
-                  _buildHeader(),
-                  
-                  SizedBox(height: 24),
-                  
-                  // Title and description
-                  _buildTitle(),
-                  
-                  SizedBox(height: 24),
-                  
-                  // OTP input
-                  _buildOtpInput(),
-                  
-                  SizedBox(height: 20),
-                  
-                  // Number pad
-                  _buildNumberPad(),
-                  
-                  SizedBox(height: 20),
-                  
-                  // Verify button
-                  _buildVerifyButton(),
-                  
-                  SizedBox(height: 16),
-                  
-                  // Resend OTP
-                  _buildResendButton(),
-                  
-                  SizedBox(height: 16),
-                  
-                  // Footer
-                  _buildFooter(),
-                ],
-              ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

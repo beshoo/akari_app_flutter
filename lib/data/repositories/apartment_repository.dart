@@ -1,7 +1,12 @@
+import 'package:dio/dio.dart';
+
 import '../models/apartment_model.dart';
 import '../../services/api_service.dart';
+import '../../utils/logger.dart';
 
 class ApartmentRepository {
+  final Dio _dio = ApiService.instance;
+
   Future<ApartmentResponse> fetchApartments({
     required int regionId,
     int page = 1,
@@ -21,12 +26,17 @@ class ApartmentRepository {
   }
 
   Future<Apartment?> fetchApartmentById(int apartmentId) async {
-    final response = await ApiService.instance.get('/apartment/view/$apartmentId');
+    try {
+      final response = await ApiService.instance.get('/apartment/view/$apartmentId');
 
-    if (response.statusCode == 200) {
-      return Apartment.fromJson(response.data);
-    } else {
-      throw Exception('Failed to fetch apartment: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        return Apartment.fromJson(response.data);
+      } else {
+        throw Exception('Failed to fetch apartment: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      Logger.error('Error fetching apartment by ID', e.response?.data);
+      rethrow;
     }
   }
 
@@ -132,12 +142,16 @@ class ApartmentRepository {
     required String ownerName,
     required String price,
     required String equity,
+    required String transactionType, // Add transaction_type parameter
     int? floor,
     int? roomsCount,
     int? salonsCount,
     int? balconyCount,
     String? isTaras,
   }) async {
+    // Convert string transaction type to numeric: 1 for sell, 2 for buy
+    final numericTransactionType = transactionType == 'sell' ? 1 : 2;
+    
     final response = await ApiService.instance.post(
       '/apartment/update/$apartmentId',
       data: {
@@ -151,6 +165,7 @@ class ApartmentRepository {
         'owner_name': ownerName,
         'price': double.tryParse(price) ?? 0.0,
         'equity': int.tryParse(equity) ?? 0,
+        'transaction_type': numericTransactionType, // Send numeric value
         'floor': floor ?? 0,
         'rooms_count': roomsCount ?? 0,
         'salons_count': salonsCount ?? 0,
@@ -288,6 +303,30 @@ class ApartmentRepository {
           .toList();
     } else {
       throw Exception('Failed to fetch payment methods: ${response.statusCode}');
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteApartment(int id) async {
+    try {
+      final response = await _dio.delete('/apartment/delete/$id');
+      
+      if (response.statusCode == 200 && response.data != null) {
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Apartment deleted successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': response.data?['message'] ?? 'Failed to delete apartment',
+        };
+      }
+    } on DioException catch (e) {
+      Logger.error('Error deleting apartment', e.response?.data);
+      return {
+        'success': false,
+        'message': e.response?.data?['message'] ?? 'An error occurred',
+      };
     }
   }
 } 

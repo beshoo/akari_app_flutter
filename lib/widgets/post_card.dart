@@ -19,12 +19,14 @@ class PostCard extends StatefulWidget {
   final PostCardData postData;
   final Function(PostCardData)? onPostUpdated;
   final ScrollController? scrollController;
+  final Future<void> Function(int id, String itemType)? onNavigateToDetails;
 
   const PostCard({
     super.key,
     required this.postData,
     this.onPostUpdated,
     this.scrollController,
+    this.onNavigateToDetails,
   });
 
   @override
@@ -204,12 +206,19 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   Widget _buildBackgroundImage() {
     return Positioned.fill(
       child: GestureDetector(
-        onTap: () {
-          NavigationHelper.navigateToDetails(
-            context,
-            _currentPostData.id,
-            _currentPostData.postType,
-          );
+        onTap: () async {
+          if (widget.onNavigateToDetails != null) {
+            await widget.onNavigateToDetails!(
+              _currentPostData.id,
+              _currentPostData.postType,
+            );
+          } else {
+            NavigationHelper.navigateToDetails(
+              context,
+              _currentPostData.id,
+              _currentPostData.postType,
+            );
+          }
         },
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
@@ -337,14 +346,21 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       bottom: 0,
       left: 0,
       right: 0,
-      child: GestureDetector(
-        onTap: () {
+              child: GestureDetector(
+        onTap: () async {
           // Navigate to details page
-          NavigationHelper.navigateToDetails(
-            context,
-            _currentPostData.id,
-            _currentPostData.postType,
-          );
+          if (widget.onNavigateToDetails != null) {
+            await widget.onNavigateToDetails!(
+              _currentPostData.id,
+              _currentPostData.postType,
+            );
+          } else {
+            NavigationHelper.navigateToDetails(
+              context,
+              _currentPostData.id,
+              _currentPostData.postType,
+            );
+          }
         },
         child: Container(
         constraints: BoxConstraints(
@@ -738,11 +754,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   void _handleReactionButtonTap() async {
-    if (_currentPostData.currentUserReaction == 'like') {
-      // User already liked it, remove the like
+    if (_currentPostData.currentUserReaction != null) {
+      // User has any reaction, remove it
       await _removeCurrentReaction();
     } else {
-      // Send like reaction directly (Facebook behavior)
+      // User has no reaction, add like
       await _selectReaction('like');
     }
   }
@@ -1004,4 +1020,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         return 0;
     }
   }
+
+
 } 

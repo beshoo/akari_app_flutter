@@ -219,13 +219,18 @@ class ShareRepository {
     required int quantity,
     required String ownerName,
     required double price,
+    required String transactionType, // Add transaction_type parameter
   }) async {
+    // Convert string transaction type to numeric: 1 for sell, 2 for buy
+    final numericTransactionType = transactionType == 'sell' ? 1 : 2;
+    
     final response = await _dio.post('/share/update/$shareId', data: {
       'region_id': regionId,
       'sector_id': sectorId,
       'quantity': quantity,
       'owner_name': ownerName,
       'price': price,
+      'transaction_type': numericTransactionType, // Send numeric value
     });
 
     Logger.log("------- Update Share Response -------");
@@ -285,19 +290,28 @@ class ShareRepository {
 
   /// Delete a share
   Future<Map<String, dynamic>> deleteShare(int shareId) async {
-    final response = await _dio.post('/share/delete/$shareId');
+    try {
+      final response = await _dio.delete('/share/delete/$shareId');
 
-    if (kDebugMode) {
-      print("------- Delete Share Response -------");
-      print("Status Code: ${response.statusCode}");
-      print("Response: ${response.data}");
-      print("-------------------------------------");
-    }
-
-    if (response.statusCode == 200) {
-      return response.data ?? {};
-    } else {
-      throw Exception('API returned status code ${response.statusCode}');
+      if (response.statusCode == 200 && response.data != null) {
+        Logger.log('Share deleted successfully: ${response.data}');
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Share deleted successfully',
+        };
+      } else {
+        Logger.error('Failed to delete share, status: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': response.data?['message'] ?? 'Failed to delete share',
+        };
+      }
+    } on DioException catch (e) {
+      Logger.error('Error deleting share', e.response?.data);
+      return {
+        'success': false,
+        'message': e.response?.data?['message'] ?? 'An error occurred',
+      };
     }
   }
 

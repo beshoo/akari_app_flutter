@@ -95,8 +95,8 @@ class _ShareFormPageState extends State<ShareFormPage> {
       _formData['owner_name'] = share.ownerName;
       _formData['region_id'] = share.regionId.toString();
       _formData['sector_id'] = share.sectorId.toString();
-      _formData['quantity'] = share.quantity;
-      _formData['price'] = share.price;
+      _formData['quantity'] = share.quantityKey; // Use the raw value for the form
+      _formData['price'] = share.priceKey.toString();
     }
   }
 
@@ -117,8 +117,33 @@ class _ShareFormPageState extends State<ShareFormPage> {
     if (foundRegion.isNotEmpty) {
       _selectedRegion = foundRegion.first;
     }
-    
-    // Set sector info (this would need to be populated based on the loaded sectors)
+
+    // Find and set sector type and populate sectors
+    if (_mainSectors != null && _mainSectors!['data'] != null) {
+      final data = _mainSectors!['data'] as List;
+      for (int i = 0; i < data.length; i++) {
+        final sectorItem = data[i] as Map<String, dynamic>;
+        if (sectorItem['key'] == share.sector.codeType) {
+          _selectedSectorType = SectorTypeOption(id: i.toString(), name: sectorItem['key']);
+          
+          // Populate sectors for this sector type
+          final sectorCodes = sectorItem['code'] as List?;
+          if (sectorCodes != null) {
+            _sectors = sectorCodes.map((code) {
+              final codeMap = code as Map<String, dynamic>;
+              return SectorOption(
+                id: codeMap['id'] ?? 0,
+                name: codeMap['name'] ?? '',
+                code: codeMap['code'] ?? '',
+              );
+            }).toList();
+          }
+          break;
+        }
+      }
+    }
+
+    // Set sector info
     _selectedSector = SectorOption(
       id: share.sectorId,
       name: share.sector.sectorName.name ?? '',
@@ -286,7 +311,7 @@ class _ShareFormPageState extends State<ShareFormPage> {
     final regionName = _selectedRegion?.name ?? '';
     final sectorTypeName = _selectedSectorType?.name ?? '';
     final sectorName = _selectedSector?.code ?? '';
-    final quantity = _formData['quantity'] ?? '';
+    final quantity = _formatNumber(_formData['quantity'] ?? '');
     final price = _formatNumber(_formData['price'] ?? '');
 
     return 'أنت تريد أن $actionVerb $quantity سهم في المقسم $sectorName من نوع $sectorTypeName في منطقة $regionName بسعر $price ليرة سورية للسهم الواحد.';
@@ -361,6 +386,7 @@ class _ShareFormPageState extends State<ShareFormPage> {
           quantity: quantity,
           ownerName: _formData['owner_name']!,
           price: price,
+          transactionType: _currentType, // Add transaction_type for update
         );
       }
 
@@ -377,10 +403,16 @@ class _ShareFormPageState extends State<ShareFormPage> {
                 ? 'تم إنشاء الإعلان بنجاح'
                 : 'تم تحديث الإعلان بنجاح',
             onOkPressed: () {
-              Navigator.of(context).pop(); // Pop the form page
-              // Optionally navigate to specific share page
-              if (response.containsKey('id')) {
-                // Navigate to share details page with ID: response['id']
+              if (widget.mode == ShareFormMode.update) {
+                // For update mode, return a result to trigger reload
+                Navigator.of(context).pop(true); // Return true to indicate successful update
+              } else {
+                // For create mode, just pop back
+                Navigator.of(context).pop();
+                // Optionally navigate to specific share page
+                if (response.containsKey('id')) {
+                  // Navigate to share details page with ID: response['id']
+                }
               }
             },
           );
@@ -527,11 +559,22 @@ class _ShareFormPageState extends State<ShareFormPage> {
                   onChanged: (value) {
                     _formData['owner_name'] = value;
                     if (value.isNotEmpty) {
-                      setState(() {
-                        _errors.remove('owner_name');
-                        _hasErrors.remove('owner_name');
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() {
+                            _errors.remove('owner_name');
+                            _hasErrors.remove('owner_name');
+                          });
+                        }
                       });
                     }
+                  },
+                  onClear: () {
+                    setState(() {
+                      _formData['owner_name'] = '';
+                      _errors.remove('owner_name');
+                      _hasErrors.remove('owner_name');
+                    });
                   },
                   hasError: _hasErrors['owner_name'] ?? false,
                 ),
@@ -548,11 +591,22 @@ class _ShareFormPageState extends State<ShareFormPage> {
                   onChanged: (value) {
                     _formData['quantity'] = value;
                     if (value.isNotEmpty && (int.tryParse(value) ?? 0) > 0) {
-                      setState(() {
-                        _errors.remove('quantity');
-                        _hasErrors.remove('quantity');
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() {
+                            _errors.remove('quantity');
+                            _hasErrors.remove('quantity');
+                          });
+                        }
                       });
                     }
+                  },
+                  onClear: () {
+                    setState(() {
+                      _formData['quantity'] = '';
+                      _errors.remove('quantity');
+                      _hasErrors.remove('quantity');
+                    });
                   },
                   hasError: _hasErrors['quantity'] ?? false,
                 ),
@@ -571,11 +625,22 @@ class _ShareFormPageState extends State<ShareFormPage> {
                   onChanged: (value) {
                     _formData['price'] = value;
                     if (value.isNotEmpty && (double.tryParse(value) ?? 0) > 0) {
-                      setState(() {
-                        _errors.remove('price');
-                        _hasErrors.remove('price');
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() {
+                            _errors.remove('price');
+                            _hasErrors.remove('price');
+                          });
+                        }
                       });
                     }
+                  },
+                  onClear: () {
+                    setState(() {
+                      _formData['price'] = '';
+                      _errors.remove('price');
+                      _hasErrors.remove('price');
+                    });
                   },
                   hasError: _hasErrors['price'] ?? false,
                 ),

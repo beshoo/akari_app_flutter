@@ -45,8 +45,8 @@ class NavigationHelper {
   }
 
   /// Navigate to unified details page for apartment
-  static void navigateToApartmentDetails(BuildContext context, int apartmentId) {
-    Navigator.push(
+  static Future<dynamic> navigateToApartmentDetails(BuildContext context, int apartmentId) {
+    return Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PropertyDetailsPage(
@@ -58,8 +58,8 @@ class NavigationHelper {
   }
 
   /// Navigate to unified details page for share
-  static void navigateToShareDetails(BuildContext context, int shareId) {
-    Navigator.push(
+  static Future<dynamic> navigateToShareDetails(BuildContext context, int shareId) {
+    return Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PropertyDetailsPage(
@@ -96,8 +96,8 @@ class NavigationHelper {
   }
 
   /// Generic navigation to details page based on type
-  static void navigateToDetails(BuildContext context, int id, String itemType) {
-    Navigator.push(
+  static Future<dynamic> navigateToDetails(BuildContext context, int id, String itemType) {
+    return Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PropertyDetailsPage(

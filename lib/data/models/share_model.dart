@@ -7,6 +7,7 @@ class Share extends Equatable {
   final int regionId;
   final int sectorId;
   final String quantity;
+  final String quantityKey; // Add this field
   final String createdAt;
   final String updatedAt;
   final String ownerName;
@@ -35,6 +36,7 @@ class Share extends Equatable {
     required this.regionId,
     required this.sectorId,
     required this.quantity,
+    required this.quantityKey, // Add to constructor
     required this.createdAt,
     required this.updatedAt,
     required this.ownerName,
@@ -65,6 +67,7 @@ class Share extends Equatable {
       regionId: json['region_id'] ?? 0,
       sectorId: json['sector_id'] ?? 0,
       quantity: json['quantity'] ?? '',
+      quantityKey: (json['quantity_key'] ?? '').toString(), // Defensive: always a string
       createdAt: json['created_at'] ?? '',
       updatedAt: json['updated_at'] ?? '',
       ownerName: json['owner_name'] ?? '',
@@ -96,6 +99,7 @@ class Share extends Equatable {
       'region_id': regionId,
       'sector_id': sectorId,
       'quantity': quantity,
+      'quantity_key': quantityKey, // Add to toJson
       'created_at': createdAt,
       'updated_at': updatedAt,
       'owner_name': ownerName,
@@ -168,6 +172,7 @@ class Share extends Equatable {
       regionId: regionId ?? this.regionId,
       sectorId: sectorId ?? this.sectorId,
       quantity: quantity ?? this.quantity,
+      quantityKey: quantityKey,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       ownerName: ownerName ?? this.ownerName,
@@ -199,6 +204,7 @@ class Share extends Equatable {
         regionId,
         sectorId,
         quantity,
+        quantityKey, // Add to props
         createdAt,
         updatedAt,
         ownerName,

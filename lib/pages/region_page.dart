@@ -14,6 +14,7 @@ import '../widgets/custom_spinner.dart';
 import 'share_form_page.dart';
 import 'apartment_form_page.dart';
 import 'search_page.dart';
+import 'property_details_page.dart';
 
 class RegionPage extends StatefulWidget {
   final int? regionId;
@@ -101,10 +102,17 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   }
 
   void _loadInitialData() {
-    if (widget.hasShare) {
-      _sharesRefreshKey.currentState?.show();
+    if (widget.hasShare && widget.hasApartment) {
+      // Both services available - load the initial tab based on initialTabIndex
+      if (widget.initialTabIndex == 0) {
+        _loadShares(refresh: true);
+      } else {
+        _loadApartments(refresh: true);
+      }
+    } else if (widget.hasShare) {
+      _loadShares(refresh: true);
     } else if (widget.hasApartment) {
-      _apartmentsRefreshKey.currentState?.show();
+      _loadApartments(refresh: true);
     }
   }
 
@@ -199,15 +207,11 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
     if (widget.hasShare && widget.hasApartment) {
       if (currentTabIndex == 0) { // Shares
         if (shares.isEmpty && !isLoadingShares) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _sharesRefreshKey.currentState?.show();
-          });
+          _loadShares(refresh: true);
         }
       } else { // Apartments
         if (apartments.isEmpty && !isLoadingApartments) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _apartmentsRefreshKey.currentState?.show();
-          });
+          _loadApartments(refresh: true);
         }
       }
     }
@@ -674,10 +678,10 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
                       color: Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.16),
-                          blurRadius: 18,
-                          offset: Offset(0, 8), // Only bottom
-                          spreadRadius: 0,
+                        color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.05),
+                        blurRadius: 5,
+                        offset: Offset(0, 5), // Only bottom
+                        spreadRadius: 0,
                         ),
                       ],
                     ),
@@ -801,6 +805,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   Widget _buildShareList() {
     return ListView.builder(
       controller: _scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: shares.length + (hasMoreSharePages ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == shares.length) {
@@ -832,6 +837,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
       key: ValueKey('share_${share.id}'),
       postData: SharePostAdapter(share, showOwner: canShowOwner),
       scrollController: _scrollController,
+      onNavigateToDetails: _navigateToPropertyDetails,
       onPostUpdated: (updatedPost) {
         if (updatedPost is SharePostAdapter) {
           if (mounted) {
@@ -917,6 +923,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   Widget _buildApartmentList() {
     return ListView.builder(
       controller: _scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: apartments.length + (hasMoreApartmentPages ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == apartments.length) {
@@ -948,6 +955,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
       key: ValueKey('apartment_${apartment.id}'),
       postData: ApartmentPostAdapter(apartment, showOwner: canShowOwner),
       scrollController: _scrollController,
+      onNavigateToDetails: _navigateToPropertyDetails,
       onPostUpdated: (updatedPost) {
         if (updatedPost is ApartmentPostAdapter) {
           if (mounted) {
@@ -961,5 +969,30 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         }
       },
     );
+  }
+
+  Future<void> _navigateToPropertyDetails(int id, String itemType) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PropertyDetailsPage(
+          id: id,
+          itemType: itemType,
+        ),
+      ),
+    );
+
+    // Handle the result from PropertyDetailsPage
+    if (result != null && result is Map<String, dynamic>) {
+      if (result['action'] == 'deleted') {
+        // Item was deleted, refresh the appropriate tab
+        final deletedItemType = result['itemType'] as String;
+        if (deletedItemType == 'share') {
+          await _refreshShares();
+        } else if (deletedItemType == 'apartment') {
+          await _refreshApartments();
+        }
+      }
+    }
   }
 } 

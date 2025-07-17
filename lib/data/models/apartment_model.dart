@@ -119,6 +119,7 @@ class Apartment {
   final int apartmentStatusId;
   final int isTaras;
   final String equity;
+  final String equityKey; // Add this field for formatted display
   final String transactionType;
   final String ownerName;
   final String createdAt;
@@ -161,6 +162,7 @@ class Apartment {
     required this.apartmentStatusId,
     required this.isTaras,
     required this.equity,
+    required this.equityKey,
     required this.transactionType,
     required this.ownerName,
     required this.createdAt,
@@ -205,6 +207,7 @@ class Apartment {
       apartmentStatusId: json['apartment_status_id'] ?? 0,
       isTaras: json['is_taras'] ?? 0,
       equity: json['equity'] ?? '',
+      equityKey: (json['equity_key'] ?? '').toString(), // Defensive: always a string
       transactionType: json['transaction_type'] ?? '',
       ownerName: json['owner_name'] ?? '',
       createdAt: json['created_at'] ?? '',
@@ -252,6 +255,7 @@ class Apartment {
       'apartment_status_id': apartmentStatusId,
       'is_taras': isTaras,
       'equity': equity,
+      'equity_key': equityKey,
       'transaction_type': transactionType,
       'owner_name': ownerName,
       'created_at': createdAt,
@@ -314,6 +318,7 @@ class Apartment {
     int? apartmentStatusId,
     int? isTaras,
     String? equity,
+    String? equityKey,
     String? transactionType,
     String? ownerName,
     String? createdAt,
@@ -356,6 +361,7 @@ class Apartment {
       apartmentStatusId: apartmentStatusId ?? this.apartmentStatusId,
       isTaras: isTaras ?? this.isTaras,
       equity: equity ?? this.equity,
+      equityKey: equityKey ?? this.equityKey,
       transactionType: transactionType ?? this.transactionType,
       ownerName: ownerName ?? this.ownerName,
       createdAt: createdAt ?? this.createdAt,
