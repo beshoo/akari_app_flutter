@@ -205,7 +205,7 @@ class ApartmentPostAdapter implements PostCardData {
       '${_apartment.sector.sectorName.name} - ${_apartment.sector.sectorName.code}';
   @override
   String get subtitle =>
-      '${_apartment.region.name} - ${_apartment.apartmentType.name} / نية ${_apartment.transactionTypeText}';
+      '${_apartment.region.name} / رغبة في الـ${_apartment.transactionTypeText}';
   @override
   bool get isUserVerified => _apartment.user.isAuthenticated;
   @override
@@ -216,14 +216,18 @@ class ApartmentPostAdapter implements PostCardData {
   @override
   List<InfoRowData> get infoRows {
     final rows = <InfoRowData>[];
-    
+        rows.add(InfoRowData(iconName: 'apartment_status.png', text: 'نوع العقار :  ${_apartment.apartmentType.name}'));
     // Always show price and equity
     rows.add(InfoRowData(iconName: 'price.png', text: 'السعر : ${_apartment.price}'));
    // rows.add(InfoRowData(iconName: 'quantity.png', text: 'الحصة السهمية : ${_apartment.equity}'));
     
     // Show area if available
     if (_apartment.area > 0) {
-      rows.add(InfoRowData(iconName: 'area.png', text: 'المساحة : ${_apartment.area} متر'));
+      final formattedArea = _apartment.area.toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (Match match) => '${match[1]},'
+      );
+      rows.add(InfoRowData(iconName: 'area.png', text: 'المساحة : $formattedArea متر'));
     }
     
     // Show apartment status

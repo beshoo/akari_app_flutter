@@ -6,6 +6,8 @@ import 'package:akari_app/pages/region_page.dart';
 import 'package:akari_app/pages/share_form_page.dart';
 import 'package:akari_app/pages/apartment_form_page.dart';
 import 'package:akari_app/pages/search_page.dart';
+import 'package:akari_app/pages/search_results_page.dart';
+import 'package:akari_app/data/repositories/apartment_repository.dart';
 import 'package:akari_app/widgets/custom_app_bar.dart';
 import 'package:akari_app/widgets/custom_dialog.dart';
 import 'package:akari_app/widgets/custom_bottom_nav_bar.dart';
@@ -24,6 +26,40 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   int _selectedIndex = 0;
+  final ApartmentRepository _apartmentRepository = ApartmentRepository();
+
+  Future<void> _handleApartmentStatisticsTap(int apartmentTypeId, String apartmentTypeName) async {
+    try {
+      final searchResult = await _apartmentRepository.searchApartments(
+        apartmentTypeId: apartmentTypeId,
+      );
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SearchResultsPage(
+              searchType: 'apartment',
+              searchData: searchResult.toJson(),
+              searchQuery: 'عقارات من نوع: $apartmentTypeName',
+              originalSearchParams: {
+                'apartmentTypeId': apartmentTypeId,
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('حدث خطأ أثناء البحث: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _showExitDialog(BuildContext context) async {
     await showCustomDialog(
@@ -425,18 +461,7 @@ class _HomeViewState extends State<HomeView> {
                                             final item = state.apartmentStatistics[index];
                                             return GestureDetector(
                                               onTap: () {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) => RegionPage(
-                                                      regionId: item.id,
-                                                      regionName: item.name,
-                                                      hasShare: true,
-                                                      hasApartment: true,
-                                                      initialTabIndex: 1, // Select apartments tab (assuming shares tab is index 0)
-                                                    ),
-                                                  ),
-                                                );
+                                                _handleApartmentStatisticsTap(item.id, item.name);
                                               },
                                               child: _buildIOSCard(
                                                 child: Column(

@@ -150,11 +150,71 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     if (widget.itemType == "apartment") {
       final equity = _itemData.equity;
       final price = '${_formatNumber(_itemData.priceKey.toString())} ل.س';
-      return "نرغب ب$transactionType $baseText في $sectorCode بكمية $equity حصة سهمية بسعر $price في منطقة $regionName";
+      final apartmentTypeName = _itemData.apartmentType?.name ?? '';
+      return "نرغب ب$transactionType $baseText $apartmentTypeName في $sectorCode بكمية $equity حصة سهمية بسعر $price في منطقة $regionName";
     } else {
       final quantity = _itemData.quantity;
       final price = '${_formatNumber(_itemData.priceKey.toString())} ل.س';
       return "نرغب ب$transactionType $baseText في $sectorCode بكمية $quantity سهم بسعر $price بالسهم في منطقة $regionName";
+    }
+  }
+
+  Widget _buildTransactionRichText() {
+    if (_itemData == null) return const SizedBox.shrink();
+    
+    final baseText = widget.itemType == "apartment" ? "عقار" : "اسهم تنظيمية";
+    final transactionType = _itemData.transactionType == 'sell' ? 'بيع' : 'شراء';
+    final sectorCode = _itemData.sector.code?.viewCode ?? _itemData.sector.code?.code ?? '';
+    final regionName = _itemData.region.name;
+    
+    const normalStyle = TextStyle(
+      fontSize: 16,
+      fontFamily: 'Cairo',
+      color: Color(0xFF555555),
+      height: 1.6,
+    );
+    
+    const boldStyle = TextStyle(
+      fontSize: 16,
+      fontFamily: 'Cairo',
+      color: Color(0xFF555555),
+      height: 1.6,
+      fontWeight: FontWeight.bold,
+    );
+    
+    if (widget.itemType == "apartment") {
+      final equity = _itemData.equity;
+      final price = '${_formatNumber(_itemData.priceKey.toString())} ل.س';
+      final apartmentTypeName = _itemData.apartmentType?.name ?? '';
+      
+      return RichText(
+        textAlign: TextAlign.right,
+        text: TextSpan(
+          style: normalStyle,
+          children: [
+            TextSpan(text: "نرغب ب$transactionType $baseText "),
+            TextSpan(text: apartmentTypeName, style: boldStyle),
+            TextSpan(text: " في $sectorCode بكمية $equity حصة سهمية بسعر "),
+            TextSpan(text: price, style: boldStyle),
+            TextSpan(text: " في منطقة $regionName"),
+          ],
+        ),
+      );
+    } else {
+      final quantity = _itemData.quantity;
+      final price = '${_formatNumber(_itemData.priceKey.toString())} ل.س';
+      
+      return RichText(
+        textAlign: TextAlign.right,
+        text: TextSpan(
+          style: normalStyle,
+          children: [
+            TextSpan(text: "نرغب ب$transactionType $baseText في $sectorCode بكمية $quantity سهم بسعر "),
+            TextSpan(text: price, style: boldStyle),
+            TextSpan(text: " بالسهم في منطقة $regionName"),
+          ],
+        ),
+      );
     }
   }
 
@@ -640,16 +700,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
             width: double.infinity,
             child: Directionality(
               textDirection: TextDirection.rtl,
-              child: Text(
-                _getTransactionText(),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Cairo',
-                  color: Color(0xFF555555),
-                  height: 1.6,
-                ),
-                textAlign: TextAlign.right,
-              ),
+              child: _buildTransactionRichText(),
             ),
           ),
         ],
@@ -701,13 +752,13 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
               ),
             ),
           ),
-          // Text area - flexible height section
+          // Text area - flexible height that adapts to content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end, // RTL alignment
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start, // Keep title and value together at top
               children: [
-                // Title (made bold) - wrapped in Directionality
+                // Title area - auto height based on content
                 Container(
                   width: double.infinity,
                   child: Directionality(
@@ -719,15 +770,16 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                         fontWeight: FontWeight.bold, // Made bold
                         fontFamily: 'Cairo',
                         color: Color(0xFF666666),
+                        height: 1.3, // Line height for better spacing
                       ),
                       textAlign: TextAlign.right,
-                      maxLines: 2,
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                // Value (removed bold) - wrapped in Directionality
+                const SizedBox(height: 8),
+                // Value area - auto height based on content
                 Container(
                   width: double.infinity,
                   child: Directionality(
@@ -739,9 +791,10 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                         fontWeight: FontWeight.normal, // Removed bold
                         fontFamily: 'Cairo',
                         color: Color(0xFF1A1A1A),
+                        height: 1.2, // Line height for better spacing
                       ),
                       textAlign: TextAlign.right,
-                      maxLines: 2,
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -767,99 +820,153 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     if (_itemData == null) return const SizedBox.shrink();
     
     final apartment = _itemData as Apartment;
+    final apartmentTypeName = apartment.apartmentType.name.isNotEmpty 
+        ? apartment.apartmentType.name 
+        : 'غير محدد';
+    
+    // Debug logging
+    Logger.log('🏠 Apartment Type Debug:');
+    Logger.log('   - apartmentType object: ${apartment.apartmentType}');
+    Logger.log('   - apartmentType.name: "${apartment.apartmentType.name}"');
+    Logger.log('   - apartmentTypeName final: "$apartmentTypeName"');
+    
+    // Helper function to check if value should be shown
+    bool shouldShowValue(dynamic value) {
+      if (value == null) return false;
+      if (value is int && value == 0) return false;
+      if (value is double && value == 0.0) return false;
+      if (value is String) {
+        final trimmed = value.trim();
+        if (trimmed.isEmpty) return false;
+        // Check if string represents zero
+        final parsed = double.tryParse(trimmed);
+        if (parsed != null && parsed == 0.0) return false;
+      }
+      return true;
+    }
+    
+    // Collect all visible main detail boxes
+    List<Widget> mainDetailBoxes = [];
+    
+    if (shouldShowValue(apartmentTypeName)) {
+      mainDetailBoxes.add(_buildGridBox(
+        iconPath: 'building_type.png',
+        title: 'نوع العقار',
+        value: apartmentTypeName,
+        textAlign: TextAlign.right,
+      ));
+    }
+    
+    if (shouldShowValue(apartment.priceKey)) {
+      mainDetailBoxes.add(_buildGridBox(
+        iconPath: 'price.png',
+        title: 'سعر العقار',
+        value: '${_formatNumber(apartment.priceKey.toString())} ل.س',
+        textAlign: TextAlign.right,
+      ));
+    }
+    
+    if (shouldShowValue(apartment.equity)) {
+      mainDetailBoxes.add(_buildGridBox(
+        iconPath: 'quantity.png',
+        title: 'اسهم العقار',
+        value: apartment.equity,
+        textAlign: TextAlign.right,
+      ));
+    }
+    
+    if (shouldShowValue(apartment.region.name)) {
+      mainDetailBoxes.add(_buildGridBox(
+        iconPath: 'location.png',
+        title: 'المنطقة',
+        value: apartment.region.name,
+        textAlign: TextAlign.right,
+      ));
+    }
+    
+    if (shouldShowValue(apartment.sector.code.name)) {
+      mainDetailBoxes.add(_buildGridBox(
+        iconPath: 'sector.png',
+        title: 'القطاع',
+        value: apartment.sector.code.name,
+        textAlign: TextAlign.right,
+      ));
+    }
+    
+    if (shouldShowValue(apartment.sector.code.code)) {
+      mainDetailBoxes.add(_buildGridBox(
+        iconPath: 'section_number.png',
+        title: 'رقم المقسم',
+        value: apartment.sector.code.code,
+        textAlign: TextAlign.right,
+      ));
+    }
+    
+    if (shouldShowValue(apartment.area)) {
+      mainDetailBoxes.add(_buildGridBox(
+        iconPath: 'area.png',
+        title: 'المساحة',
+        value: '${apartment.area} م²',
+        textAlign: TextAlign.right,
+      ));
+    }
+    
+    if (shouldShowValue(apartment.direction.name)) {
+      mainDetailBoxes.add(_buildGridBox(
+        iconPath: 'direction.png',
+        title: 'اتجاه العقار',
+        value: apartment.direction.name,
+        textAlign: TextAlign.right,
+      ));
+    }
+    
+    if (shouldShowValue(apartment.floor)) {
+      mainDetailBoxes.add(_buildGridBox(
+        iconPath: 'floor.png',
+        title: 'الطابق',
+        value: apartment.floor.toString(),
+        textAlign: TextAlign.right,
+      ));
+    }
+    
+    if (apartment.paymentMethod != null && shouldShowValue(apartment.paymentMethod!.name)) {
+      mainDetailBoxes.add(_buildGridBox(
+        iconPath: 'mobile.png',
+        title: 'طريقة الدفع',
+        value: apartment.paymentMethod!.name,
+        textAlign: TextAlign.right,
+      ));
+    }
     
     return Column(
       children: [
-        // Row 1 - 3 Equal Boxes
-        _buildEqualHeightGridRow([
-          Expanded(
-            child: _buildGridBox(
-              iconPath: 'price.png',
-              title: 'سعر العقار',
-              value: '${_formatNumber(apartment.priceKey.toString())} ل.س',
-              textAlign: TextAlign.right,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildGridBox(
-              iconPath: 'quantity.png',
-              title: 'اسهم العقار',
-              value: apartment.equity,
-              textAlign: TextAlign.right,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildGridBox(
-              iconPath: 'location.png',
-              title: 'المنطقة',
-              value: apartment.region.name,
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ]),
-        const SizedBox(height: 8),
-        // Row 2 - 3 Equal Boxes
-        _buildEqualHeightGridRow([
-          Expanded(
-            child: _buildGridBox(
-              iconPath: 'sector.png',
-              title: 'القطاع',
-              value: apartment.sector.code.name,
-              textAlign: TextAlign.right,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildGridBox(
-              iconPath: 'section_number.png',
-              title: 'رقم المقسم',
-              value: apartment.sector.code.code,
-              textAlign: TextAlign.right,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildGridBox(
-              iconPath: 'area.png',
-              title: 'المساحة',
-              value: '${apartment.area} م²',
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ]),
-        const SizedBox(height: 8),
-        // Row 3 - 3 Equal Boxes (conditional payment method)
-        _buildEqualHeightGridRow([
-          if (apartment.paymentMethod != null)
-            Expanded(
-              child: _buildGridBox(
-                iconPath: 'mobile.png',
-                title: 'طريقة الدفع',
-                value: apartment.paymentMethod!.name,
-                textAlign: TextAlign.right,
-              ),
-            ),
-          if (apartment.paymentMethod != null) const SizedBox(width: 8),
-          Expanded(
-            child: _buildGridBox(
-              iconPath: 'direction.png',
-              title: 'اتجاه العقار',
-              value: apartment.direction.name,
-              textAlign: TextAlign.right,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildGridBox(
-              iconPath: 'floor.png',
-              title: 'الطابق',
-              value: apartment.floor.toString(),
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ]),
+        // Build rows of 3 boxes each
+        ...List.generate(
+          (mainDetailBoxes.length / 3).ceil(),
+          (rowIndex) {
+            final startIndex = rowIndex * 3;
+            final endIndex = (startIndex + 3).clamp(0, mainDetailBoxes.length);
+            final rowBoxes = mainDetailBoxes.sublist(startIndex, endIndex);
+            
+            // Pad with empty space if less than 3 boxes
+            while (rowBoxes.length < 3) {
+              rowBoxes.add(const SizedBox());
+            }
+            
+            return Column(
+              children: [
+                if (rowIndex > 0) const SizedBox(height: 8),
+                _buildEqualHeightGridRow([
+                  Expanded(child: rowBoxes[0]),
+                  const SizedBox(width: 8),
+                  Expanded(child: rowBoxes[1]),
+                  const SizedBox(width: 8),
+                  Expanded(child: rowBoxes[2]),
+                ]),
+              ],
+            );
+          },
+        ),
         
         // Conditional additional details
         if (_shouldShowAdditionalDetails(apartment)) ...[
@@ -888,9 +995,9 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
           const SizedBox(height: 8),
           
           // Additional details rows
-          if (apartment.roomsCount > 0 || apartment.salonsCount > 0)
+          if (shouldShowValue(apartment.roomsCount) || shouldShowValue(apartment.salonsCount))
             _buildEqualHeightGridRow([
-              if (apartment.salonsCount > 0)
+              if (shouldShowValue(apartment.salonsCount))
                 Expanded(
                   child: _buildGridBox(
                     iconPath: 'salons.png',
@@ -899,9 +1006,9 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                     textAlign: TextAlign.right,
                   ),
                 ),
-              if (apartment.salonsCount > 0 && apartment.roomsCount > 0)
+              if (shouldShowValue(apartment.salonsCount) && shouldShowValue(apartment.roomsCount))
                 const SizedBox(width: 8),
-              if (apartment.roomsCount > 0)
+              if (shouldShowValue(apartment.roomsCount))
                 Expanded(
                   child: _buildGridBox(
                     iconPath: 'rooms.png',
@@ -912,22 +1019,24 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                 ),
             ]),
           
-          if ((apartment.roomsCount > 0 || apartment.salonsCount > 0) &&
-              (apartment.balconyCount > 0 || apartment.isTaras > 0))
+          if ((shouldShowValue(apartment.roomsCount) || shouldShowValue(apartment.salonsCount)) &&
+              (shouldShowValue(apartment.balconyCount) || shouldShowValue(apartment.isTaras)))
             const SizedBox(height: 8),
             
-          if (apartment.balconyCount > 0 || apartment.isTaras > 0)
+          if (shouldShowValue(apartment.balconyCount) || shouldShowValue(apartment.isTaras))
             _buildEqualHeightGridRow([
-              Expanded(
-                child: _buildGridBox(
-                  iconPath: 'unit_status.png',
-                  title: 'حالة العقار',
-                  value: apartment.apartmentStatus.name,
-                  textAlign: TextAlign.right,
+              if (shouldShowValue(apartment.apartmentStatus.name))
+                Expanded(
+                  child: _buildGridBox(
+                    iconPath: 'unit_status.png',
+                    title: 'حالة العقار',
+                    value: apartment.apartmentStatus.name,
+                    textAlign: TextAlign.right,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              if (apartment.isTaras > 0)
+              if (shouldShowValue(apartment.apartmentStatus.name) && shouldShowValue(apartment.isTaras))
+                const SizedBox(width: 8),
+              if (shouldShowValue(apartment.isTaras))
                 Expanded(
                   child: _buildGridBox(
                     iconPath: 'terrace.png',
@@ -936,9 +1045,9 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                     textAlign: TextAlign.right,
                   ),
                 ),
-              if (apartment.isTaras > 0 && apartment.balconyCount > 0)
+              if (shouldShowValue(apartment.isTaras) && shouldShowValue(apartment.balconyCount))
                 const SizedBox(width: 8),
-              if (apartment.balconyCount > 0)
+              if (shouldShowValue(apartment.balconyCount))
                 Expanded(
                   child: _buildGridBox(
                     iconPath: 'balcons.png',
@@ -958,58 +1067,98 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     
     final share = _itemData as Share;
     
+    // Helper function to check if value should be shown
+    bool shouldShowValue(dynamic value) {
+      if (value == null) return false;
+      if (value is int && value == 0) return false;
+      if (value is double && value == 0.0) return false;
+      if (value is String) {
+        final trimmed = value.trim();
+        if (trimmed.isEmpty) return false;
+        // Check if string represents zero
+        final parsed = double.tryParse(trimmed);
+        if (parsed != null && parsed == 0.0) return false;
+      }
+      return true;
+    }
+    
+    // Collect all visible share detail boxes
+    List<Widget> shareDetailBoxes = [];
+    
+    if (shouldShowValue(share.quantity)) {
+      shareDetailBoxes.add(_buildGridBox(
+        iconPath: 'quantity.png',
+        title: 'الأسهم المطروحة',
+        value: share.quantity,
+        textAlign: TextAlign.right,
+      ));
+    }
+    
+    if (shouldShowValue(share.priceKey)) {
+      shareDetailBoxes.add(_buildGridBox(
+        iconPath: 'price.png',
+        title: 'سعر السهم المطروح',
+        value: '${_formatNumber(share.priceKey.toString())} ل.س',
+        textAlign: TextAlign.right,
+      ));
+    }
+    
+    if (shouldShowValue(share.sector.code?.code)) {
+      shareDetailBoxes.add(_buildGridBox(
+        iconPath: 'section_number.png',
+        title: 'رقم المقسم',
+        value: share.sector.code?.code ?? '',
+        textAlign: TextAlign.right,
+      ));
+    }
+    
+    if (shouldShowValue(share.sector.code?.name)) {
+      shareDetailBoxes.add(_buildGridBox(
+        iconPath: 'sector.png',
+        title: 'القطاع',
+        value: share.sector.code?.name ?? '',
+        textAlign: TextAlign.right,
+      ));
+    }
+    
+    if (shouldShowValue(share.region.name)) {
+      shareDetailBoxes.add(_buildGridBox(
+        iconPath: 'location.png',
+        title: 'المنطقة',
+        value: share.region.name,
+        textAlign: TextAlign.right,
+      ));
+    }
+    
     return Column(
       children: [
-        // Row 1 - 2 Equal Boxes
-        _buildEqualHeightGridRow([
-          Expanded(
-            child: _buildGridBox(
-              iconPath: 'quantity.png',
-              title: 'الأسهم المطروحة',
-              value: share.quantity,
-              textAlign: TextAlign.right,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildGridBox(
-              iconPath: 'price.png',
-              title: 'سعر السهم المطروح',
-              value: '${_formatNumber(share.priceKey.toString())} ل.س',
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ]),
-        const SizedBox(height: 8),
-        // Row 2 - 3 Equal Boxes
-        _buildEqualHeightGridRow([
-          Expanded(
-            child: _buildGridBox(
-              iconPath: 'section_number.png',
-              title: 'رقم المقسم',
-              value: share.sector.code?.code ?? '',
-              textAlign: TextAlign.right,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildGridBox(
-              iconPath: 'sector.png',
-              title: 'القطاع',
-              value: share.sector.code?.name ?? '',
-              textAlign: TextAlign.right,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildGridBox(
-              iconPath: 'location.png',
-              title: 'المنطقة',
-              value: share.region.name,
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ]),
+        // Build rows of 3 boxes each
+        ...List.generate(
+          (shareDetailBoxes.length / 3).ceil(),
+          (rowIndex) {
+            final startIndex = rowIndex * 3;
+            final endIndex = (startIndex + 3).clamp(0, shareDetailBoxes.length);
+            final rowBoxes = shareDetailBoxes.sublist(startIndex, endIndex);
+            
+            // Pad with empty space if less than 3 boxes
+            while (rowBoxes.length < 3) {
+              rowBoxes.add(const SizedBox());
+            }
+            
+            return Column(
+              children: [
+                if (rowIndex > 0) const SizedBox(height: 8),
+                _buildEqualHeightGridRow([
+                  Expanded(child: rowBoxes[0]),
+                  const SizedBox(width: 8),
+                  Expanded(child: rowBoxes[1]),
+                  const SizedBox(width: 8),
+                  Expanded(child: rowBoxes[2]),
+                ]),
+              ],
+            );
+          },
+        ),
       ],
     );
   }
