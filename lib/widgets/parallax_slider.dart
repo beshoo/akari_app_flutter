@@ -113,40 +113,31 @@ class _ParallaxSliderState extends State<ParallaxSlider> {
           ),
           
           // Small gap after logo
-          const SizedBox(height: 20),
-          
-          // PageView slider with dots overlay
+          const SizedBox(height: 60),
+
+          // Dots under the logo
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              _slides.length,
+              (index) => _buildDot(index),
+            ),
+          ),
+          //const SizedBox(height: 20),
+
+          // PageView slider (no more Stack or overlayed dots)
           Expanded(
-            child: Stack(
-              children: [
-                // PageView slider
-                PageView.builder(
-                  controller: _pageController,
-                  itemCount: _slides.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentIndex = index;
-                    });
-                  },
-                  itemBuilder: (context, index) {
-                    return _buildSlide(_slides[index]);
-                  },
-                ),
-                
-                // Pagination dots positioned over content
-                Positioned(
-                  bottom: 100, // 100px bottom gap as requested
-                  left: 0,
-                  right: 0,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      _slides.length,
-                      (index) => _buildDot(index),
-                    ),
-                  ),
-                ),
-              ],
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: _slides.length,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+              itemBuilder: (context, index) {
+                return _buildSlide(_slides[index]);
+              },
             ),
           ),
         ],
@@ -190,7 +181,7 @@ class _ParallaxSliderState extends State<ParallaxSlider> {
             textDirection: TextDirection.rtl,
           ),
           
-          const SizedBox(height: 24),
+          const SizedBox(height: 30),
           
           // Subtitle
           Padding(

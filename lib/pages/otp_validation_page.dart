@@ -26,6 +26,7 @@ class OtpValidationPageState extends State<OtpValidationPage> {
   // OTP controllers
   final List<TextEditingController> _otpControllers = List.generate(6, (index) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
+  final List<String> _previousValues = List.generate(6, (index) => ''); // Track previous values
   Timer? _timer;
   
   // State variables
@@ -126,13 +127,10 @@ class OtpValidationPageState extends State<OtpValidationPage> {
   void initState() {
     super.initState();
     _startResendTimer();
-    for (var i = 0; i < _focusNodes.length; i++) {
-      _focusNodes[i].addListener(() {
-        if (_focusNodes[i].hasFocus) {
-          _onFocus(i);
-        }
-      });
-    }
+    // Focus the first OTP input on page load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNodes[0].requestFocus();
+    });
   }
   
   @override
@@ -176,8 +174,15 @@ class OtpValidationPageState extends State<OtpValidationPage> {
       // Set selection to the end of the text
       _otpControllers[index].selection = TextSelection.fromPosition(
           TextPosition(offset: _otpControllers[index].text.length));
+      _previousValues[index] = value[0]; // Update previous value
       return;
     }
+
+    // Check if user pressed backspace (current field is empty and previous value was not empty)
+    bool isBackspace = value.isEmpty && _previousValues[index].isNotEmpty;
+    
+    // Update previous value
+    _previousValues[index] = value;
 
     // Update current index based on input
     _currentIndex = _otpControllers.indexWhere((controller) => controller.text.isEmpty);
@@ -200,12 +205,57 @@ class OtpValidationPageState extends State<OtpValidationPage> {
       return;
     }
     
+    // Handle backspace - move to previous field and clear it
+    if (isBackspace && index > 0) {
+      _otpControllers[index - 1].clear();
+      _previousValues[index - 1] = ''; // Update previous value
+      FocusScope.of(context).requestFocus(_focusNodes[index - 1]);
+      return;
+    }
+    
+    // Handle normal input - move to next field
     if (value.isNotEmpty && index < 5) {
       FocusScope.of(context).requestFocus(_focusNodes[index + 1]);
     }
+  }
+  
+  void _onFieldTapped(int index) {
+    // If user taps on an empty field that's not the first one, 
+    // and the previous field has content, move to that field instead
+    if (_otpControllers[index].text.isEmpty && index > 0) {
+      // Find the last field with content
+      int lastFilledIndex = -1;
+      for (int i = index - 1; i >= 0; i--) {
+        if (_otpControllers[i].text.isNotEmpty) {
+          lastFilledIndex = i;
+          break;
+        }
+      }
+      
+      // If we found a filled field, move to the one after it
+      if (lastFilledIndex >= 0) {
+        int targetIndex = lastFilledIndex + 1;
+        if (targetIndex < 6) {
+          FocusScope.of(context).requestFocus(_focusNodes[targetIndex]);
+          return;
+        }
+      }
+    }
     
-    if (value.isEmpty && index > 0) {
+    // Default behavior - focus the tapped field
+    FocusScope.of(context).requestFocus(_focusNodes[index]);
+  }
+  
+  void _handleKeyPress(int index) {
+    // This method will be called on key press to handle backspace on empty fields
+    if (_otpControllers[index].text.isEmpty && index > 0) {
+      // Move to previous field and clear it
+      _otpControllers[index - 1].clear();
+      _previousValues[index - 1] = '';
       FocusScope.of(context).requestFocus(_focusNodes[index - 1]);
+      setState(() {
+        _otp = _otpControllers.map((controller) => controller.text).join();
+      });
     }
   }
   
@@ -229,19 +279,6 @@ class OtpValidationPageState extends State<OtpValidationPage> {
     });
   }
   
-  void _onFocus(int index) {
-    // Find the first empty text field
-    int firstEmptyIndex = _otpControllers.indexWhere((c) => c.text.isEmpty);
-
-    // If there is an empty field and the user focuses on a different field,
-    // move the focus to the first empty field and show a message.
-    if (firstEmptyIndex != -1 && index != firstEmptyIndex) {
-      FocusScope.of(context).requestFocus(_focusNodes[firstEmptyIndex]);
-      ToastHelper.showToast(context, 'يرجى البدء في إدخال الرمز من اليسار',
-          isError: true);
-    }
-  }
-  
   Future<void> _loginWithOtp() async {
     if (_otp.length != 6) {
       ToastHelper.showToast(context, 'يرجى إدخال رمز التحقق كاملاً',
@@ -251,11 +288,18 @@ class OtpValidationPageState extends State<OtpValidationPage> {
     
     final authStore = Provider.of<AuthStore>(context, listen: false);
     
+    String firebaseToken = '';
+    try {
+      firebaseToken = FirebaseMessagingService.instance.fcmToken ?? '';
+    } catch (e) {
+      firebaseToken = '';
+    }
+    
     final verifyData = {
       'phone': widget.phone,
       'otp_number': _otp,
       'country_code': widget.countryCode,
-      'firebase': FirebaseMessagingService.instance.fcmToken ?? '',
+      'firebase': firebaseToken,
     };
     
     final result = await authStore.loginWithOtp(verifyData);
@@ -292,8 +336,12 @@ class OtpValidationPageState extends State<OtpValidationPage> {
     if (!mounted) return;
     
     if (result['success'] == true) {
-      ToastHelper.showToast(context, 'تم إرسال رمز التحقق بنجاح',
-          isError: false);
+      ToastHelper.showToast(
+        context,
+        result['message'] ?? 'تم إرسال رمز التحقق بنجاح',
+        isError: false,
+        duration: const Duration(seconds: 10), 
+      );
       setState(() {
         _resendTimer = 60;
       });
@@ -368,7 +416,7 @@ class OtpValidationPageState extends State<OtpValidationPage> {
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+                        mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _buildHeader(),
@@ -377,13 +425,22 @@ class OtpValidationPageState extends State<OtpValidationPage> {
                           SizedBox(height: 12),
                           _buildOtpInput(),
                           SizedBox(height: 10),
-                          Flexible(child: _buildNumberPad()),
-                          SizedBox(height: 10),
-                          _buildVerifyButton(),
-                          SizedBox(height: 8),
-                          _buildResendButton(),
-                          SizedBox(height: 8),
-                          _buildFooter(),
+                          Expanded(child: Container()), // Pushes the buttons to the bottom
+                          Padding(
+                            padding: EdgeInsets.only(
+                              bottom: MediaQuery.of(context).viewInsets.bottom,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _buildVerifyButton(),
+                                SizedBox(height: 8),
+                                _buildResendButton(),
+                                SizedBox(height: 8),
+                                _buildFooter(),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -459,6 +516,7 @@ class OtpValidationPageState extends State<OtpValidationPage> {
             textAlign: TextAlign.center,
           ),
         ),
+        SizedBox(height: 12),
       ],
     );
   }
@@ -482,25 +540,35 @@ class OtpValidationPageState extends State<OtpValidationPage> {
               ),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: TextField(
-              controller: _otpControllers[index],
-              focusNode: _focusNodes[index],
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Cairo',
+            child: RawKeyboardListener(
+              focusNode: FocusNode(),
+              onKey: (RawKeyEvent event) {
+                if (event is RawKeyDownEvent && 
+                    event.logicalKey == LogicalKeyboardKey.backspace) {
+                  _handleKeyPress(index);
+                }
+              },
+              child: TextField(
+                controller: _otpControllers[index],
+                focusNode: _focusNodes[index],
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Cairo',
+                ),
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                decoration: InputDecoration(
+                  counterText: '',
+                  border: InputBorder.none,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
+                onChanged: (value) => _onOtpChanged(value, index),
+                onTap: () => _onFieldTapped(index),
               ),
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              decoration: InputDecoration(
-                counterText: '',
-                border: InputBorder.none,
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-              ],
-              onChanged: (value) => _onOtpChanged(value, index),
             ),
           );
         }),
@@ -607,112 +675,5 @@ class OtpValidationPageState extends State<OtpValidationPage> {
     );
   }
   
-  Widget _buildNumberPad() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-          // Numbers 1-3 (RTL: 3-2-1)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildNumberButton('3'),
-              _buildNumberButton('2'),
-              _buildNumberButton('1'),
-            ],
-          ),
-          SizedBox(height: 12),
-          // Numbers 4-6 (RTL: 6-5-4)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildNumberButton('6'),
-              _buildNumberButton('5'),
-              _buildNumberButton('4'),
-            ],
-          ),
-          SizedBox(height: 12),
-          // Numbers 7-9 (RTL: 9-8-7)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildNumberButton('9'),
-              _buildNumberButton('8'),
-              _buildNumberButton('7'),
-            ],
-          ),
-          SizedBox(height: 12),
-          // Backspace, 0, Clear (RTL arrangement)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildActionButton(
-                icon: Icons.backspace_outlined,
-                onTap: _onBackspaceTap,
-                tooltip: 'مسح',
-              ),
-              _buildNumberButton('0'),
-              _buildActionButton(
-                icon: Icons.clear_all,
-                onTap: _onClearAll,
-                tooltip: 'مسح الكل',
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildNumberButton(String number) {
-    return GestureDetector(
-      onTap: () => _onNumberPadTap(number),
-      child: Container(
-        width: 70,
-        height: 70,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(35),
-          border: Border.all(color: const Color(0xFFa47764).withAlpha(77)),
-        ),
-        child: Center(
-          child: Text(
-            number,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF633e3d),
-              fontFamily: 'Cairo',
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildActionButton({
-    required IconData icon,
-    required VoidCallback onTap,
-    required String tooltip,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 70,
-        height: 70,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(35),
-          border: Border.all(color: const Color(0xFFa47764).withAlpha(77)),
-        ),
-        child: Center(
-          child: Icon(
-            icon,
-            size: 28,
-            color: Color(0xFF633e3d),
-          ),
-        ),
-      ),
-    );
-  }
+  // Remove _buildNumberPad and related number pad methods
 } 

@@ -1,5 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+
 import '../utils/logger.dart';
 
 class FirebaseMessagingService {

@@ -6,6 +6,7 @@ class ToastHelper {
     BuildContext context,
     String message, {
     required bool isError,
+    Duration duration = const Duration(seconds: 4),
   }) {
     toastification.dismissAll();
     toastification.show(
@@ -22,7 +23,7 @@ class ToastHelper {
       ),
       alignment: Alignment.topCenter,
       direction: TextDirection.rtl,
-      autoCloseDuration: const Duration(seconds: 4),
+      autoCloseDuration: duration,
       showProgressBar: true,
       closeButton: const ToastCloseButton(
         showType: CloseButtonShowType.onHover,
