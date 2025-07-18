@@ -1597,11 +1597,13 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
 
   void _handleReactionButtonTap() {
     setState(() {
-      if (_itemData.currentUserReaction == 'like') {
-        Logger.log('👆 Reaction button tapped');
-        _handleReactionSelected('like'); 
-        Logger.log('👍 Removing like reaction');
+      if (_itemData.currentUserReaction != null) {
+        // User has an existing reaction, remove it
+        Logger.log('👆 Reaction button tapped - removing existing reaction: ${_itemData.currentUserReaction}');
+        _handleReactionSelected(_itemData.currentUserReaction!);
+        Logger.log('🗑️ Removing current reaction');
       } else {
+        // User has no reaction, add like reaction
         _handleReactionSelected('like');
         Logger.log('👍 Adding like reaction');
       }
