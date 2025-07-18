@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:akari_app/services/secure_storage.dart';
 import 'package:akari_app/stores/auth_store.dart';
+import 'package:akari_app/services/firebase_messaging_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -31,12 +31,27 @@ class _SplashPageState extends State<SplashPage> {
 
     if (!mounted) return;
 
-    if (authStore.isAuthenticated) {
-      // If user is authenticated, go to home
-      Navigator.pushReplacementNamed(context, '/home');
+    // Check for initial notification AFTER auth check
+    final hasInitialNotification = FirebaseMessagingService.initialMessage != null;
+    
+    if (hasInitialNotification) {
+      // First navigate to appropriate screen based on auth
+      if (authStore.isAuthenticated) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        Navigator.pushReplacementNamed(context, '/onboarding');
+      }
+      
+      // Then handle the notification (this will navigate on top)
+      await Future.delayed(const Duration(milliseconds: 500)); // Small delay for navigation
+      await FirebaseMessagingService.handleInitialNotificationFromSplash();
     } else {
-      // Otherwise, go to onboarding
-      Navigator.pushReplacementNamed(context, '/onboarding');
+      // Normal navigation without notification
+      if (authStore.isAuthenticated) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        Navigator.pushReplacementNamed(context, '/onboarding');
+      }
     }
   }
 

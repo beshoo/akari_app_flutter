@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../services/api_service.dart';
 import '../services/firebase_messaging_service.dart';
 import '../services/secure_storage.dart';
+import '../services/version_service.dart';
 import '../utils/logger.dart';
 
 class AuthStore extends ChangeNotifier {
@@ -356,6 +357,11 @@ class AuthStore extends ChangeNotifier {
           Logger.log('🔐 AuthStore: Authenticated: ${_user?['authenticated']}');
           Logger.log('🔐 AuthStore: Support Phone: ${_user?['support_phone']}');
           Logger.log('🔐 AuthStore: User Privilege: ${_user?['privilege']}');
+          
+          // Send version update to server (non-blocking)
+          VersionService.instance.sendVersionUpdate().catchError((e) {
+            Logger.log('⚠️ AuthStore: Version update failed but continuing: $e');
+          });
         } else {
           Logger.log('❌ AuthStore: /user/auth_data endpoint returned failure, deleting token');
           await SecureStorage.deleteToken();

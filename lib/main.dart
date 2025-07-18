@@ -1,4 +1,7 @@
 import 'package:akari_app/data/repositories/home_repository.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -7,20 +10,32 @@ import 'package:phone_form_field/phone_form_field.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
+import 'pages/home/home_page.dart';
 import 'pages/login_page.dart';
+import 'pages/notifications_page.dart';
 import 'pages/onboarding_page.dart';
 import 'pages/otp_validation_page.dart';
 import 'pages/signup_page.dart';
 import 'pages/splash_page.dart';
 import 'pages/webview_page.dart';
-import 'pages/home/home_page.dart';
 import 'services/api_service.dart';
 import 'services/firebase_messaging_service.dart';
+import 'services/version_service.dart';
 import 'stores/auth_store.dart';
 import 'stores/enums_store.dart';
 import 'stores/reaction_store.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'utils/logger.dart';
+
+// Background message handler (must be top-level function)
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  Logger.log('📱 Background message received: ${message.messageId}');
+  Logger.log('📱 Background message data: ${message.data}');
+  if (message.notification != null) {
+    Logger.log('📱 Background notification: ${message.notification!.title} - ${message.notification!.body}');
+  }
+}
 
 Future<void> main() async {
   // Ensure Flutter binding is initialized
@@ -35,6 +50,13 @@ Future<void> main() async {
   // Initialize Firebase
   try {
     await Firebase.initializeApp();
+    
+    // Initialize Firebase Analytics
+    FirebaseAnalytics.instance;
+    Logger.log('✅ Firebase Analytics initialized');
+    
+    // Set up background message handler
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   } catch (e, stack) {
     Logger.log('Firebase initialization failed: '
         '\nError: '
@@ -47,6 +69,17 @@ Future<void> main() async {
   ApiService.initialize();
   Get.put(ApiService.instance);
   Get.put(HomeRepository());
+  
+  // Initialize version service and try to get PackageInfo early
+  Get.put(VersionService.instance);
+  
+  // Try to initialize PackageInfo early to avoid issues later
+  try {
+    await VersionService.getPackageInfo();
+    Logger.log('✅ Main: PackageInfo initialized successfully');
+  } catch (e) {
+    Logger.log('⚠️ Main: Failed to initialize PackageInfo early: $e');
+  }
   
   // Initialize Firebase messaging and request permission
   try {
@@ -189,6 +222,7 @@ class MyApp extends StatelessWidget {
           '/login': (context) => const LoginPage(),
           '/onboarding': (context) => const OnboardingPage(),
           '/home': (context) => const HomePage(),
+          '/notifications': (context) => const NotificationsPage(),
         },
         
         onGenerateRoute: (settings) {
