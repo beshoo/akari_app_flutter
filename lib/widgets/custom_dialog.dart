@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'custom_button.dart';
 
 Future<void> showCustomDialog({
   required BuildContext context,
@@ -124,57 +125,22 @@ Future<void> showCustomDialog({
                               children: [
                                 // OK Button
                                 Expanded(
-                                  child: Container(
+                                  child: CustomButton(
+                                    title: okButtonText,
+                                    hasGradient: true,
                                     height: 48,
-                                    decoration: BoxDecoration(
-                                      gradient: isWarning
-                                          ? const LinearGradient(
-                                              colors: [
-                                                Color(0xFFD32F2F),
-                                                Color(0xFFB71C1C),
-                                              ],
-                                              begin: Alignment.centerLeft,
-                                              end: Alignment.centerRight,
-                                            )
-                                          : const LinearGradient(
-                                              colors: [
-                                                Color(0xFFbfa98d),
-                                                Color(0xFFa47764),
-                                              ],
-                                              begin: Alignment.centerLeft,
-                                              end: Alignment.centerRight,
-                                            ),
-                                      borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: (isWarning ? Colors.red : const Color(0xFFa47764))
-                                              .withOpacity(0.3),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(12),
-                                        onTap: () {
-                                          Navigator.of(context).pop();
-                                          onOkPressed?.call();
-                                        },
-                                        child: Center(
-                                          child: Text(
-                                            okButtonText,
-                                            style: const TextStyle(
-                                              fontFamily: 'Cairo',
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                    borderRadius: 12,
+                                    gradientColors: const [
+                                      Color(0xff633e3d),
+                                      Color(0xff774b46),
+                                      Color(0xff8d5e52),
+                                      Color(0xffa47764),
+                                      Color(0xffbda28c),
+                                    ],
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                      onOkPressed?.call();
+                                    },
                                   ),
                                 ),
                                 
@@ -217,6 +183,150 @@ Future<void> showCustomDialog({
                             ),
                           ],
                         ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+} 
+
+Future<void> showIntentionDialog({
+  required BuildContext context,
+  required String title,
+  required VoidCallback onBuyPressed,
+  required VoidCallback onSellPressed,
+}) async {
+  return showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'إغلاق',
+    barrierColor: Colors.black.withOpacity(0.4),
+    transitionDuration: const Duration(milliseconds: 300),
+    pageBuilder: (context, animation1, animation2) => const SizedBox.shrink(),
+    transitionBuilder: (context, animation1, animation2, child) {
+      final scaleAnimation = Tween<double>(
+        begin: 0.8,
+        end: 1.0,
+      ).animate(CurvedAnimation(
+        parent: animation1,
+        curve: Curves.easeOutBack,
+      ));
+
+      final opacityAnimation = Tween<double>(
+        begin: 0.0,
+        end: 1.0,
+      ).animate(CurvedAnimation(
+        parent: animation1,
+        curve: Curves.easeOut,
+      ));
+
+      return AnimatedBuilder(
+        animation: animation1,
+        builder: (context, child) => Center(
+          child: Transform.scale(
+            scale: scaleAnimation.value,
+            child: Opacity(
+              opacity: opacityAnimation.value,
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.85,
+                  constraints: const BoxConstraints(
+                    maxWidth: 400,
+                  ),
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFD4C4B0),
+                      width: 0.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.25),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                        spreadRadius: 2,
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.12),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Title
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontFamily: 'Cairo',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                              color: Colors.black87,
+                              decoration: TextDecoration.none,
+                              backgroundColor: Colors.transparent,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          
+                          const SizedBox(height: 24),
+                          
+                          // Buttons
+                          Row(
+                            children: [
+                              CustomButton(
+                                title: 'أريد أن أشتري',
+                                hasGradient: true,
+                                height: 48,
+                                borderRadius: 12,
+                                gradientColors: const [
+                                  Color(0xff2E7D32),
+                                  Color(0xff4CAF50),
+                                  Color(0xff66BB6A),
+                                ],
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  onBuyPressed();
+                                },
+                              ),
+                              const SizedBox(width: 12),
+                              CustomButton(
+                                title: 'أريد أن أبيع',
+                                hasGradient: true,
+                                height: 48,
+                                borderRadius: 12,
+                                gradientColors: const [
+                                  Color(0xff1976D2),
+                                  Color(0xff2196F3),
+                                  Color(0xff42A5F5),
+                                ],
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  onSellPressed();
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),

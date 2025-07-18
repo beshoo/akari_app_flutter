@@ -131,6 +131,7 @@ class Apartment {
   final bool userSentOrder;
   final String shareButton;
   final String postType;
+  final String questionMessage;
   final ReactionCounts reactionCounts;
   final String? currentUserReaction;
   final bool isFavorited;
@@ -174,6 +175,7 @@ class Apartment {
     required this.userSentOrder,
     required this.shareButton,
     required this.postType,
+    required this.questionMessage,
     required this.reactionCounts,
     this.currentUserReaction,
     required this.isFavorited,
@@ -219,6 +221,7 @@ class Apartment {
       userSentOrder: json['user_sent_order'] ?? false,
       shareButton: json['share_button'] ?? '',
       postType: json['post_type'] ?? 'apartment',
+      questionMessage: json['question_message'] ?? '',
       reactionCounts: ReactionCounts.fromJson(json['reaction_counts'] ?? {}),
       currentUserReaction: json['current_user_reaction'],
       isFavorited: json['is_favorited'] ?? false,
@@ -267,6 +270,7 @@ class Apartment {
       'user_sent_order': userSentOrder,
       'share_button': shareButton,
       'post_type': postType,
+      'question_message': questionMessage,
       'reaction_counts': reactionCounts.toJson(),
       'current_user_reaction': currentUserReaction,
       'is_favorited': isFavorited,
@@ -330,6 +334,7 @@ class Apartment {
     bool? userSentOrder,
     String? shareButton,
     String? postType,
+    String? questionMessage,
     ReactionCounts? reactionCounts,
     ValueGetter<String?>? currentUserReaction,
     bool? isFavorited,
@@ -373,6 +378,7 @@ class Apartment {
       userSentOrder: userSentOrder ?? this.userSentOrder,
       shareButton: shareButton ?? this.shareButton,
       postType: postType ?? this.postType,
+      questionMessage: questionMessage ?? this.questionMessage,
       reactionCounts: reactionCounts ?? this.reactionCounts,
       currentUserReaction: currentUserReaction != null ? currentUserReaction() : this.currentUserReaction,
       isFavorited: isFavorited ?? this.isFavorited,

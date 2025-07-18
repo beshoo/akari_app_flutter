@@ -19,6 +19,7 @@ import '../widgets/custom_bottom_sheet.dart';
 import '../widgets/custom_dialog.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import '../utils/logger.dart';
+import 'contact_us_page.dart';
 
 class PropertyDetailsPage extends StatefulWidget {
   final int id;
@@ -1786,12 +1787,12 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   }
 
   void _contactOwner() {
-    // TODO: Implement WhatsApp contact functionality
-    final message = widget.itemType == "apartment" 
-        ? _itemData.questionMessage 
-        : _itemData.questionMessage;
-    
-   // ToastHelper.showToast(context, 'جاري فتح WhatsApp...', isError: false);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ContactUsPage(itemData: _itemData),
+      ),
+    );
   }
 
   String _formatNumber(String number) {

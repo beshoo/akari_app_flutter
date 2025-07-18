@@ -388,4 +388,106 @@ class ShareRepository {
       throw Exception('Failed to load sectors for region $regionId');
     }
   }
+
+  /// Create buy request for a share (appointment scheduling)
+  Future<Map<String, dynamic>> createBuyRequest(int shareId) async {
+    try {
+      final response = await _dio.post('/share/create_buy_request/$shareId');
+
+      Logger.log("------- Create Buy Request Response -------");
+      Logger.log("Status Code: ${response.statusCode}");
+      Logger.log("URL: ${response.requestOptions.uri}");
+      Logger.log("Share ID: $shareId");
+      Logger.log("Response: ${response.data}");
+      Logger.log("--------------------------------------------");
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data,
+          'message': 'تم ترتيب الموعد بنجاح',
+        };
+      } else {
+        Logger.error('Failed to create buy request, status: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': response.data?['message'] ?? 'فشل في ترتيب الموعد',
+        };
+      }
+    } on DioException catch (e) {
+      Logger.error('Error creating buy request', e.response?.data);
+      return {
+        'success': false,
+        'message': e.response?.data?['message'] ?? 'حدث خطأ أثناء ترتيب الموعد',
+      };
+    }
+  }
+
+  /// Create sell request for a share (appointment scheduling)
+  Future<Map<String, dynamic>> createSellRequest(int shareId) async {
+    try {
+      final response = await _dio.post('/share/create_sell_request/$shareId');
+
+      Logger.log("------- Create Sell Request Response -------");
+      Logger.log("Status Code: ${response.statusCode}");
+      Logger.log("URL: ${response.requestOptions.uri}");
+      Logger.log("Share ID: $shareId");
+      Logger.log("Response: ${response.data}");
+      Logger.log("---------------------------------------------");
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data,
+          'message': 'تم ترتيب الموعد بنجاح',
+        };
+      } else {
+        Logger.error('Failed to create sell request, status: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': response.data?['message'] ?? 'فشل في ترتيب الموعد',
+        };
+      }
+    } on DioException catch (e) {
+      Logger.error('Error creating sell request', e.response?.data);
+      return {
+        'success': false,
+        'message': e.response?.data?['message'] ?? 'حدث خطأ أثناء ترتيب الموعد',
+      };
+    }
+  }
+
+  /// Cancel an order (appointment)
+  Future<Map<String, dynamic>> cancelOrder(int orderId) async {
+    try {
+      final response = await _dio.delete('/order/$orderId');
+
+      Logger.log("------- Cancel Order Response -------");
+      Logger.log("Status Code: ${response.statusCode}");
+      Logger.log("URL: ${response.requestOptions.uri}");
+      Logger.log("Order ID: $orderId");
+      Logger.log("Response: ${response.data}");
+      Logger.log("--------------------------------------");
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data,
+          'message': 'تم إلغاء الموعد بنجاح',
+        };
+      } else {
+        Logger.error('Failed to cancel order, status: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': response.data?['message'] ?? 'فشل في إلغاء الموعد',
+        };
+      }
+    } on DioException catch (e) {
+      Logger.error('Error cancelling order', e.response?.data);
+      return {
+        'success': false,
+        'message': e.response?.data?['message'] ?? 'حدث خطأ أثناء إلغاء الموعد',
+      };
+    }
+  }
 }
