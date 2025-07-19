@@ -534,7 +534,7 @@ class _HomeViewState extends State<HomeView> {
               left: 0,
               right: 0,
               child: Container(
-                height: 25, // Matches the bottom margin of the nav bar
+                height: 25 + MediaQuery.of(context).viewPadding.bottom, // Matches the bottom margin of the nav bar + safe area
                 color: const Color(0xFFF7F5F2), // The screen's background color
               ),
             ),

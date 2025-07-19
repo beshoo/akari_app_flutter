@@ -57,9 +57,14 @@ class CustomBottomSheet extends StatelessWidget {
             const SizedBox(height: 16),
           ],
           
-          // Content with padding
+          // Content with padding and safe area consideration
           Padding(
-            padding: padding ?? const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            padding: EdgeInsets.fromLTRB(
+              (padding?.left ?? 16),
+              (padding?.top ?? 0),
+              (padding?.right ?? 16),
+              (padding?.bottom ?? 24) + MediaQuery.of(context).viewPadding.bottom,
+            ),
             child: child,
           ),
         ],
