@@ -1431,7 +1431,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
       children: [
         // Background container that covers content underneath
         Positioned(
-          bottom: 0,
+          bottom: MediaQuery.of(context).viewPadding.bottom,
           left: 0,
           right: 0,
           height: backgroundHeight,
@@ -2084,7 +2084,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                       
                       // Fixed bottom buttons
                       Positioned(
-                        bottom: 0,
+                        bottom: MediaQuery.of(context).viewPadding.bottom,
                         left: 0,
                         right: 0,
                         child: _buildBottomActionButtons(),
