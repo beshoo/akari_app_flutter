@@ -7,3 +7,5 @@ alwaysApply: true
 Try using a 'SizedBox' rather than a 'Container'.dartsized_box_for_whitespace
 - Do not use print or debugPrint , use Logger.log()
 - Do not create example or Demo pages at all
+- Whn you want to use spinner , use CustomSpinner(size: 50.0) not CircularProgressIndicator()
+

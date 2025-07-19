@@ -209,7 +209,9 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
         text: TextSpan(
           style: normalStyle,
           children: [
-            TextSpan(text: "نرغب ب$transactionType $baseText في $sectorCode بكمية $quantity سهم بسعر "),
+            TextSpan(text: "نرغب ب$transactionType $baseText في $sectorCode بكمية "),
+            TextSpan(text: "$quantity", style: boldStyle),
+            TextSpan(text: " سهم بسعر "),
             TextSpan(text: price, style: boldStyle),
             TextSpan(text: " بالسهم في منطقة $regionName"),
           ],

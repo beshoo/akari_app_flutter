@@ -25,6 +25,43 @@ class ApartmentRepository {
     }
   }
 
+  Future<ApartmentResponse> fetchApartmentsWithSort({
+    required int regionId,
+    int page = 1,
+    String sortBy = '',
+    String sortDirection = '',
+    String transactionType = '',
+    String myPostsFirst = '',
+  }) async {
+    final Map<String, dynamic> queryParams = {
+      'page': page,
+      'region_id': regionId,
+    };
+    
+    // Add sorting parameters if they're not empty
+    if (sortBy.isNotEmpty) queryParams['sort_by'] = sortBy;
+    if (sortDirection.isNotEmpty) queryParams['sort_direction'] = sortDirection;
+    if (transactionType.isNotEmpty) queryParams['transaction_type'] = int.tryParse(transactionType) ?? transactionType;
+    if (myPostsFirst.isNotEmpty) queryParams['my_posts_first'] = myPostsFirst;
+
+    final response = await ApiService.instance.get(
+      '/apartment/sort',
+      queryParameters: queryParams,
+    );
+
+    Logger.log("------- Apartment Sort API Response -------");
+    Logger.log("Status Code: ${response.statusCode}");
+    Logger.log("URL: ${response.requestOptions.uri}");
+    Logger.log("Sort Parameters: $queryParams");
+    Logger.log("-------------------------------------------");
+
+    if (response.statusCode == 200) {
+      return ApartmentResponse.fromJson(response.data);
+    } else {
+      throw Exception('Failed to fetch apartments: ${response.statusCode}');
+    }
+  }
+
   Future<Apartment?> fetchApartmentById(int apartmentId) async {
     try {
       final response = await ApiService.instance.get('/apartment/view/$apartmentId');

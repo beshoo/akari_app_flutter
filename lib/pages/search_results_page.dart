@@ -13,14 +13,14 @@ import 'package:provider/provider.dart';
 
 class SearchResultsPage extends StatefulWidget {
   final String searchType; // 'apartment' or 'share'
-  final Map<String, dynamic> searchData;
+  final Map<String, dynamic>? searchData;
   final String searchQuery; // For display purposes
   final Map<String, dynamic>? originalSearchParams; // Store original search parameters
 
   const SearchResultsPage({
     super.key,
     required this.searchType,
-    required this.searchData,
+    this.searchData,
     required this.searchQuery,
     this.originalSearchParams,
   });
@@ -45,7 +45,11 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
   @override
   void initState() {
     super.initState();
-    _parseSearchResults();
+    if (widget.searchData != null) {
+      _parseSearchResults();
+    } else {
+      _performSearch();
+    }
     _scrollController.addListener(_onScroll);
   }
 
@@ -63,16 +67,18 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
   }
 
   void _parseSearchResults() {
+    if (widget.searchData == null) return;
+    
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      final data = widget.searchData['data'] as List<dynamic>? ?? [];
-      _currentPage = widget.searchData['current_page'] ?? 1;
-      _totalPages = widget.searchData['last_page'] ?? 1;
-      _totalResults = widget.searchData['total'] ?? 0;
+      final data = widget.searchData!['data'] as List<dynamic>? ?? [];
+      _currentPage = widget.searchData!['current_page'] ?? 1;
+      _totalPages = widget.searchData!['last_page'] ?? 1;
+      _totalResults = widget.searchData!['total'] ?? 0;
 
       Logger.log('📊 Parsing ${widget.searchType} search results: ${data.length} items');
       Logger.log('📄 Page $_currentPage of $_totalPages (Total: $_totalResults)');
@@ -100,6 +106,88 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
       setState(() {
         _isLoading = false;
         _errorMessage = 'خطأ في تحليل نتائج البحث';
+      });
+    }
+  }
+
+  void _performSearch() async {
+    if (widget.originalSearchParams == null) {
+      setState(() {
+        _errorMessage = 'لا توجد معاملات بحث متاحة';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final authStore = Provider.of<AuthStore>(context, listen: false);
+      final showOwner = authStore.userPrivilege == 'admin' || authStore.userPrivilege == 'owner';
+
+      if (widget.searchType == 'apartment') {
+        final params = widget.originalSearchParams!;
+        final response = await _apartmentRepository.searchApartments(
+          apartmentTypeId: params['apartmentTypeId'],
+          regionId: params['regionId'],
+          sectorId: params['sectorId'],
+          directionId: params['directionId'],
+          paymentMethodId: params['paymentMethodId'],
+          apartmentStatusId: params['apartmentStatusId'],
+          area: params['area'],
+          floor: params['floor'],
+          roomsCount: params['roomsCount'],
+          salonsCount: params['salonsCount'],
+          balconyCount: params['balconyCount'],
+          isTaras: params['isTaras'],
+          equity: params['equity'],
+          price: params['price'],
+          transactionType: params['transactionType'],
+          priceOperator: params['priceOperator'],
+          equityOperator: params['equityOperator'],
+          ownerName: params['ownerName'],
+        );
+
+        _currentPage = response.currentPage;
+        _totalPages = response.lastPage;
+        _totalResults = response.total;
+
+        _searchResults = response.apartments.map((apartment) {
+          return ApartmentPostAdapter(apartment, showOwner: showOwner);
+        }).toList();
+      } else if (widget.searchType == 'share') {
+        final params = widget.originalSearchParams!;
+        final response = await _shareRepository.searchShares(
+          id: params['id'],
+          regionId: params['regionId'],
+          sectorId: params['sectorId'],
+          quantity: params['quantity'],
+          quantityOperator: params['quantityOperator'],
+          transactionType: params['transactionType'],
+          price: params['price'],
+          priceOperator: params['priceOperator'],
+          ownerName: params['ownerName'],
+        );
+
+        _currentPage = response.currentPage;
+        _totalPages = response.lastPage;
+        _totalResults = response.total;
+
+        _searchResults = response.shares.map((share) {
+          return SharePostAdapter(share, showOwner: showOwner);
+        }).toList();
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      Logger.log('❌ Error performing search: $e');
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'حدث خطأ أثناء البحث: ${e.toString()}';
       });
     }
   }
@@ -251,9 +339,7 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
   Widget _buildBody() {
     if (_isLoading && _searchResults.isEmpty) {
       return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF633E3D)),
-        ),
+        child: CustomSpinner(size: 50.0),
       );
     }
 

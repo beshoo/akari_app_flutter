@@ -1,16 +1,16 @@
 import 'dart:io';
+
+import 'package:akari_app/pages/apartment_form_page.dart';
 import 'package:akari_app/pages/home/bloc/home_bloc.dart';
 import 'package:akari_app/pages/home/bloc/home_event.dart';
 import 'package:akari_app/pages/home/bloc/home_state.dart';
 import 'package:akari_app/pages/region_page.dart';
-import 'package:akari_app/pages/share_form_page.dart';
-import 'package:akari_app/pages/apartment_form_page.dart';
 import 'package:akari_app/pages/search_page.dart';
 import 'package:akari_app/pages/search_results_page.dart';
-import 'package:akari_app/data/repositories/apartment_repository.dart';
+import 'package:akari_app/pages/share_form_page.dart';
 import 'package:akari_app/widgets/custom_app_bar.dart';
-import 'package:akari_app/widgets/custom_dialog.dart';
 import 'package:akari_app/widgets/custom_bottom_nav_bar.dart';
+import 'package:akari_app/widgets/custom_dialog.dart';
 import 'package:akari_app/widgets/custom_fab.dart';
 import 'package:akari_app/widgets/custom_spinner.dart';
 import 'package:flutter/material.dart';
@@ -26,39 +26,20 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   int _selectedIndex = 0;
-  final ApartmentRepository _apartmentRepository = ApartmentRepository();
 
-  Future<void> _handleApartmentStatisticsTap(int apartmentTypeId, String apartmentTypeName) async {
-    try {
-      final searchResult = await _apartmentRepository.searchApartments(
-        apartmentTypeId: apartmentTypeId,
-      );
-
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SearchResultsPage(
-              searchType: 'apartment',
-              searchData: searchResult.toJson(),
-              searchQuery: 'عقارات من نوع: $apartmentTypeName',
-              originalSearchParams: {
-                'apartmentTypeId': apartmentTypeId,
-              },
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ أثناء البحث: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+  void _handleApartmentStatisticsTap(int apartmentTypeId, String apartmentTypeName) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SearchResultsPage(
+          searchType: 'apartment',
+          searchQuery: 'عقارات من نوع: $apartmentTypeName',
+          originalSearchParams: {
+            'apartmentTypeId': apartmentTypeId,
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _showExitDialog(BuildContext context) async {
@@ -109,7 +90,7 @@ class _HomeViewState extends State<HomeView> {
                   );
                 },
                 onNotificationPressed: () {
-                  // TODO: Handle notification press
+                  Navigator.pushNamed(context, '/notifications');
                 },
                 onHelpPressed: () {
                   // TODO: Handle help press

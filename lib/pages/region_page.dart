@@ -11,6 +11,7 @@ import '../widgets/custom_app_bar.dart';
 import '../widgets/post_card.dart';
 import '../widgets/post_card_data.dart';
 import '../widgets/custom_spinner.dart';
+import '../widgets/custom_bottom_sheet.dart';
 import 'share_form_page.dart';
 import 'apartment_form_page.dart';
 import 'search_page.dart';
@@ -67,6 +68,45 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   String? apartmentErrorMessage;
   bool isRefreshingApartments = false;
   bool hasLoadedApartments = false;
+
+  // Sorting state for shares
+  Map<String, String> sharesSortParams = {};
+  String? selectedSharesSortLabel;
+
+  // Sorting state for apartments
+  Map<String, String> apartmentsSortParams = {};
+  String? selectedApartmentsSortLabel;
+
+  // Sorting options
+  final sharesSortingOptions = [
+    { 'label': 'منشوراتي أولاً', 'sortBy': '', 'sortDirection': '', 'transactionType': '', 'myPostsFirst': '1' },
+    { 'label': 'الأعلى سعراً', 'sortBy': 'price', 'sortDirection': 'desc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'الأقل سعراً', 'sortBy': 'price', 'sortDirection': 'asc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'الأكثر مشاهدة', 'sortBy': 'views', 'sortDirection': 'desc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'الأقل مشاهدة', 'sortBy': 'views', 'sortDirection': 'asc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'الأكثر تفاعل', 'sortBy': 'reactions', 'sortDirection': 'desc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'الأقل تفاعل', 'sortBy': 'reactions', 'sortDirection': 'asc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'الأكثر عدد أسهم', 'sortBy': 'quantity', 'sortDirection': 'desc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'الأقل عدد أسهم', 'sortBy': 'quantity', 'sortDirection': 'asc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'عروض البيع أولاً', 'sortBy': '', 'sortDirection': '', 'transactionType': '1', 'myPostsFirst': '' },
+    { 'label': 'إعلانات الشراء أولاً', 'sortBy': '', 'sortDirection': '', 'transactionType': '2', 'myPostsFirst': '' },
+    { 'label': 'العروض الحديثة أولاً', 'sortBy': 'created_date', 'sortDirection': 'desc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'العروض القديمة أولاً', 'sortBy': 'created_date', 'sortDirection': 'asc', 'transactionType': '', 'myPostsFirst': '' },
+  ];
+
+  final apartmentsSortingOptions = [
+    { 'label': 'منشوراتي أولاً', 'sortBy': '', 'sortDirection': '', 'transactionType': '', 'myPostsFirst': '1' },
+    { 'label': 'الأعلى سعراً', 'sortBy': 'price', 'sortDirection': 'desc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'الأقل سعراً', 'sortBy': 'price', 'sortDirection': 'asc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'الأكثر مشاهدة', 'sortBy': 'views', 'sortDirection': 'desc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'الأقل مشاهدة', 'sortBy': 'views', 'sortDirection': 'asc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'الأكثر تفاعل', 'sortBy': 'reactions', 'sortDirection': 'desc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'الأقل تفاعل', 'sortBy': 'reactions', 'sortDirection': 'asc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'عروض البيع أولاً', 'sortBy': '', 'sortDirection': '', 'transactionType': '1', 'myPostsFirst': '' },
+    { 'label': 'إعلانات الشراء أولاً', 'sortBy': '', 'sortDirection': '', 'transactionType': '2', 'myPostsFirst': '' },
+    { 'label': 'العروض الحديثة أولاً', 'sortBy': 'created_date', 'sortDirection': 'desc', 'transactionType': '', 'myPostsFirst': '' },
+    { 'label': 'العروض القديمة أولاً', 'sortBy': 'created_date', 'sortDirection': 'asc', 'transactionType': '', 'myPostsFirst': '' },
+  ];
 
   @override
   void initState() {
@@ -161,6 +201,12 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
           apartmentErrorMessage = null;
           isRefreshingApartments = false;
           hasLoadedApartments = false;
+
+          // Reset sorting state
+          sharesSortParams.clear();
+          selectedSharesSortLabel = null;
+          apartmentsSortParams.clear();
+          selectedApartmentsSortLabel = null;
         });
       }
 
@@ -170,6 +216,149 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         }
       });
     }
+  }
+
+  // Method to show sorting bottom sheet
+  void _showSortingBottomSheet() {
+    // Determine current tab and available options
+    bool isSharesTab = false;
+    List<Map<String, String>> sortingOptions = [];
+    String? currentSortLabel;
+
+    if (_tabController != null && _tabs.length > 1) {
+      isSharesTab = _tabController!.index == 0 && widget.hasShare;
+    } else if (_tabs.length == 1) {
+      isSharesTab = widget.hasShare;
+    }
+
+    if (isSharesTab) {
+      sortingOptions = sharesSortingOptions;
+      currentSortLabel = selectedSharesSortLabel;
+    } else {
+      sortingOptions = apartmentsSortingOptions;
+      currentSortLabel = selectedApartmentsSortLabel;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CustomBottomSheet(
+        title: 'ترتيب النتائج',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Cancel sorting button
+            if (currentSortLabel != null)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 8.0),
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _clearSorting(isSharesTab);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 191, 191, 191),
+                    foregroundColor: const Color.fromARGB(255, 0, 0, 0),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'إلغاء الترتيب',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Cairo',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            // Sorting options
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.5,
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: sortingOptions.length,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final option = sortingOptions[index];
+                  final isSelected = currentSortLabel == option['label'];
+                  
+                  return ListTile(
+                    title: Text(
+                      option['label']!,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Cairo',
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        color: isSelected ? const Color(0xFF633e3d) : Colors.black87,
+                      ),
+                    ),
+                    trailing: isSelected
+                        ? const Icon(
+                            Icons.check,
+                            color: Color(0xFF633e3d),
+                          )
+                        : null,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _applySorting(option, isSharesTab);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Method to apply sorting
+  void _applySorting(Map<String, String> sortOption, bool isSharesTab) {
+    setState(() {
+      if (isSharesTab) {
+        sharesSortParams = {
+          'sortBy': sortOption['sortBy'] ?? '',
+          'sortDirection': sortOption['sortDirection'] ?? '',
+          'transactionType': sortOption['transactionType'] ?? '',
+          'myPostsFirst': sortOption['myPostsFirst'] ?? '',
+        };
+        selectedSharesSortLabel = sortOption['label'];
+        // Refresh shares with new sorting
+        _loadShares(refresh: true);
+      } else {
+        apartmentsSortParams = {
+          'sortBy': sortOption['sortBy'] ?? '',
+          'sortDirection': sortOption['sortDirection'] ?? '',
+          'transactionType': sortOption['transactionType'] ?? '',
+          'myPostsFirst': sortOption['myPostsFirst'] ?? '',
+        };
+        selectedApartmentsSortLabel = sortOption['label'];
+        // Refresh apartments with new sorting
+        _loadApartments(refresh: true);
+      }
+    });
+  }
+
+  // Method to clear sorting
+  void _clearSorting(bool isSharesTab) {
+    setState(() {
+      if (isSharesTab) {
+        sharesSortParams.clear();
+        selectedSharesSortLabel = null;
+        // Refresh shares without sorting
+        _loadShares(refresh: true);
+      } else {
+        apartmentsSortParams.clear();
+        selectedApartmentsSortLabel = null;
+        // Refresh apartments without sorting
+        _loadApartments(refresh: true);
+      }
+    });
   }
 
   void _onScroll() {
@@ -270,10 +459,23 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
       // Log auth data before making the request
       await _logAuthData('Shares${refresh ? ' (Refresh)' : ''}');
       
-      final response = await _shareRepository.fetchShares(
-        regionId: widget.regionId!,
-        page: currentSharePage,
-      );
+      // Check if we have sorting parameters
+      final bool hasSorting = sharesSortParams.isNotEmpty && 
+                             sharesSortParams.values.any((value) => value.isNotEmpty);
+      
+      final response = hasSorting 
+        ? await _shareRepository.fetchSharesWithSort(
+            regionId: widget.regionId!,
+            page: currentSharePage,
+            sortBy: sharesSortParams['sortBy'] ?? '',
+            sortDirection: sharesSortParams['sortDirection'] ?? '',
+            transactionType: sharesSortParams['transactionType'] ?? '',
+            myPostsFirst: sharesSortParams['myPostsFirst'] ?? '',
+          )
+        : await _shareRepository.fetchShares(
+            regionId: widget.regionId!,
+            page: currentSharePage,
+          );
 
       if (mounted) {
         setState(() {
@@ -315,10 +517,23 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
       // Log auth data before making the request
       await _logAuthData('Load More Shares (Page $currentSharePage)');
       
-      final response = await _shareRepository.fetchShares(
-        regionId: widget.regionId!,
-        page: currentSharePage,
-      );
+      // Check if we have sorting parameters
+      final bool hasSorting = sharesSortParams.isNotEmpty && 
+                             sharesSortParams.values.any((value) => value.isNotEmpty);
+      
+      final response = hasSorting 
+        ? await _shareRepository.fetchSharesWithSort(
+            regionId: widget.regionId!,
+            page: currentSharePage,
+            sortBy: sharesSortParams['sortBy'] ?? '',
+            sortDirection: sharesSortParams['sortDirection'] ?? '',
+            transactionType: sharesSortParams['transactionType'] ?? '',
+            myPostsFirst: sharesSortParams['myPostsFirst'] ?? '',
+          )
+        : await _shareRepository.fetchShares(
+            regionId: widget.regionId!,
+            page: currentSharePage,
+          );
 
       if (mounted) {
         setState(() {
@@ -383,10 +598,23 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
       // Log auth data before making the request
       await _logAuthData('Apartments${refresh ? ' (Refresh)' : ''}');
       
-      final response = await _apartmentRepository.fetchApartments(
-        regionId: widget.regionId!,
-        page: currentApartmentPage,
-      );
+      // Check if we have sorting parameters
+      final bool hasSorting = apartmentsSortParams.isNotEmpty && 
+                             apartmentsSortParams.values.any((value) => value.isNotEmpty);
+      
+      final response = hasSorting 
+        ? await _apartmentRepository.fetchApartmentsWithSort(
+            regionId: widget.regionId!,
+            page: currentApartmentPage,
+            sortBy: apartmentsSortParams['sortBy'] ?? '',
+            sortDirection: apartmentsSortParams['sortDirection'] ?? '',
+            transactionType: apartmentsSortParams['transactionType'] ?? '',
+            myPostsFirst: apartmentsSortParams['myPostsFirst'] ?? '',
+          )
+        : await _apartmentRepository.fetchApartments(
+            regionId: widget.regionId!,
+            page: currentApartmentPage,
+          );
 
       if (mounted) {
         setState(() {
@@ -428,10 +656,23 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
       // Log auth data before making the request
       await _logAuthData('Load More Apartments (Page $currentApartmentPage)');
       
-      final response = await _apartmentRepository.fetchApartments(
-        regionId: widget.regionId!,
-        page: currentApartmentPage,
-      );
+      // Check if we have sorting parameters
+      final bool hasSorting = apartmentsSortParams.isNotEmpty && 
+                             apartmentsSortParams.values.any((value) => value.isNotEmpty);
+      
+      final response = hasSorting 
+        ? await _apartmentRepository.fetchApartmentsWithSort(
+            regionId: widget.regionId!,
+            page: currentApartmentPage,
+            sortBy: apartmentsSortParams['sortBy'] ?? '',
+            sortDirection: apartmentsSortParams['sortDirection'] ?? '',
+            transactionType: apartmentsSortParams['transactionType'] ?? '',
+            myPostsFirst: apartmentsSortParams['myPostsFirst'] ?? '',
+          )
+        : await _apartmentRepository.fetchApartments(
+            regionId: widget.regionId!,
+            page: currentApartmentPage,
+          );
 
       if (mounted) {
         setState(() {
@@ -596,7 +837,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
           );
         },
         onSortPressed: () {
-          // TODO: Handle sort press
+          _showSortingBottomSheet();
         },
       ),
       body: Column(

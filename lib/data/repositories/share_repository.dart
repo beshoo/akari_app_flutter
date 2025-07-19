@@ -129,6 +129,43 @@ class ShareRepository {
     }
   }
 
+  Future<SharePaginatedResponse> fetchSharesWithSort({
+    required int regionId,
+    int page = 1,
+    String sortBy = '',
+    String sortDirection = '',
+    String transactionType = '',
+    String myPostsFirst = '',
+  }) async {
+    final Map<String, dynamic> queryParams = {
+      'page': page,
+      'region_id': regionId,
+    };
+    
+    // Add sorting parameters if they're not empty
+    if (sortBy.isNotEmpty) queryParams['sort_by'] = sortBy;
+    if (sortDirection.isNotEmpty) queryParams['sort_direction'] = sortDirection;
+    if (transactionType.isNotEmpty) queryParams['transaction_type'] = int.tryParse(transactionType) ?? transactionType;
+    if (myPostsFirst.isNotEmpty) queryParams['my_posts_first'] = myPostsFirst;
+
+    final response = await _dio.get('/share/sort', queryParameters: queryParams);
+
+    Logger.log("------- Share Sort API Response -------");
+    Logger.log("Status Code: ${response.statusCode}");
+    Logger.log("URL: ${response.requestOptions.uri}");
+    Logger.log("Sort Parameters: $queryParams");
+    Logger.log("Current Page: ${response.data?['current_page']}");
+    Logger.log("Total Items: ${response.data?['total']}");
+    Logger.log("Data Count: ${response.data?['data']?.length ?? 0}");
+    Logger.log("---------------------------------------");
+
+    if (response.statusCode == 200 && response.data != null) {
+      return SharePaginatedResponse.fromJson(response.data);
+    } else {
+      throw Exception('API returned status code ${response.statusCode}');
+    }
+  }
+
   Future<SharePaginatedResponse> refreshShares({
     required int regionId,
   }) async {
