@@ -602,8 +602,13 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
 
   Widget _buildFloatingReactionPanel() {
     Logger.log('🎨 Building floating reaction panel, _showReactions: $_showReactions');
+    
+    // Get safe area padding for proper positioning across platforms
+    final double bottomSafeArea = MediaQuery.of(context).viewPadding.bottom;
+    final double panelBottomPosition = bottomSafeArea + 450;
+    
     return Positioned(
-      bottom: 450, // Position above the action buttons (50 height + 24 padding + some margin)
+      bottom: panelBottomPosition, // Position above the action buttons with safe area consideration
       right: 20, // Position above the reaction button (right side in RTL)
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

@@ -136,8 +136,19 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get safe area padding for proper positioning across platforms
+    final double bottomSafeArea = MediaQuery.of(context).viewPadding.bottom;
+    
+    // Adjust bottom margin to account for safe area
+    final adjustedMargin = EdgeInsets.fromLTRB(
+      margin.left,
+      margin.top,
+      margin.right,
+      margin.bottom + bottomSafeArea,
+    );
+    
     return Padding(
-      padding: margin,
+      padding: adjustedMargin,
       child: PhysicalShape(
         color: backgroundColor,
         shadowColor: shadowColor,

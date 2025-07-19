@@ -636,8 +636,12 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     // double leftPosition = 40.0;  // A bit more to the right
      double leftPosition = 150.0;  // Even more to the right
     
+    // Get safe area padding for proper positioning across platforms
+    final double bottomSafeArea = MediaQuery.of(context).viewPadding.bottom;
+    final double panelBottomPosition = bottomSafeArea + 50;
+    
     return Positioned(
-      bottom: 50, // Position above action buttons
+      bottom: panelBottomPosition, // Position above action buttons with safe area consideration
       left: leftPosition,
       child: GestureDetector(
         onTap: () {}, // Prevent taps on the panel from closing it
