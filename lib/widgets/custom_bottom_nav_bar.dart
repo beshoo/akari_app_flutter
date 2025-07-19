@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Model class for bottom navigation items
+/// Model class for bottoOom navigation items
 class BottomNavItem {
   final String label;
   final String inactiveIcon;
@@ -136,58 +136,49 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get safe area padding for proper positioning across platforms
-    final double bottomSafeArea = MediaQuery.of(context).viewPadding.bottom;
-    
-    // Adjust bottom margin to account for safe area
-    final adjustedMargin = EdgeInsets.fromLTRB(
-      margin.left,
-      margin.top,
-      margin.right,
-      margin.bottom + bottomSafeArea,
-    );
-    
-    return Padding(
-      padding: adjustedMargin,
-      child: PhysicalShape(
-        color: backgroundColor,
-        shadowColor: shadowColor,
-        elevation: 8,
-        clipper: ShapeBorderClipper(
-          shape: const _CustomNavBarShape(),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: BottomNavigationBar(
-            currentIndex: currentIndex,
-            onTap: onTap,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: selectedItemColor,
-            unselectedItemColor: unselectedItemColor,
-            showSelectedLabels: true,
-            showUnselectedLabels: true,
-            selectedLabelStyle: TextStyle(
-              fontSize: labelFontSize,
-              fontFamily: 'Cairo',
-              fontWeight: FontWeight.w600,
+    return SafeArea(
+      child: Padding(
+        padding: margin,
+        child: PhysicalShape(
+          color: backgroundColor,
+          shadowColor: shadowColor,
+          elevation: 8,
+          clipper: ShapeBorderClipper(
+            shape: const _CustomNavBarShape(),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: BottomNavigationBar(
+              currentIndex: currentIndex,
+              onTap: onTap,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              type: BottomNavigationBarType.fixed,
+              selectedItemColor: selectedItemColor,
+              unselectedItemColor: unselectedItemColor,
+              showSelectedLabels: true,
+              showUnselectedLabels: true,
+              selectedLabelStyle: TextStyle(
+                fontSize: labelFontSize,
+                fontFamily: 'Cairo',
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelStyle: TextStyle(
+                fontSize: labelFontSize,
+                fontFamily: 'Cairo',
+                fontWeight: FontWeight.w600,
+              ),
+              items: items.asMap().entries.map((entry) {
+                final item = entry.value;
+                final isSelected = currentIndex == entry.key;
+                return _buildNavItem(
+                  item.label,
+                  item.inactiveIcon,
+                  item.activeIcon,
+                  isSelected,
+                );
+              }).toList(),
             ),
-            unselectedLabelStyle: TextStyle(
-              fontSize: labelFontSize,
-              fontFamily: 'Cairo',
-              fontWeight: FontWeight.w600,
-            ),
-            items: items.asMap().entries.map((entry) {
-              final item = entry.value;
-              final isSelected = currentIndex == entry.key;
-              return _buildNavItem(
-                item.label,
-                item.inactiveIcon,
-                item.activeIcon,
-                isSelected,
-              );
-            }).toList(),
           ),
         ),
       ),

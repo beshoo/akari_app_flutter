@@ -150,7 +150,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                 children: [
                   // Main card
                   Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                     height: 350,
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -187,9 +187,12 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                   
                   // Reaction summary section
                   if (_currentPostData.reactionCounts.totalCount > 0)
-                    _buildReactionSummary(),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 12),
+                      child: _buildReactionSummary(),
+                    ),
                   
-                  // Action buttons row
+                  // Action buttons row - now uses full screen width
                   _buildActionButtons(reactionStore, authStore),
                 ],
               ),
@@ -518,24 +521,26 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   Widget _buildActionButtons(ReactionStore reactionStore, AuthStore authStore) {
-    return Container(
-      // Removed the top border line
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      child: Row(
+    return SizedBox(
+      // Use full screen width - no margins or constraints
+      width: double.infinity,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
+        child: Row(
         children: [
           // Like/Reaction button
           Expanded(
             child: GestureDetector(
               onTap: () => _handleReactionButtonTap(),
               onLongPress: () => _handleReactionButtonLongPress(),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _getCurrentReactionIcon(size: _actionButtonIconSize),
-                    const SizedBox(width: 6),
+                              child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _getCurrentReactionIcon(size: _actionButtonIconSize),
+                      const SizedBox(width: 8),
                     Flexible(
                       child: Text(
                         _getCurrentReactionText(),
@@ -588,6 +593,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -599,14 +605,14 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            icon,
-            const SizedBox(width: 6),
+              child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              icon,
+              const SizedBox(width: 8),
             Flexible(
               child: Text(
                 text,
@@ -626,15 +632,14 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   Widget _buildFloatingReactionPanel() {
     final screenWidth = MediaQuery.of(context).size.width;
-    final cardMargin = 24.0; // Total horizontal margin of the card (12px each side)
-    final availableWidth = screenWidth - cardMargin;
-    final buttonWidth = availableWidth / 4; // 4 equal buttons
-    final panelWidth = 200.0; // Approximate panel width
+    final panelWidth = 220.0; // Approximate panel width (5 reactions * 40px + padding)
+    final horizontalPadding = 16.0; // Safe margin from screen edges
     
-    // Calculate left position - you can try different values:
-    //double leftPosition = 8.0;   // Far left edge
-    // double leftPosition = 40.0;  // A bit more to the right
-     double leftPosition = 150.0;  // Even more to the right
+    // Calculate centered position, but ensure it doesn't go off screen
+    double leftPosition = (screenWidth - panelWidth) / 2;
+    
+    // Ensure panel stays within screen bounds
+    leftPosition = leftPosition.clamp(horizontalPadding, screenWidth - panelWidth - horizontalPadding);
     
     // Get safe area padding for proper positioning across platforms
     final double bottomSafeArea = MediaQuery.of(context).viewPadding.bottom;

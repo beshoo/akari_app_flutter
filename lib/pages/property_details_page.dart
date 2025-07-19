@@ -603,13 +603,32 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   Widget _buildFloatingReactionPanel() {
     Logger.log('🎨 Building floating reaction panel, _showReactions: $_showReactions');
     
-    // Get safe area padding for proper positioning across platforms
-    final double bottomSafeArea = MediaQuery.of(context).viewPadding.bottom;
-    final double panelBottomPosition = bottomSafeArea + 450;
+    // Calculate position from top of screen to إعجاب button
+    final double appBarHeight = kToolbarHeight; // CustomAppBar height
+    final double statusBarHeight = MediaQuery.of(context).viewPadding.top;
+    
+    // Fixed header height (approximate)
+    final double fixedHeaderHeight = 80.0; // Estimated from _buildFixedHeader
+    
+    // Image slider height
+    final double imageSliderHeight = 300.0; // From _buildImageSlider
+    
+    // Clickable dots height (approximate)
+    final double dotsHeight = 44.0; // 16 padding top + 12 dot + 16 padding bottom
+    
+    // Action buttons padding top
+    final double actionButtonsPaddingTop = 10.0; // From _buildActionButtons padding
+    
+    // Calculate total distance from top to where إعجاب button starts
+    final double distanceFromTop = statusBarHeight + appBarHeight + fixedHeaderHeight + 
+                                   imageSliderHeight + dotsHeight + actionButtonsPaddingTop;
+    
+    // Position panel just above the إعجاب button
+    final double panelTopPosition = distanceFromTop - 100.0; // 100px above the button (moved up more)
     
     return Positioned(
-      bottom: panelBottomPosition, // Position above the action buttons with safe area consideration
-      right: 20, // Position above the reaction button (right side in RTL)
+      top: panelTopPosition, // Position from top of screen
+      right: 20, // Position above the إعجاب button (move to the right side)
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
