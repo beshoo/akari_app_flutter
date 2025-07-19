@@ -57,7 +57,7 @@ Future<void> main() async {
     
     // Set up background message handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  } catch (e, stack) {
+  } catch (e) {
     Logger.log('Firebase initialization failed: '
         '\nError: '
         '\ne.toString()'
@@ -84,7 +84,7 @@ Future<void> main() async {
   // Initialize Firebase messaging and request permission
   try {
     await FirebaseMessagingService.instance.initialize();
-  } catch (e, stack) {
+  } catch (e) {
     Logger.log('Firebase Messaging initialization failed: '
         '\nError: '
         '\ne.toString()'
