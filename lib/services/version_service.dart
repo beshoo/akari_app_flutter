@@ -1,7 +1,8 @@
 import 'package:package_info_plus/package_info_plus.dart';
+
+import '../utils/logger.dart';
 import 'api_service.dart';
 import 'firebase_messaging_service.dart';
-import '../utils/logger.dart';
 
 class VersionService {
   static final VersionService instance = VersionService._internal();
@@ -58,8 +59,19 @@ class VersionService {
         Logger.log('⚠️ VersionService: Using fallback version: $version');
       }
       
-      // Get Firebase token
-      final String? firebaseToken = FirebaseMessagingService.instance.fcmToken;
+      // Get Firebase token safely, handle case where Firebase might not be initialized
+      String? firebaseToken;
+      try {
+        if (FirebaseMessagingService.instance.isInitialized) {
+          firebaseToken = FirebaseMessagingService.instance.fcmToken;
+        } else {
+          Logger.log('⚠️ VersionService: Firebase Messaging not initialized, skipping FCM token');
+          firebaseToken = null;
+        }
+      } catch (e) {
+        Logger.log('⚠️ VersionService: Could not get FCM token: $e');
+        firebaseToken = null;
+      }
       
       Logger.log('📱 VersionService: App version: $version');
       Logger.log('🔥 VersionService: Firebase token available: ${firebaseToken != null}');

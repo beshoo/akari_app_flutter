@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import '../data/models/share_model.dart';
 import '../data/models/apartment_model.dart';
 import '../utils/logger.dart';

@@ -1,13 +1,14 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
-import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../utils/logger.dart';
 import '../pages/property_details_page.dart';
+import '../utils/logger.dart';
 
 class FirebaseMessagingService {
   static final FirebaseMessagingService instance = FirebaseMessagingService._internal();
@@ -18,7 +19,13 @@ class FirebaseMessagingService {
 
   FirebaseMessagingService._internal();
 
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  // Make FirebaseMessaging lazy-loaded to avoid initialization issues
+  FirebaseMessaging? _firebaseMessaging;
+  FirebaseMessaging get _firebaseMessagingInstance {
+    _firebaseMessaging ??= FirebaseMessaging.instance;
+    return _firebaseMessaging!;
+  }
+
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
   String? _token;
   static RemoteMessage? _initialMessage; // Static for splash screen access
@@ -30,50 +37,44 @@ class FirebaseMessagingService {
   static RemoteMessage? get initialMessage => _initialMessage;
   static void clearInitialMessage() => _initialMessage = null;
   
-  // Enable immediate handling of foreground notifications
-  void enableImmediateForegroundHandling(bool enable) {
-    handleForegroundImmediately = enable;
-    Logger.log('📱 Immediate foreground handling: ${enable ? 'enabled' : 'disabled'}');
-  }
+  // Check if Firebase is properly initialized
+  bool get isInitialized => _firebaseMessaging != null;
 
   Future<void> initialize() async {
-    // Request permissions
-    await _firebaseMessaging.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true,
-    );
-
-    // iOS specific: Set foreground notification presentation options
-    if (Platform.isIOS) {
-      await _firebaseMessaging.setForegroundNotificationPresentationOptions(
-        alert: true, // Show alert in foreground
-        badge: true, // Update badge
-        sound: true, // Play sound
+    try {
+      // Request permissions
+      await _firebaseMessagingInstance.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
       );
-    }
 
-    // Initialize local notifications
-    await _initializeLocalNotifications();
+      // Initialize local notifications
+      await _initializeLocalNotifications();
 
-    // Get FCM token
-    _token = await _firebaseMessaging.getToken();
-    Logger.log('🔑 Firebase Messaging Token: $_token');
+      // Get FCM token
+      _token = await _firebaseMessagingInstance.getToken();
+      Logger.log('🔑 Firebase Messaging Token: $_token');
 
-    // Listen for foreground messages
-    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-    
-    // Listen for notification taps when app is in background
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
-    
-    // Store initial message for splash screen to handle
-    _initialMessage = await _firebaseMessaging.getInitialMessage();
-    if (_initialMessage != null) {
-      Logger.log('📱 Initial message stored for splash: ${_initialMessage!.messageId}');
+      // Listen for foreground messages
+      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+      
+      // Listen for notification taps when app is in background
+      FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+      
+      // Store initial message for splash screen to handle
+      _initialMessage = await _firebaseMessagingInstance.getInitialMessage();
+      if (_initialMessage != null) {
+        Logger.log('📱 Initial message stored for splash: ${_initialMessage!.messageId}');
+      }
+    } catch (e, stack) {
+      Logger.log('❌ Firebase Messaging initialization failed: $e');
+      Logger.log('❌ Stack trace: $stack');
+      // Continue without Firebase messaging if it fails
     }
   }
 

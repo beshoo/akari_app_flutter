@@ -1,6 +1,8 @@
-import 'package:flutter/foundation.dart';
-import 'package:dio/dio.dart';
 import 'dart:convert';
+
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+
 import '../services/api_service.dart';
 import '../services/firebase_messaging_service.dart';
 import '../services/secure_storage.dart';
@@ -207,7 +209,20 @@ class AuthStore extends ChangeNotifier {
       _otpError = null;
       notifyListeners();
 
-      final fcmToken = FirebaseMessagingService.instance.fcmToken;
+      // Get FCM token safely, handle case where Firebase might not be initialized
+      String? fcmToken;
+      try {
+        if (FirebaseMessagingService.instance.isInitialized) {
+          fcmToken = FirebaseMessagingService.instance.fcmToken;
+        } else {
+          Logger.log('⚠️ AuthStore: Firebase Messaging not initialized, skipping FCM token');
+          fcmToken = null;
+        }
+      } catch (e) {
+        Logger.log('⚠️ AuthStore: Could not get FCM token: $e');
+        fcmToken = null;
+      }
+      
       final data = {
         ...verifyData,
         'firebase': fcmToken,

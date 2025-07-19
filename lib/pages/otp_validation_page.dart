@@ -1,10 +1,13 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../stores/auth_store.dart';
-import '../utils/toast_helper.dart';
+
 import '../services/firebase_messaging_service.dart';
+import '../stores/auth_store.dart';
+import '../utils/logger.dart';
+import '../utils/toast_helper.dart';
 
 class OtpValidationPage extends StatefulWidget {
   final String phone;
@@ -290,8 +293,14 @@ class OtpValidationPageState extends State<OtpValidationPage> {
     
     String firebaseToken = '';
     try {
-      firebaseToken = FirebaseMessagingService.instance.fcmToken ?? '';
+      if (FirebaseMessagingService.instance.isInitialized) {
+        firebaseToken = FirebaseMessagingService.instance.fcmToken ?? '';
+      } else {
+        Logger.log('⚠️ OTP Validation: Firebase Messaging not initialized, using empty token');
+        firebaseToken = '';
+      }
     } catch (e) {
+      Logger.log('⚠️ OTP Validation: Could not get FCM token: $e');
       firebaseToken = '';
     }
     
