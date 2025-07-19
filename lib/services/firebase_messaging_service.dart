@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
@@ -21,10 +22,19 @@ class FirebaseMessagingService {
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
   String? _token;
   static RemoteMessage? _initialMessage; // Static for splash screen access
+  
+  // Option to handle notifications immediately in foreground (without showing notification)
+  bool handleForegroundImmediately = false;
 
   String? get fcmToken => _token;
   static RemoteMessage? get initialMessage => _initialMessage;
   static void clearInitialMessage() => _initialMessage = null;
+  
+  // Enable immediate handling of foreground notifications
+  void enableImmediateForegroundHandling(bool enable) {
+    handleForegroundImmediately = enable;
+    Logger.log('📱 Immediate foreground handling: ${enable ? 'enabled' : 'disabled'}');
+  }
 
   Future<void> initialize() async {
     // Request permissions
@@ -37,6 +47,15 @@ class FirebaseMessagingService {
       provisional: false,
       sound: true,
     );
+
+    // iOS specific: Set foreground notification presentation options
+    if (Platform.isIOS) {
+      await _firebaseMessaging.setForegroundNotificationPresentationOptions(
+        alert: true, // Show alert in foreground
+        badge: true, // Update badge
+        sound: true, // Play sound
+      );
+    }
 
     // Initialize local notifications
     await _initializeLocalNotifications();
@@ -103,15 +122,28 @@ class FirebaseMessagingService {
     Logger.log('📱 Got message in foreground: ${message.messageId}');
     Logger.log('📱 Message data: ${message.data}');
 
+    // If configured to handle immediately, do so without showing notification
+    if (handleForegroundImmediately && message.data.isNotEmpty) {
+      Logger.log('📱 Handling foreground message immediately');
+      _handleNotificationAction(message.data);
+      return;
+    }
+
     if (message.notification != null) {
       Logger.log('📱 Notification: ${message.notification!.title} - ${message.notification!.body}');
       
-      // Display the notification
+      // Display the notification with proper payload encoding
       await _showNotification(
         title: message.notification!.title ?? 'Akari App',
         body: message.notification!.body ?? 'You have a new message',
         payload: _encodePayload(message.data),
       );
+    } else if (message.data.isNotEmpty) {
+      // Handle data-only messages immediately in foreground
+      Logger.log('📱 Data-only message in foreground, handling immediately');
+      _handleNotificationAction(message.data);
+    } else {
+      Logger.log('📱 Foreground message with no data or notification content');
     }
   }
 
@@ -151,11 +183,26 @@ class FirebaseMessagingService {
   }
 
   void _onNotificationTapped(NotificationResponse response) {
-    Logger.log('📱 Notification tapped: ${response.payload}');
-    // Handle notification tap - navigate to specific screen if needed
-    if (response.payload != null) {
-      final data = _decodePayload(response.payload!);
-      _handleNotificationAction(data);
+    Logger.log('📱 Notification tapped with payload: ${response.payload}');
+    
+    if (response.payload != null && response.payload!.isNotEmpty) {
+      try {
+        final data = _decodePayload(response.payload!);
+        Logger.log('📱 Decoded notification data: $data');
+        
+        if (data.isNotEmpty) {
+          _handleNotificationAction(data);
+        } else {
+          Logger.log('📱 Empty data, navigating to notifications page');
+          Get.toNamed('/notifications');
+        }
+      } catch (e) {
+        Logger.log('❌ Error handling notification tap: $e');
+        Get.toNamed('/notifications');
+      }
+    } else {
+      Logger.log('📱 No payload, navigating to notifications page');
+      Get.toNamed('/notifications');
     }
   }
 
@@ -168,67 +215,91 @@ class FirebaseMessagingService {
   }
 
   String _encodePayload(Map<String, dynamic> data) {
-    // Convert map to a simple string format for local notifications
-    return data.entries.map((e) => '${e.key}=${e.value}').join('&');
+    try {
+      // Convert map to JSON string for more reliable encoding
+      return jsonEncode(data);
+    } catch (e) {
+      Logger.log('❌ Error encoding payload: $e');
+      return '{}';
+    }
   }
 
   Map<String, dynamic> _decodePayload(String payload) {
-    // Convert string back to map
-    final Map<String, dynamic> data = {};
-    final pairs = payload.split('&');
-    for (final pair in pairs) {
-      final parts = pair.split('=');
-      if (parts.length == 2) {
-        data[parts[0]] = parts[1];
-      }
+    try {
+      // Convert JSON string back to map
+      return jsonDecode(payload) as Map<String, dynamic>;
+    } catch (e) {
+      Logger.log('❌ Error decoding payload: $e');
+      return {};
     }
-    return data;
   }
 
   void _handleNotificationAction(Map<String, dynamic> data) {
     Logger.log('📱 Handling notification action with data: $data');
     
-    final notificationType = data['notification_type'];
-    final content = data['content'];
+    try {
+      final notificationType = data['notification_type'];
+      final content = data['content'];
 
-    switch (notificationType) {
-      case 'share':
-        if (content != null) {
-          Logger.log('📱 Navigating to share details: $content');
-          final shareId = int.tryParse(content.toString());
-          if (shareId != null) {
-            Get.to(() => PropertyDetailsPage(
-              id: shareId,
-              itemType: "share",
-            ));
+      Logger.log('📱 Notification type: $notificationType, Content: $content');
+
+      switch (notificationType) {
+        case 'share':
+          if (content != null) {
+            Logger.log('📱 Navigating to share details: $content');
+            final shareId = int.tryParse(content.toString());
+            if (shareId != null) {
+              Get.to(() => PropertyDetailsPage(
+                id: shareId,
+                itemType: "share",
+              ));
+            } else {
+              Logger.log('❌ Invalid share ID: $content');
+              Get.toNamed('/notifications');
+            }
+          } else {
+            Logger.log('❌ Share notification missing content');
+            Get.toNamed('/notifications');
           }
-        }
-        break;
-        
-      case 'apartment':
-        if (content != null) {
-          Logger.log('📱 Navigating to apartment details: $content');
-          final apartmentId = int.tryParse(content.toString());
-          if (apartmentId != null) {
-            Get.to(() => PropertyDetailsPage(
-              id: apartmentId,
-              itemType: "apartment",
-            ));
+          break;
+          
+        case 'apartment':
+          if (content != null) {
+            Logger.log('📱 Navigating to apartment details: $content');
+            final apartmentId = int.tryParse(content.toString());
+            if (apartmentId != null) {
+              Get.to(() => PropertyDetailsPage(
+                id: apartmentId,
+                itemType: "apartment",
+              ));
+            } else {
+              Logger.log('❌ Invalid apartment ID: $content');
+              Get.toNamed('/notifications');
+            }
+          } else {
+            Logger.log('❌ Apartment notification missing content');
+            Get.toNamed('/notifications');
           }
-        }
-        break;
-        
-      case 'url':
-        if (content != null) {
-          Logger.log('📱 Opening URL: $content');
-          _openUrl(content);
-        }
-        break;
-        
-      default:
-        Logger.log('📱 Navigating to notifications page');
-        Get.toNamed('/notifications');
-        break;
+          break;
+          
+        case 'url':
+          if (content != null) {
+            Logger.log('📱 Opening URL: $content');
+            _openUrl(content.toString());
+          } else {
+            Logger.log('❌ URL notification missing content');
+            Get.toNamed('/notifications');
+          }
+          break;
+          
+        default:
+          Logger.log('📱 Unknown notification type or no type specified, navigating to notifications page');
+          Get.toNamed('/notifications');
+          break;
+      }
+    } catch (e) {
+      Logger.log('❌ Error handling notification action: $e');
+      Get.toNamed('/notifications');
     }
   }
 

@@ -259,7 +259,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
                     _clearSorting(isSharesTab);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 191, 191, 191),
+                    backgroundColor: const Color.fromARGB(255, 232, 232, 232),
                     foregroundColor: const Color.fromARGB(255, 0, 0, 0),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -282,7 +282,7 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: sortingOptions.length,
-                separatorBuilder: (context, index) => const Divider(height: 1),
+                separatorBuilder: (context, index) => const Divider(height: 1, color: Color.fromARGB(255, 224, 223, 223)),
                 itemBuilder: (context, index) {
                   final option = sortingOptions[index];
                   final isSelected = currentSortLabel == option['label'];
@@ -309,6 +309,15 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
                     },
                   );
                 },
+              ),
+            ),
+            // Scroll indicator triangle
+            const Padding(
+              padding: EdgeInsets.only(top: 1.0, bottom: 1.0),
+              child: Icon(
+                Icons.keyboard_arrow_down,
+                color: Color.fromARGB(255, 150, 150, 150),
+                size: 30,
               ),
             ),
           ],

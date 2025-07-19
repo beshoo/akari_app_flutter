@@ -63,87 +63,89 @@ class _CustomFABState extends State<CustomFAB> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Dark overlay with fade animation
-        Positioned.fill(
-          child: AnimatedOpacity(
-            opacity: _isOpen ? 0.75 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            child: IgnorePointer(
-              ignoring: !_isOpen,
-              child: GestureDetector(
-                onTap: _toggleFAB,
-                child: Container(
-                  color: Colors.black,
+    return SafeArea(
+      child: Stack(
+        children: [
+          // Dark overlay with fade animation
+          Positioned.fill(
+            child: AnimatedOpacity(
+              opacity: _isOpen ? 0.75 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: IgnorePointer(
+                ignoring: !_isOpen,
+                child: GestureDetector(
+                  onTap: _toggleFAB,
+                  child: Container(
+                    color: Colors.black,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
 
-        // Menu items
-        Positioned(
-          left: 16,
-          right: 16,
-          bottom: 190,
-          child: IgnorePointer(
-            ignoring: !_isOpen && _controller.isDismissed,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _buildMenuItem(
-                  icon: Icons.home_outlined,
-                  label: 'إضافة إعلان عن عقار',
-                  onTap: widget.onAddApartment,
-                ),
-                const SizedBox(height: 16),
-                _buildMenuItem(
-                  icon: Icons.trending_up,
-                  label: 'إضافة إعلان عن أسهم تنظيمية',
-                  onTap: widget.onAddShare,
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Main FAB - Always positioned at the same spot
-        Positioned(
-          left: 16,
-          bottom: 90,
-          child: FloatingActionButton.extended(
-            onPressed: _toggleFAB,
-            backgroundColor: const Color(0xFF8E6756),
-            label: Row(
-              children: [
-                Text(
-                  'أضف إعلانك الأن',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontFamily: 'Cairo',
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withValues(red: 0, green: 0, blue: 0, alpha: 150),
-                        offset: const Offset(0, 2),
-                        blurRadius: 15,
-                      ),
-                    ],
+          // Menu items - positioned with consistent spacing
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 190,
+            child: IgnorePointer(
+              ignoring: !_isOpen && _controller.isDismissed,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _buildMenuItem(
+                    icon: Icons.home_outlined,
+                    label: 'إضافة إعلان عن عقار',
+                    onTap: widget.onAddApartment,
                   ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  _isOpen ? Icons.close : Icons.add,
-                  color: Colors.white,
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  _buildMenuItem(
+                    icon: Icons.trending_up,
+                    label: 'إضافة إعلان عن أسهم تنظيمية',
+                    onTap: widget.onAddShare,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+
+          // Main FAB - positioned consistently across platforms
+          Positioned(
+            left: 16,
+            bottom: 90,
+            child: FloatingActionButton.extended(
+              onPressed: _toggleFAB,
+              backgroundColor: const Color(0xFF8E6756),
+              label: Row(
+                children: [
+                  Text(
+                    'أضف إعلانك الأن',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontFamily: 'Cairo',
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(red: 0, green: 0, blue: 0, alpha: 150),
+                          offset: const Offset(0, 2),
+                          blurRadius: 15,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    _isOpen ? Icons.close : Icons.add,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
