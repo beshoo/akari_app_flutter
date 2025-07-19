@@ -36,7 +36,7 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
   int _currentPage = 1;
   int _totalPages = 1;
   int _totalResults = 0;
-  ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
   
   // Add repositories for pagination
   final ShareRepository _shareRepository = ShareRepository();

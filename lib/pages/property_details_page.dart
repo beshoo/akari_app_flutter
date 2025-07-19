@@ -304,7 +304,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   Widget _buildImageSlider() {
     final photos = _getPhotos();
     
-    return Container(
+    return SizedBox(
       height: 300,
       child: Stack(
         children: [
@@ -319,7 +319,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
             itemBuilder: (context, index) {
               return GestureDetector(
                 onTap: () => _showFullScreenPhotoViewer(index),
-                child: Container(
+                child: SizedBox(
                   width: double.infinity,
                   child: photos[index].startsWith('assets/')
                       ? Image.asset(
@@ -681,7 +681,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end, // Changed to end for RTL alignment
         children: [
-          Container(
+          SizedBox(
             width: double.infinity,
             child: Directionality(
               textDirection: TextDirection.rtl,
@@ -698,7 +698,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
             ),
           ),
           const SizedBox(height: 16),
-          Container(
+          SizedBox(
             width: double.infinity,
             child: Directionality(
               textDirection: TextDirection.rtl,
@@ -761,7 +761,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
               mainAxisAlignment: MainAxisAlignment.start, // Keep title and value together at top
               children: [
                 // Title area - auto height based on content
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: Directionality(
                     textDirection: TextDirection.rtl,
@@ -782,7 +782,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                 ),
                 const SizedBox(height: 8),
                 // Value area - auto height based on content
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: Directionality(
                     textDirection: TextDirection.rtl,
@@ -1105,20 +1105,20 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
       ));
     }
     
-    if (shouldShowValue(share.sector.code?.code)) {
+    if (shouldShowValue(share.sector.code.code)) {
       shareDetailBoxes.add(_buildGridBox(
         iconPath: 'section_number.png',
         title: 'رقم المقسم',
-        value: share.sector.code?.code ?? '',
+        value: share.sector.code.code ?? '',
         textAlign: TextAlign.right,
       ));
     }
     
-    if (shouldShowValue(share.sector.code?.name)) {
+    if (shouldShowValue(share.sector.code.name)) {
       shareDetailBoxes.add(_buildGridBox(
         iconPath: 'sector.png',
         title: 'القطاع',
-        value: share.sector.code?.name ?? '',
+        value: share.sector.code.name ?? '',
         textAlign: TextAlign.right,
       ));
     }
@@ -1344,7 +1344,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end, // Changed to end for RTL alignment
               children: [
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: Directionality(
                     textDirection: TextDirection.rtl,
@@ -1361,7 +1361,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                   ),
                 ),
                 const SizedBox(height: 8),
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: Directionality(
                     textDirection: TextDirection.rtl,
