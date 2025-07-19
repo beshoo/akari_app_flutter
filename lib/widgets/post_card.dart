@@ -521,80 +521,90 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   Widget _buildActionButtons(ReactionStore reactionStore, AuthStore authStore) {
-    return SizedBox(
-      // Use full screen width - no margins or constraints
-      width: double.infinity,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
-        child: Row(
-        children: [
-          // Like/Reaction button
-          Expanded(
-            child: GestureDetector(
-              onTap: () => _handleReactionButtonTap(),
-              onLongPress: () => _handleReactionButtonLongPress(),
-                              child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _getCurrentReactionIcon(size: _getResponsiveIconSize(context)),
-                      const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        _getCurrentReactionText(),
-                        style: TextStyle(
-                          fontSize: _getResponsiveFontSize(context),
-                          fontWeight: FontWeight.w500,
-                          color: _grayColor,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final buttonWidth = constraints.maxWidth / 4; // Each button gets 1/4 of available width
+        
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
+          child: Row(
+            children: [
+              // Like/Reaction button
+              SizedBox(
+                width: buttonWidth,
+                child: GestureDetector(
+                  onTap: () => _handleReactionButtonTap(),
+                  onLongPress: () => _handleReactionButtonLongPress(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _getCurrentReactionIcon(size: _actionButtonIconSize),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.center,
+                            child: Text(
+                              _getCurrentReactionText(),
+                              style: const TextStyle(
+                                fontSize: _actionButtonFontSize,
+                                fontWeight: FontWeight.w500,
+                                color: _grayColor,
+                              ),
+                            ),
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
-          // Share button
-          Expanded(
-            child: _buildActionButton(
-              icon: FaIcon(FontAwesomeIcons.shareNodes, size: _getResponsiveIconSize(context)),
-              text: 'شارك',
-              onTap: () => _shareContent(),
-            ),
-          ),
-          // Favorite button
-          Expanded(
-            child: _buildActionButton(
-              icon: FaIcon(
-                _currentPostData.isFavorited
-                    ? FontAwesomeIcons.solidStar
-                    : FontAwesomeIcons.star,
-                size: _getResponsiveIconSize(context),
-                color: _currentPostData.isFavorited ? Colors.amber : _grayColor,
+              // Share button
+              SizedBox(
+                width: buttonWidth,
+                child: _buildActionButton(
+                  icon: FaIcon(FontAwesomeIcons.shareNodes, size: _actionButtonIconSize),
+                  text: 'شارك',
+                  onTap: () => _shareContent(),
+                ),
               ),
-              text: 'مفضلة',
-              onTap: () => _toggleFavorite(reactionStore),
-            ),
-          ),
-          // Views counter
-          Expanded(
-            child: _buildActionButton(
-              icon: Image.asset(
-                'assets/images/icons/view.png',
-                width: _getResponsiveIconSize(context),
-                height: _getResponsiveIconSize(context),
-                color: _grayColor,
+              // Favorite button
+              SizedBox(
+                width: buttonWidth,
+                child: _buildActionButton(
+                  icon: FaIcon(
+                    _currentPostData.isFavorited
+                        ? FontAwesomeIcons.solidStar
+                        : FontAwesomeIcons.star,
+                    size: _actionButtonIconSize,
+                    color: _currentPostData.isFavorited ? Colors.amber : _grayColor,
+                  ),
+                  text: 'مفضلة',
+                  onTap: () => _toggleFavorite(reactionStore),
+                ),
               ),
-              text: '${_currentPostData.views}',
-              onTap: null,
-            ),
+              // Views counter
+              SizedBox(
+                width: buttonWidth,
+                child: _buildActionButton(
+                  icon: Image.asset(
+                    'assets/images/icons/view.png',
+                    width: _actionButtonIconSize,
+                    height: _actionButtonIconSize,
+                    color: _grayColor,
+                  ),
+                  text: '${_currentPostData.views}',
+                  onTap: null,
+                ),
+              ),
+            ],
           ),
-        ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -605,23 +615,26 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }) {
     return GestureDetector(
       onTap: onTap,
-              child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              icon,
-              const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                text,
-                style: TextStyle(
-                  fontSize: _getResponsiveFontSize(context),
-                  fontWeight: FontWeight.w500,
-                  color: _grayColor,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            icon,
+            const SizedBox(width: 6),
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Text(
+                  text,
+                  style: const TextStyle(
+                    fontSize: _actionButtonFontSize,
+                    fontWeight: FontWeight.w500,
+                    color: _grayColor,
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -706,28 +719,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   // Helper methods
-  double _getResponsiveFontSize(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    if (screenWidth < 350) {
-      return 14.0; // Very small screens
-    } else if (screenWidth < 400) {
-      return 15.0; // Small screens
-    } else {
-      return _actionButtonFontSize; // Normal screens
-    }
-  }
-
-  double _getResponsiveIconSize(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    if (screenWidth < 350) {
-      return 18.0; // Very small screens
-    } else if (screenWidth < 400) {
-      return 20.0; // Small screens
-    } else {
-      return _actionButtonIconSize; // Normal screens
-    }
-  }
-
   bool _shouldShowApprovalBadge(AuthStore authStore) {
     final isAdminOrOwner = authStore.userPrivilege == 'admin' || 
                           authStore.userPrivilege == 'owner';
