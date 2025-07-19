@@ -539,13 +539,13 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _getCurrentReactionIcon(size: _actionButtonIconSize),
+                      _getCurrentReactionIcon(size: _getResponsiveIconSize(context)),
                       const SizedBox(width: 8),
                     Flexible(
                       child: Text(
                         _getCurrentReactionText(),
                         style: TextStyle(
-                          fontSize: _actionButtonFontSize,
+                          fontSize: _getResponsiveFontSize(context),
                           fontWeight: FontWeight.w500,
                           color: _grayColor,
                         ),
@@ -560,7 +560,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           // Share button
           Expanded(
             child: _buildActionButton(
-              icon: FaIcon(FontAwesomeIcons.shareNodes, size: _actionButtonIconSize),
+              icon: FaIcon(FontAwesomeIcons.shareNodes, size: _getResponsiveIconSize(context)),
               text: 'شارك',
               onTap: () => _shareContent(),
             ),
@@ -572,7 +572,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                 _currentPostData.isFavorited
                     ? FontAwesomeIcons.solidStar
                     : FontAwesomeIcons.star,
-                size: _actionButtonIconSize,
+                size: _getResponsiveIconSize(context),
                 color: _currentPostData.isFavorited ? Colors.amber : _grayColor,
               ),
               text: 'مفضلة',
@@ -584,8 +584,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
             child: _buildActionButton(
               icon: Image.asset(
                 'assets/images/icons/view.png',
-                width: _actionButtonIconSize,
-                height: _actionButtonIconSize,
+                width: _getResponsiveIconSize(context),
+                height: _getResponsiveIconSize(context),
                 color: _grayColor,
               ),
               text: '${_currentPostData.views}',
@@ -617,7 +617,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
               child: Text(
                 text,
                 style: TextStyle(
-                  fontSize: _actionButtonFontSize,
+                  fontSize: _getResponsiveFontSize(context),
                   fontWeight: FontWeight.w500,
                   color: _grayColor,
                 ),
@@ -706,6 +706,28 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   // Helper methods
+  double _getResponsiveFontSize(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    if (screenWidth < 350) {
+      return 14.0; // Very small screens
+    } else if (screenWidth < 400) {
+      return 15.0; // Small screens
+    } else {
+      return _actionButtonFontSize; // Normal screens
+    }
+  }
+
+  double _getResponsiveIconSize(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    if (screenWidth < 350) {
+      return 18.0; // Very small screens
+    } else if (screenWidth < 400) {
+      return 20.0; // Small screens
+    } else {
+      return _actionButtonIconSize; // Normal screens
+    }
+  }
+
   bool _shouldShowApprovalBadge(AuthStore authStore) {
     final isAdminOrOwner = authStore.userPrivilege == 'admin' || 
                           authStore.userPrivilege == 'owner';
