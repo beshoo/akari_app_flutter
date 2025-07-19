@@ -8,4 +8,5 @@ Try using a 'SizedBox' rather than a 'Container'.dartsized_box_for_whitespace
 - Do not use print or debugPrint , use Logger.log()
 - Do not create example or Demo pages at all
 - Whn you want to use spinner , use CustomSpinner(size: 50.0) not CircularProgressIndicator()
+- 🔧 CROSS-PLATFORM UI ALERT: Please ensure all floating/positioned UI elements (FABs, bottom sheets, modals, bottom nav bars, overlays) properly handle iOS/Android safe areas. Watch for hardcoded bottom/top positioning that doesn't account for iOS home indicator, notches, or dynamic islands. Use MediaQuery.of(context).viewPadding or SafeArea widgets for consistent cross-platform positioning.
 
