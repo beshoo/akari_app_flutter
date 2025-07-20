@@ -164,7 +164,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           // Add button with fixed width
           if (showAddAdButton)
-            Container(
+            SizedBox(
               width: isSmallScreen ? 100 : 140,
               child: Padding(
                 padding: EdgeInsets.only(right: isSmallScreen ? 4.0 : 8.0),
