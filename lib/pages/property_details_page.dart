@@ -603,6 +603,9 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   Widget _buildFloatingReactionPanel() {
     Logger.log('🎨 Building floating reaction panel, _showReactions: $_showReactions');
     
+    // Get current scroll position
+    final double scrollOffset = _scrollController.hasClients ? _scrollController.offset : 0.0;
+    
     // Calculate position from top of screen to إعجاب button
     final double appBarHeight = kToolbarHeight; // CustomAppBar height
     final double statusBarHeight = MediaQuery.of(context).viewPadding.top;
@@ -623,11 +626,15 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     final double distanceFromTop = statusBarHeight + appBarHeight + fixedHeaderHeight + 
                                    imageSliderHeight + dotsHeight + actionButtonsPaddingTop;
     
-    // Position panel just above the إعجاب button
-    final double panelTopPosition = distanceFromTop - 100.0; // 100px above the button (moved up more)
+    // Position panel just above the إعجاب button, accounting for scroll offset
+    final double panelTopPosition = distanceFromTop - scrollOffset - 100.0; // 100px above the button
+    
+    // Ensure the panel doesn't go above the app bar
+    final double minTopPosition = statusBarHeight + appBarHeight + 10.0;
+    final double finalTopPosition = panelTopPosition.clamp(minTopPosition, double.infinity);
     
     return Positioned(
-      top: panelTopPosition, // Position from top of screen
+      top: finalTopPosition, // Position from top of screen, accounting for scroll
       right: 20, // Position above the إعجاب button (move to the right side)
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

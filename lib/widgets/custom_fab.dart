@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 class CustomFAB extends StatefulWidget {
   final Function()? onAddApartment;
@@ -19,6 +20,9 @@ class _CustomFABState extends State<CustomFAB> with SingleTickerProviderStateMix
   late Animation<double> _animation;
   late Animation<Offset> _slideAnimation;
   bool _isOpen = false;
+  
+  // AutoSizeGroup to sync font sizes across menu items
+  final AutoSizeGroup _menuItemsGroup = AutoSizeGroup();
 
   @override
   void initState() {
@@ -83,7 +87,7 @@ class _CustomFABState extends State<CustomFAB> with SingleTickerProviderStateMix
             ),
           ),
 
-          // Menu items - positioned with consistent spacing
+          // Menu items - positioned with proper constraints
           Positioned(
             left: 16,
             right: 16,
@@ -110,37 +114,48 @@ class _CustomFABState extends State<CustomFAB> with SingleTickerProviderStateMix
             ),
           ),
 
-          // Main FAB - positioned consistently across platforms
+          // Main FAB - positioned with proper constraints
           Positioned(
             left: 16,
+            right: 16,
             bottom: 90,
-            child: FloatingActionButton.extended(
-              onPressed: _toggleFAB,
-              backgroundColor: const Color(0xFF8E6756),
-              label: Row(
-                children: [
-                  Text(
-                    'أضف إعلانك الأن',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withValues(red: 0, green: 0, blue: 0, alpha: 150),
-                          offset: const Offset(0, 2),
-                          blurRadius: 15,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FloatingActionButton.extended(
+                onPressed: _toggleFAB,
+                backgroundColor: const Color(0xFF8E6756),
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: AutoSizeText(
+                        'أضف إعلانك الأن',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black54,
+                              offset: Offset(0, 2),
+                              blurRadius: 15,
+                            ),
+                          ],
                         ),
-                      ],
+                        maxLines: 1,
+                        minFontSize: 12,
+                        maxFontSize: 16,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    _isOpen ? Icons.close : Icons.add,
-                    color: Colors.white,
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Icon(
+                      _isOpen ? Icons.close : Icons.add,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -164,22 +179,30 @@ class _CustomFABState extends State<CustomFAB> with SingleTickerProviderStateMix
             onTap?.call(); // Call the provided callback
           },
           child: Container(
-            width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 19,
-                    fontFamily: 'Cairo',
-                    fontWeight: FontWeight.bold,
-                    decoration: TextDecoration.none,
+                Flexible(
+                  child: AutoSizeText(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 19,
+                      fontFamily: 'Cairo',
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.none,
+                    ),
+                    group: _menuItemsGroup,
+                    maxLines: 1,
+                    minFontSize: 12,
+                    maxFontSize: 19,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
                   ),
                 ),
-                const SizedBox(width: 30), // Space between text and icon
+                const SizedBox(width: 16), // Reduced space between text and icon
                 Container(
                   width: 60,
                   height: 60,

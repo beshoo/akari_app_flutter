@@ -14,6 +14,7 @@ import 'package:akari_app/widgets/custom_bottom_nav_bar.dart';
 import 'package:akari_app/widgets/custom_dialog.dart';
 import 'package:akari_app/widgets/custom_fab.dart';
 import 'package:akari_app/widgets/custom_spinner.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -234,9 +235,12 @@ class _HomeViewState extends State<HomeView> {
                                                     right: 0,
                                                     child: Container(
                                                       padding: const EdgeInsets.all(16.0),
-                                                      child: Text(
+                                                      child: AutoSizeText(
                                                         region.name,
                                                         textAlign: TextAlign.center,
+                                                        maxLines: 2,
+                                                        minFontSize: 14,
+                                                        maxFontSize: 18,
                                                         style: const TextStyle(
                                                           color: Colors.white,
                                                           fontSize: 18,
@@ -289,7 +293,7 @@ class _HomeViewState extends State<HomeView> {
                                             crossAxisCount: 2,
                                             crossAxisSpacing: 16.0,
                                             mainAxisSpacing: 16.0,
-                                            childAspectRatio: 0.9,
+                                            childAspectRatio: 1.0,
                                           ),
                                           itemCount: state.shareStatistics.length,
                                           itemBuilder: (context, index) {
@@ -314,10 +318,10 @@ class _HomeViewState extends State<HomeView> {
                                                   mainAxisAlignment: MainAxisAlignment.center,
                                                   children: [
                                                     Container(
-                                                      padding: const EdgeInsets.all(10.0),
+                                                      padding: const EdgeInsets.all(8.0),
                                                       decoration: BoxDecoration(
                                                         color: Colors.white.withValues(alpha: 0.25),
-                                                        borderRadius: BorderRadius.circular(14.0),
+                                                        borderRadius: BorderRadius.circular(12.0),
                                                         boxShadow: [
                                                           BoxShadow(
                                                             color: Colors.black.withValues(alpha: 0.1),
@@ -328,24 +332,28 @@ class _HomeViewState extends State<HomeView> {
                                                       ),
                                                       child: Image.asset(
                                                         'assets/images/icons/building_1.png',
-                                                        height: 30.0,
-                                                        width: 30.0,
+                                                        height: MediaQuery.of(context).size.width > 400 ? 35.0 : 25.0,
+                                                        width: MediaQuery.of(context).size.width > 400 ? 35.0 : 25.0,
                                                         color: Colors.white,
                                                       ),
                                                     ),
-                                                    const SizedBox(height: 12.0),
-                                                    Padding(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                                                      child: FittedBox(
-                                                        fit: BoxFit.scaleDown,
+                                                    const SizedBox(height: 8.0),
+                                                    Expanded(
+                                                      flex: 2,
+                                                      child: Padding(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 6.0),
                                                         child: Text(
                                                           'أسهم ${item.name}',
+                                                          textAlign: TextAlign.center,
+                                                          maxLines: 3,
+                                                          overflow: TextOverflow.ellipsis,
                                                           style: TextStyle(
-                                                            fontSize: 15.0,
+                                                            fontSize: MediaQuery.of(context).size.width > 400 ? 16.0 : 15.0,
                                                             fontWeight: FontWeight.bold,
                                                             color: Colors.white,
                                                             letterSpacing: -0.2,
-                                                            shadows: [
+                                                            height: 1.2,
+                                                            shadows: const [
                                                               Shadow(
                                                                 color: Colors.black26,
                                                                 offset: Offset(0, 1),
@@ -356,34 +364,42 @@ class _HomeViewState extends State<HomeView> {
                                                         ),
                                                       ),
                                                     ),
-                                                    const SizedBox(height: 6.0),
-                                                    Padding(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                                                      child: FittedBox(
-                                                        fit: BoxFit.scaleDown,
+                                                    const SizedBox(height: 4.0),
+                                                    Expanded(
+                                                      flex: 1,
+                                                      child: Padding(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 6.0),
                                                         child: Text(
-                                                          'طلبات الشراء: ${item.buySharesCount}',
+                                                          'طلبات شراء: ${item.buySharesCount}',
+                                                          textAlign: TextAlign.center,
+                                                          maxLines: 2,
+                                                          overflow: TextOverflow.ellipsis,
                                                           style: TextStyle(
-                                                            fontSize: 17.0,
+                                                            fontSize: MediaQuery.of(context).size.width > 400 ? 16.0 : 14.0,
                                                             fontWeight: FontWeight.w500,
                                                             color: Colors.white.withValues(alpha: 0.95),
                                                             letterSpacing: -0.1,
+                                                            height: 1.1,
                                                           ),
                                                         ),
                                                       ),
                                                     ),
-                                                    const SizedBox(height: 3.0),
-                                                    Padding(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                                                      child: FittedBox(
-                                                        fit: BoxFit.scaleDown,
+                                                    const SizedBox(height: 2.0),
+                                                    Expanded(
+                                                      flex: 1,
+                                                      child: Padding(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 6.0),
                                                         child: Text(
-                                                          'عروض البيع: ${item.sellSharesCount}',
+                                                          'عروض بيع: ${item.sellSharesCount}',
+                                                          textAlign: TextAlign.center,
+                                                          maxLines: 2,
+                                                          overflow: TextOverflow.ellipsis,
                                                           style: TextStyle(
-                                                            fontSize: 17.0,
+                                                            fontSize: MediaQuery.of(context).size.width > 400 ? 16.0 : 14.0,
                                                             fontWeight: FontWeight.w500,
                                                             color: Colors.white.withValues(alpha: 0.95),
                                                             letterSpacing: -0.1,
+                                                            height: 1.1,
                                                           ),
                                                         ),
                                                       ),
@@ -417,16 +433,19 @@ class _HomeViewState extends State<HomeView> {
                                                 ),
                                                 child: Image.asset(
                                                   'assets/images/icons/updates.png',
-                                                  height: 26,
-                                                  width: 26,
+                                                  height: 25,
+                                                  width: 25,
                                                   color: Colors.white,
                                                 ),
                                               ),
                                               const SizedBox(height: 8),
-                                              const Text(
+                                              AutoSizeText(
                                                 'عدد العقارات المتاحة حسب النوع',
                                                 textAlign: TextAlign.center,
-                                                style: TextStyle(
+                                                maxLines: 2,
+                                                minFontSize: 14,
+                                                maxFontSize: 18,
+                                                style: const TextStyle(
                                                   fontSize: 18,
                                                   fontWeight: FontWeight.bold,
                                                   color: Colors.white,
@@ -454,7 +473,7 @@ class _HomeViewState extends State<HomeView> {
                                             crossAxisCount: 2,
                                             crossAxisSpacing: 16.0,
                                             mainAxisSpacing: 16.0,
-                                            childAspectRatio: 0.9,
+                                            childAspectRatio: 1.0,
                                           ),
                                           itemCount: state.apartmentStatistics.length,
                                           itemBuilder: (context, index) {
@@ -468,10 +487,10 @@ class _HomeViewState extends State<HomeView> {
                                                   mainAxisAlignment: MainAxisAlignment.center,
                                                   children: [
                                                     Container(
-                                                      padding: const EdgeInsets.all(10.0),
+                                                      padding: const EdgeInsets.all(8.0),
                                                       decoration: BoxDecoration(
                                                         color: Colors.white.withValues(alpha: 0.25),
-                                                        borderRadius: BorderRadius.circular(14.0),
+                                                        borderRadius: BorderRadius.circular(12.0),
                                                         boxShadow: [
                                                           BoxShadow(
                                                             color: Colors.black.withValues(alpha: 0.1),
@@ -482,47 +501,26 @@ class _HomeViewState extends State<HomeView> {
                                                       ),
                                                       child: Image.asset(
                                                         'assets/images/icons/building_1.png',
-                                                        height: 30.0,
-                                                        width: 30.0,
+                                                        height: MediaQuery.of(context).size.width > 400 ? 30.0 : 24.0,
+                                                        width: MediaQuery.of(context).size.width > 400 ? 30.0 : 24.0,
                                                         color: Colors.white,
                                                       ),
                                                     ),
-                                                    const SizedBox(height: 12.0),
+                                                    const SizedBox(height: 10.0),
                                                     Padding(
                                                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                                      child: FittedBox(
-                                                        fit: BoxFit.scaleDown,
-                                                        child: Text(
-                                                          item.name,
-                                                          textAlign: TextAlign.center,
-                                                          style: const TextStyle(
-                                                            fontSize: 17.0,
-                                                            fontWeight: FontWeight.bold,
-                                                            color: Colors.white,
-                                                            letterSpacing: -0.2,
-                                                            shadows: [
-                                                              Shadow(
-                                                                color: Colors.black26,
-                                                                offset: Offset(0, 1),
-                                                                blurRadius: 2,
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 6.0),
-                                                    FittedBox(
-                                                      fit: BoxFit.scaleDown,
                                                       child: Text(
-                                                        item.apartmentsCount.toString(),
+                                                        item.name,
                                                         textAlign: TextAlign.center,
-                                                        style: const TextStyle(
-                                                          fontSize: 26.0,
-                                                          // fontWeight: FontWeight.w700,
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow.ellipsis,
+                                                        style: TextStyle(
+                                                          fontSize: MediaQuery.of(context).size.width > 400 ? 17.0 : 16.0,
+                                                          fontWeight: FontWeight.bold,
                                                           color: Colors.white,
-                                                          letterSpacing: -0.5,
-                                                          shadows: [
+                                                          letterSpacing: -0.2,
+                                                          height: 1.2,
+                                                          shadows: const [
                                                             Shadow(
                                                               color: Colors.black26,
                                                               offset: Offset(0, 1),
@@ -532,6 +530,26 @@ class _HomeViewState extends State<HomeView> {
                                                         ),
                                                       ),
                                                     ),
+                                                    const SizedBox(height: 4.0),
+                                                    Text(
+                                                      item.apartmentsCount.toString(),
+                                                      textAlign: TextAlign.center,
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontSize: MediaQuery.of(context).size.width > 400 ? 26.0 : 22.0,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: Colors.white,
+                                                        letterSpacing: -0.5,
+                                                        shadows: const [
+                                                          Shadow(
+                                                            color: Colors.black26,
+                                                            offset: Offset(0, 1),
+                                                            blurRadius: 2,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
                                                   ],
                                                 ),
                                               ),
@@ -539,9 +557,8 @@ class _HomeViewState extends State<HomeView> {
                                           },
                                         ),
 
-                                        const SizedBox(height: 24),
                                         // Add extra bottom padding for FAB
-                                        const SizedBox(height: 150),
+                                        const SizedBox(height: 175),
                                         ],
                                       ),
                                   ),
