@@ -339,13 +339,13 @@ class _HomeViewState extends State<HomeView> {
                                                     ),
                                                     const SizedBox(height: 8.0),
                                                     Expanded(
-                                                      flex: 2,
+                                                      flex: 1,
                                                       child: Padding(
                                                         padding: const EdgeInsets.symmetric(horizontal: 6.0),
                                                         child: Text(
-                                                          'أسهم ${item.name}',
+                                                          'أسهم ${item.name.replaceAll('تنظيم', '')}',
                                                           textAlign: TextAlign.center,
-                                                          maxLines: 3,
+                                                          maxLines: 1,
                                                           overflow: TextOverflow.ellipsis,
                                                           style: TextStyle(
                                                             fontSize: MediaQuery.of(context).size.width > 400 ? 16.0 : 15.0,
@@ -364,7 +364,7 @@ class _HomeViewState extends State<HomeView> {
                                                         ),
                                                       ),
                                                     ),
-                                                    const SizedBox(height: 4.0),
+                                                    const SizedBox(height: 2.0),
                                                     Expanded(
                                                       flex: 1,
                                                       child: Padding(
@@ -372,7 +372,7 @@ class _HomeViewState extends State<HomeView> {
                                                         child: Text(
                                                           'طلبات شراء: ${item.buySharesCount}',
                                                           textAlign: TextAlign.center,
-                                                          maxLines: 2,
+                                                          maxLines: 1,
                                                           overflow: TextOverflow.ellipsis,
                                                           style: TextStyle(
                                                             fontSize: MediaQuery.of(context).size.width > 400 ? 16.0 : 14.0,
@@ -384,7 +384,7 @@ class _HomeViewState extends State<HomeView> {
                                                         ),
                                                       ),
                                                     ),
-                                                    const SizedBox(height: 2.0),
+                                                    const SizedBox(height: 1.0),
                                                     Expanded(
                                                       flex: 1,
                                                       child: Padding(
@@ -392,7 +392,7 @@ class _HomeViewState extends State<HomeView> {
                                                         child: Text(
                                                           'عروض بيع: ${item.sellSharesCount}',
                                                           textAlign: TextAlign.center,
-                                                          maxLines: 2,
+                                                          maxLines: 1,
                                                           overflow: TextOverflow.ellipsis,
                                                           style: TextStyle(
                                                             fontSize: MediaQuery.of(context).size.width > 400 ? 16.0 : 14.0,
@@ -445,8 +445,8 @@ class _HomeViewState extends State<HomeView> {
                                                 maxLines: 2,
                                                 minFontSize: 14,
                                                 maxFontSize: 18,
-                                                style: const TextStyle(
-                                                  fontSize: 18,
+                                                style: TextStyle(
+                                                  fontSize: MediaQuery.of(context).size.width > 400 ? 22.0 : 18.0,
                                                   fontWeight: FontWeight.bold,
                                                   color: Colors.white,
                                                   letterSpacing: -0.3,
@@ -515,8 +515,8 @@ class _HomeViewState extends State<HomeView> {
                                                         maxLines: 2,
                                                         overflow: TextOverflow.ellipsis,
                                                         style: TextStyle(
-                                                          fontSize: MediaQuery.of(context).size.width > 400 ? 17.0 : 16.0,
-                                                          fontWeight: FontWeight.bold,
+                                                          fontSize: MediaQuery.of(context).size.width > 400 ? 16.0 : 15.0,
+                                                           fontWeight: FontWeight.bold,
                                                           color: Colors.white,
                                                           letterSpacing: -0.2,
                                                           height: 1.2,
