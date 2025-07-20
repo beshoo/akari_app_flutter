@@ -192,8 +192,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                       child: _buildReactionSummary(),
                     ),
                   
-                  // Action buttons row - now uses full screen width
-                  _buildActionButtons(reactionStore, authStore),
+                  // Action buttons row - contained within card boundaries
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 12),
+                    child: _buildActionButtons(reactionStore, authStore),
+                  ),
                 ],
               ),
               
@@ -531,8 +534,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           child: Row(
             children: [
               // Like/Reaction button
-              SizedBox(
-                width: buttonWidth,
+              Expanded(
                 child: GestureDetector(
                   onTap: () => _handleReactionButtonTap(),
                   onLongPress: () => _handleReactionButtonLongPress(),
@@ -543,7 +545,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _getCurrentReactionIcon(size: _actionButtonIconSize),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 4),
                         Expanded(
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
@@ -564,8 +566,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                 ),
               ),
               // Share button
-              SizedBox(
-                width: buttonWidth,
+              Expanded(
                 child: _buildActionButton(
                   icon: FaIcon(FontAwesomeIcons.shareNodes, size: _actionButtonIconSize),
                   text: 'شارك',
@@ -573,8 +574,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                 ),
               ),
               // Favorite button
-              SizedBox(
-                width: buttonWidth,
+              Expanded(
                 child: _buildActionButton(
                   icon: FaIcon(
                     _currentPostData.isFavorited
@@ -588,23 +588,43 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                 ),
               ),
               // Views counter
-              SizedBox(
-                width: buttonWidth,
-                child: _buildActionButton(
-                  icon: Image.asset(
-                    'assets/images/icons/view.png',
-                    width: _actionButtonIconSize,
-                    height: _actionButtonIconSize,
-                    color: _grayColor,
-                  ),
-                  text: '${_currentPostData.views}',
-                  onTap: null,
-                ),
+              Expanded(
+                child: _buildViewCountButton(),
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+    Widget _buildViewCountButton() {
+    return GestureDetector(
+      onTap: null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/icons/view.png',
+              width: _actionButtonIconSize,
+              height: _actionButtonIconSize,
+              color: _grayColor,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              '${_currentPostData.views}',
+              style: const TextStyle(
+                fontSize: _actionButtonFontSize,
+                fontWeight: FontWeight.w500,
+                color: _grayColor,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -621,8 +641,13 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            icon,
-            const SizedBox(width: 6),
+            Container(
+              width: _actionButtonIconSize + 4,
+              height: _actionButtonIconSize + 4,
+              alignment: Alignment.center,
+              child: icon,
+            ),
+            const SizedBox(width: 4),
             Expanded(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -634,6 +659,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                     fontWeight: FontWeight.w500,
                     color: _grayColor,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
@@ -750,21 +776,22 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   Widget _getCurrentReactionIcon({double size = 16}) {
-    return SizedBox(
-      width: size + 2, // Fixed width to prevent layout shifts
-      height: size + 2, // Fixed height to prevent layout shifts
-      child: Center(
-        child: _currentPostData.currentUserReaction != null
-            ? Text(
-                _reactionEmojis[_currentPostData.currentUserReaction!]!,
-                style: TextStyle(fontSize: size - 2), // Slightly smaller to fit better
-              )
-            : FaIcon(
-                FontAwesomeIcons.thumbsUp,
-                size: size,
-                color: _grayColor,
-              ),
-      ),
+    return Container(
+      width: size + 4, // Slightly larger container to prevent overflow
+      height: size + 4, // Slightly larger container to prevent overflow
+      alignment: Alignment.center,
+      child: _currentPostData.currentUserReaction != null
+          ? Text(
+              _reactionEmojis[_currentPostData.currentUserReaction!]!,
+              style: TextStyle(fontSize: size - 1), // Adjusted size to fit better
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.clip,
+            )
+          : FaIcon(
+              FontAwesomeIcons.thumbsUp,
+              size: size,
+              color: _grayColor,
+            ),
     );
   }
 
