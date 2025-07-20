@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:share_plus/share_plus.dart' as share_plus;
 import 'package:shimmer/shimmer.dart';
+import 'dart:io';
 import '../data/models/apartment_model.dart';
 import '../data/models/share_model.dart';
 import '../data/repositories/apartment_repository.dart';
@@ -40,6 +41,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   final ShareRepository _shareRepository = ShareRepository();
   final PageController _pageController = PageController();
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey _reactionButtonKey = GlobalKey();
 
   // State management
   dynamic _itemData;
@@ -438,6 +440,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
               onTap: () => _handleReactionButtonTap(),
               onLongPress: _handleReactionButtonLongPress,
               child: Container(
+                key: _reactionButtonKey,
                 height: 50,
                 decoration: BoxDecoration(
                   border: Border.all(color: const Color(0xFFE5E5E5)),
@@ -600,100 +603,114 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     );
   }
 
-  Widget _buildFloatingReactionPanel() {
-    Logger.log('🎨 Building floating reaction panel, _showReactions: $_showReactions');
+  Widget _buildReactionPanel() {
+    Logger.log('🎨 Building reaction panel, _showReactions: $_showReactions');
     
-    // Get current scroll position
-    final double scrollOffset = _scrollController.hasClients ? _scrollController.offset : 0.0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 12,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: _reactionEmojis.entries.map((entry) {
+          final isSelected = _itemData.currentUserReaction == entry.key;
+          return GestureDetector(
+            onTap: () {
+              _handleReactionSelected(entry.key);
+              Logger.log('🎯 Reaction panel: ${entry.key} reaction tapped');
+              // Hide the reaction panel after selection
+              setState(() {
+                _showReactions = false;
+              });
+            },
+            child: AnimatedBuilder(
+              animation: _reactionScaleAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: isSelected ? _reactionScaleAnimation.value : 1.0,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFF1877F2).withOpacity(0.1)
+                          : Colors.transparent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        entry.value,
+                        style: TextStyle(
+                          fontSize: isSelected ? 28 : 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildReactionPanelWithPosition() {
+    // Get the actual position of the reaction button
+    final RenderBox? renderBox = _reactionButtonKey.currentContext?.findRenderObject() as RenderBox?;
     
-    // Calculate position from top of screen to إعجاب button
-    final double appBarHeight = kToolbarHeight; // CustomAppBar height
-    final double statusBarHeight = MediaQuery.of(context).viewPadding.top;
+    if (renderBox == null) {
+      // Fallback to calculated position if renderBox is not available
+      final double scrollOffset = _scrollController.hasClients ? _scrollController.offset : 0.0;
+      final double appBarHeight = kToolbarHeight;
+      final double statusBarHeight = MediaQuery.of(context).viewPadding.top;
+      final double fixedHeaderHeight = 80.0;
+      final double imageSliderHeight = 300.0;
+      final double dotsHeight = 44.0;
+      final double actionButtonsPaddingTop = 10.0;
+      
+      final double buttonTopPosition = statusBarHeight + appBarHeight + fixedHeaderHeight + 
+                                     imageSliderHeight + dotsHeight + actionButtonsPaddingTop;
+      final double panelTopPosition = buttonTopPosition - scrollOffset - 140.0;
+      final double minTopPosition = statusBarHeight + appBarHeight + 10.0;
+      final double finalTopPosition = panelTopPosition.clamp(minTopPosition, double.infinity);
+      
+      return Positioned(
+        top: finalTopPosition,
+        right: 20,
+        child: _buildReactionPanel(),
+      );
+    }
     
-    // Fixed header height (approximate)
-    final double fixedHeaderHeight = 80.0; // Estimated from _buildFixedHeader
+    // Get the button's position relative to the screen
+    final Offset buttonPosition = renderBox.localToGlobal(Offset.zero);
+    final Size buttonSize = renderBox.size;
     
-    // Image slider height
-    final double imageSliderHeight = 300.0; // From _buildImageSlider
-    
-    // Clickable dots height (approximate)
-    final double dotsHeight = 44.0; // 16 padding top + 12 dot + 16 padding bottom
-    
-    // Action buttons padding top
-    final double actionButtonsPaddingTop = 10.0; // From _buildActionButtons padding
-    
-    // Calculate total distance from top to where إعجاب button starts
-    final double distanceFromTop = statusBarHeight + appBarHeight + fixedHeaderHeight + 
-                                   imageSliderHeight + dotsHeight + actionButtonsPaddingTop;
-    
-    // Position panel just above the إعجاب button, accounting for scroll offset
-    final double panelTopPosition = distanceFromTop - scrollOffset - 100.0; // 100px above the button
+    // Calculate panel position to appear above the button
+    final double panelTopPosition = buttonPosition.dy - 140.0; // 80px above the button
+    final double panelRightPosition = MediaQuery.of(context).size.width - buttonPosition.dx - (buttonSize.width / 2);
     
     // Ensure the panel doesn't go above the app bar
+    final double statusBarHeight = MediaQuery.of(context).viewPadding.top;
+    final double appBarHeight = kToolbarHeight;
     final double minTopPosition = statusBarHeight + appBarHeight + 10.0;
     final double finalTopPosition = panelTopPosition.clamp(minTopPosition, double.infinity);
     
     return Positioned(
-      top: finalTopPosition, // Position from top of screen, accounting for scroll
-      right: 20, // Position above the إعجاب button (move to the right side)
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: 12,
-              spreadRadius: 2,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: _reactionEmojis.entries.map((entry) {
-            final isSelected = _itemData.currentUserReaction == entry.key;
-            return GestureDetector(
-              onTap: () {
-                _handleReactionSelected(entry.key);
-                Logger.log('🎯 Floating panel: ${entry.key} reaction tapped');
-                // Hide the reaction panel after selection
-                setState(() {
-                  _showReactions = false;
-                });
-              },
-              child: AnimatedBuilder(
-                animation: _reactionScaleAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: isSelected ? _reactionScaleAnimation.value : 1.0,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF1877F2).withOpacity(0.1)
-                            : Colors.transparent,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          entry.value,
-                          style: TextStyle(
-                            fontSize: isSelected ? 28 : 24,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            );
-          }).toList(),
-        ),
-      ),
+      top: finalTopPosition,
+      right: panelRightPosition,
+      child: _buildReactionPanel(),
     );
   }
 
@@ -2116,9 +2133,9 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                         child: _buildBottomActionButtons(),
                       ),
                       
-                      // Floating reaction panel - moved outside the main stack
+                      // Reaction panel positioned relative to the reaction button
                       if (_showReactions)
-                        _buildFloatingReactionPanel(),
+                        _buildReactionPanelWithPosition(),
                     ],
                   ),
                 ),
