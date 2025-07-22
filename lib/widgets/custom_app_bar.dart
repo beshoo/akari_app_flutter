@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:akari_app/utils/logger.dart';
+import 'package:akari_app/pages/webview_page.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppBar({
@@ -190,21 +191,30 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               ],
             ),
           if (onHelpPressed != null)
-            Container(
+            SizedBox(
               width: isSmallScreen ? 32 : 36,
               height: isSmallScreen ? 32 : 36,
-              decoration: const BoxDecoration(
-                color: Color(0xFFEBE5DB),
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                icon: Icon(
-                  Icons.question_mark,
-                  color: const Color(0xFF8C7A6A),
-                  size: isSmallScreen ? 16 : 20,
+              child: Material(
+                color: const Color(0xFFEBE5DB),
+                shape: const CircleBorder(),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(
+                    Icons.question_mark,
+                    color: const Color(0xFF8C7A6A),
+                    size: isSmallScreen ? 16 : 20,
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => WebViewPage(
+                          url: 'https://akari.versetech.net/info.html',
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                onPressed: onHelpPressed,
               ),
             ),
           // Add button with fixed width
