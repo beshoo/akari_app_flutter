@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:akari_app/utils/logger.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppBar({
@@ -17,6 +18,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.titleStyle,
     this.onLogoPressed,
     this.onlyText = false,
+    this.notificationCount = 0,
   });
 
   final VoidCallback? onNotificationPressed;
@@ -33,9 +35,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final TextStyle? titleStyle;
   final VoidCallback? onLogoPressed;
   final bool onlyText;
+  final int notificationCount;
 
   @override
   Widget build(BuildContext context) {
+   // Logger.log('CustomAppBar notificationCount: ' + notificationCount.toString());
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 360;
     final logoHeight = isSmallScreen ? 28.0 : 35.0;
@@ -138,18 +142,52 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
           if (onNotificationPressed != null)
-            IconButton(
-              icon: const Icon(
-                Icons.notifications_none_outlined,
-                color: Color(0xFF8C7A6A),
-              ),
-              onPressed: onNotificationPressed,
-              iconSize: isSmallScreen ? 20 : 24,
-              padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
-              constraints: BoxConstraints(
-                minWidth: isSmallScreen ? 32 : 48,
-                minHeight: isSmallScreen ? 32 : 48,
-              ),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.notifications_none_outlined,
+                    color: Color(0xFF8C7A6A),
+                  ),
+                  onPressed: onNotificationPressed,
+                  iconSize: isSmallScreen ? 20 : 24,
+                  padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
+                  constraints: BoxConstraints(
+                    minWidth: isSmallScreen ? 32 : 48,
+                    minHeight: isSmallScreen ? 32 : 48,
+                  ),
+                ),
+                if (notificationCount > 0)
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 167, 43, 34),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white, width: 1),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          notificationCount > 99 ? '99+' : notificationCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           if (onHelpPressed != null)
             Container(

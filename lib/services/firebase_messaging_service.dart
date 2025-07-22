@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../pages/property_details_page.dart';
 import '../utils/logger.dart';
 import '../services/secure_storage.dart';
+import '../stores/notification_store.dart';
 
 class FirebaseMessagingService {
   static final FirebaseMessagingService instance = FirebaseMessagingService._internal();
@@ -19,6 +20,9 @@ class FirebaseMessagingService {
   }
 
   FirebaseMessagingService._internal();
+
+  // Callback for foreground notification
+  void Function()? onForegroundNotification;
 
   // Make FirebaseMessaging lazy-loaded to avoid initialization issues
   FirebaseMessaging? _firebaseMessaging;
@@ -153,6 +157,14 @@ class FirebaseMessagingService {
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     Logger.log('📱 Got message in foreground: ${message.messageId}');
     Logger.log('📱 Message data: ${message.data}');
+
+    // Call the callback if set
+    if (onForegroundNotification != null) {
+      onForegroundNotification!();
+    }
+
+    // Increment notification count in store
+    // notificationStore.increment(); // This line was removed as per the edit hint
 
     // If configured to handle immediately, do so without showing notification
     if (handleForegroundImmediately && message.data.isNotEmpty) {

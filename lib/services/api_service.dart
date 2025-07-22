@@ -177,6 +177,30 @@ class ApiService {
     }
   }
   
+  // Fetch notification count
+  static Future<int> getNotificationCount() async {
+    try {
+      final response = await dio.get('/notification/count');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        Logger.log('Notification count raw value: $data (type: ${data.runtimeType})');
+        if (data is int) {
+          return data;
+        } else if (data is String) {
+          return int.tryParse(data) ?? 0;
+        } else if (data is Map && data['count'] != null) {
+          final countValue = data['count'];
+          if (countValue is int) return countValue;
+          if (countValue is String) return int.tryParse(countValue) ?? 0;
+        }
+      }
+      return 0;
+    } catch (e, st) {
+      Logger.log('Failed to fetch notification count: $e');
+      return 0;
+    }
+  }
+  
   // Helper method to check if ApiService is initialized
   static bool get isInitialized => _initialized;
   

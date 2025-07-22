@@ -4,18 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/services.dart';
 
 import '../pages/webview_page.dart';
+import '../services/firebase_messaging_service.dart';
 import '../services/secure_storage.dart';
 import '../stores/auth_store.dart';
 import '../utils/logger.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_sheet.dart';
-import '../services/firebase_messaging_service.dart';
+import '../pages/support_page.dart';
 
 class MorePage extends StatefulWidget {
-  const MorePage({Key? key}) : super(key: key);
+  const MorePage({super.key});
 
   @override
   State<MorePage> createState() => _MorePageState();
@@ -36,6 +36,7 @@ class _MorePageState extends State<MorePage> {
   }
 
   Future<void> _initialize() async {
+    final authStore = Provider.of<AuthStore>(context, listen: false); // moved here
     setState(() => loading = true);
     Logger.log('==================== MORE SCREEN INIT ====================');
     // Check what's in secure store
@@ -49,14 +50,13 @@ class _MorePageState extends State<MorePage> {
         Logger.error('Failed to decode user data', e);
       }
     }
-    Logger.log('Secure store user keys: ${userData?.keys}');
+    Logger.log('Secure store user keys:  [38;5;8m [48;5;8m${userData?.keys} [0m');
     Logger.log('Secure store user name: ${userData?['name']}');
-    // Check API response
-    final authStore = Provider.of<AuthStore>(context, listen: false);
     final response = authStore.user;
     Logger.log('API response: $response');
     Logger.log('API response keys: ${response?.keys}');
     Logger.log('API response name: ${response?['name']}');
+    if (!mounted) return;
     setState(() {
       user = response;
       loading = false;
@@ -77,6 +77,7 @@ class _MorePageState extends State<MorePage> {
   Future<void> _handleLogout() async {
     await SecureStorage.deleteUserData('user');
     await SecureStorage.deleteToken();
+    if (!mounted) return;
     if (Navigator.canPop(context)) {
       Navigator.popUntil(context, (route) => route.isFirst);
     }
@@ -216,7 +217,6 @@ class _MorePageState extends State<MorePage> {
                       MaterialPageRoute(
                         builder: (context) => WebViewPage(
                           url: 'https://akari.versetech.net/info.html',
-                          title: 'الحساب الذهبي',
                         ),
                       ),
                     ),
@@ -229,7 +229,6 @@ class _MorePageState extends State<MorePage> {
                       MaterialPageRoute(
                         builder: (context) => WebViewPage(
                           url: 'https://akari.versetech.net/info.html#app-fees',
-                          title: 'أجور تطبيق عقاري دمشق',
                         ),
                       ),
                     ),
@@ -254,7 +253,6 @@ class _MorePageState extends State<MorePage> {
                       MaterialPageRoute(
                         builder: (context) => WebViewPage(
                           url: 'https://akari.versetech.net/golden-account.html',
-                          title: 'الحساب الذهبي',
                         ),
                       ),
                     ),
@@ -268,16 +266,14 @@ class _MorePageState extends State<MorePage> {
                     icon: 'assets/images/icons/notifications.png',
                     title: 'مركز الإشعارات',
                     onTap: () {
-                      Future.microtask(() {
-                        Navigator.pushNamed(context, '/notifications');
-                      });
+                      Navigator.pushNamed(context, '/notifications');
                     },
                   ),
                   NotificationPermissionSwitcher(),
                   _MoreSettingsItem(
                     icon: 'assets/images/icons/support.png',
                     title: 'المساعدة و الدعم الفني',
-                    onTap: () => Navigator.pushNamed(context, '/support'),
+                    onTap: () => Navigator.pushNamed(context, '/support_page'),
                   ),
                   _MoreSettingsItemWithIcon(
                     icon: Icons.facebook,
@@ -489,6 +485,8 @@ class _LogoutInnerItem extends StatelessWidget {
 }
 
 class NotificationPermissionSwitcher extends StatefulWidget {
+  const NotificationPermissionSwitcher({super.key});
+
   @override
   State<NotificationPermissionSwitcher> createState() => _NotificationPermissionSwitcherState();
 }
@@ -531,9 +529,9 @@ class _NotificationPermissionSwitcherState extends State<NotificationPermissionS
         backgroundColor: const Color(0xFFEAE2DB),
         child: Image.asset('assets/images/icons/notifications.png', width: 24, height: 24, color: const Color(0xFF633e3d)),
       ),
-      title: const Text(
-        'تفعيل الإشعارات',
-        style: TextStyle(
+      title: Text(
+        _enabled ? 'إيقاف الإشعارات' : 'تفعيل الإشعارات',
+        style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: Color(0xFF633e3d),

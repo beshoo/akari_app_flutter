@@ -5,7 +5,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-
 import 'package:get/get.dart';
 import 'package:phone_form_field/phone_form_field.dart';
 import 'package:provider/provider.dart';
@@ -13,18 +12,20 @@ import 'package:toastification/toastification.dart';
 
 import 'pages/home/home_page.dart';
 import 'pages/login_page.dart';
+import 'pages/more_page.dart';
 import 'pages/notifications_page.dart';
 import 'pages/onboarding_page.dart';
 import 'pages/otp_validation_page.dart';
 import 'pages/signup_page.dart';
 import 'pages/splash_page.dart';
+import 'pages/support_page.dart';
 import 'pages/webview_page.dart';
-import 'pages/more_page.dart';
 import 'services/api_service.dart';
 import 'services/firebase_messaging_service.dart';
 import 'services/version_service.dart';
 import 'stores/auth_store.dart';
 import 'stores/enums_store.dart';
+import 'stores/notification_store.dart';
 import 'stores/reaction_store.dart';
 import 'utils/logger.dart';
 
@@ -94,7 +95,12 @@ Future<void> main() async {
         '\nstack');
   }
   
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => NotificationStore(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -226,6 +232,7 @@ class MyApp extends StatelessWidget {
           '/home': (context) => const HomePage(),
           '/notifications': (context) => const NotificationsPage(),
           '/more': (context) => const MorePage(),
+          '/support_page': (context) => const SupportPage(),
         },
         
         onGenerateRoute: (settings) {
