@@ -94,6 +94,7 @@ dependencies:
   
   # Auto sizing text
   auto_size_text: ^3.0.0
+  flutter_inappwebview: ^6.1.5
 
 dev_dependencies:
   flutter_test:

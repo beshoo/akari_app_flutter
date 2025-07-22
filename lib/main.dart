@@ -19,6 +19,7 @@ import 'pages/otp_validation_page.dart';
 import 'pages/signup_page.dart';
 import 'pages/splash_page.dart';
 import 'pages/webview_page.dart';
+import 'pages/more_page.dart';
 import 'services/api_service.dart';
 import 'services/firebase_messaging_service.dart';
 import 'services/version_service.dart';
@@ -224,6 +225,7 @@ class MyApp extends StatelessWidget {
           '/onboarding': (context) => const OnboardingPage(),
           '/home': (context) => const HomePage(),
           '/notifications': (context) => const NotificationsPage(),
+          '/more': (context) => const MorePage(),
         },
         
         onGenerateRoute: (settings) {

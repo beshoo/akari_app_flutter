@@ -37,50 +37,48 @@ class CustomButton extends StatelessWidget {
     final isPressed = isDisabled || isLoading;
     final opacity = isPressed ? 0.5 : 1.0;
 
-    return Expanded(
-      child: Opacity(
-        opacity: opacity,
-        child: Container(
-          height: height,
-          decoration: BoxDecoration(
+    return Opacity(
+      opacity: opacity,
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
+          gradient: hasGradient ? _buildGradient() : null,
+          border: !hasGradient
+              ? Border.all(
+                  color: borderColor ?? const Color(0xff4b5563),
+                  width: 1,
+                )
+              : null,
+          color: !hasGradient ? Colors.transparent : null,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: isPressed ? null : onPressed,
             borderRadius: BorderRadius.circular(borderRadius),
-            gradient: hasGradient ? _buildGradient() : null,
-            border: !hasGradient
-                ? Border.all(
-                    color: borderColor ?? const Color(0xff4b5563),
-                    width: 1,
-                  )
-                : null,
-            color: !hasGradient ? Colors.transparent : null,
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: isPressed ? null : onPressed,
-              borderRadius: BorderRadius.circular(borderRadius),
-              child: Container(
-                padding: padding,
-                child: Center(
-                  child: isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                                              : Text(
-                          title,
-                          style: TextStyle(
-                            color: _getTextColor(),
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Cairo',
-                          ),
-                          textAlign: TextAlign.center,
+            child: Container(
+              padding: padding,
+              child: Center(
+                child: isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
-                ),
+                      )
+                    : Text(
+                        title,
+                        style: TextStyle(
+                          color: _getTextColor(),
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Cairo',
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
               ),
             ),
           ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import '../widgets/custom_app_bar.dart';
+import '../widgets/custom_spinner.dart';
 
 class WebViewPage extends StatefulWidget {
   final String url;
@@ -16,91 +18,101 @@ class WebViewPage extends StatefulWidget {
 }
 
 class WebViewPageState extends State<WebViewPage> {
-  late WebViewController _controller;
+  InAppWebViewController? _controller;
+  PullToRefreshController? _pullToRefreshController;
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
+  bool _showScrollToTop = false;
 
   @override
   void initState() {
     super.initState();
+    _pullToRefreshController = PullToRefreshController(
+      onRefresh: () async {
+        _controller?.reload();
+      },
+    );
     _initializeWebView();
   }
 
   void _initializeWebView() {
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onProgress: (int progress) {
-            // Update loading progress
-            if (progress == 100) {
-              setState(() {
-                _isLoading = false;
-              });
-            }
-          },
-          onPageStarted: (String url) {
-            setState(() {
-              _isLoading = true;
-              _hasError = false;
-            });
-          },
-          onPageFinished: (String url) {
-            setState(() {
-              _isLoading = false;
-            });
-          },
-          onWebResourceError: (WebResourceError error) {
-            setState(() {
-              _isLoading = false;
-              _hasError = true;
-              _errorMessage = error.description;
-            });
-          },
-          onNavigationRequest: (NavigationRequest request) {
-            // Allow all navigation requests
-            return NavigationDecision.navigate;
-          },
-        ),
-      )
-      ..loadRequest(Uri.parse(widget.url));
+    // The original _initializeWebView function is removed as per the new_code.
+    // The new_code provides the onLoadStop callback which handles the webview initialization.
+  }
+
+  void _scrollToTop() async {
+    await _controller?.evaluateJavascript(source: 'window.scrollTo({top: 0, behavior: "smooth"});');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.title ?? 'شروط الاستخدام',
-          style: TextStyle(
-            fontFamily: 'Cairo',
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Color(0xFF633e3d),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: _refresh,
-          ),
-        ],
+      appBar: CustomAppBar(
+        showBackButton: true,
+        showLogo: true,
+        onBackPressed: () => Navigator.pop(context),
+        showAddAdButton: false,
+        title: null,
       ),
       body: Stack(
         children: [
           if (_hasError)
             _buildErrorView()
           else
-            WebViewWidget(controller: _controller),
-          
+            InAppWebView(
+              initialUrlRequest: URLRequest(url: WebUri(widget.url)),
+              initialSettings: InAppWebViewSettings(
+                underPageBackgroundColor: Color(0xFFF7F5F2), // Your desired color
+                transparentBackground: true,
+                verticalScrollBarEnabled: false,
+                horizontalScrollBarEnabled: false, // optional
+              ),
+              pullToRefreshController: _pullToRefreshController,
+              onWebViewCreated: (controller) {
+                _controller = controller;
+              },
+              onLoadStart: (controller, url) {
+                setState(() {
+                  _isLoading = true;
+                  _hasError = false;
+                });
+              },
+              onLoadStop: (controller, url) async {
+                setState(() {
+                  _isLoading = false;
+                });
+                _pullToRefreshController?.endRefreshing();
+              },
+              onReceivedError: (controller, request, error) {
+                setState(() {
+                  _isLoading = false;
+                  _hasError = true;
+                  _errorMessage = error.description;
+                });
+                _pullToRefreshController?.endRefreshing();
+              },
+              onScrollChanged: (controller, x, y) {
+                setState(() {
+                  _showScrollToTop = y > 0;
+                });
+              },
+            ),
           if (_isLoading)
             _buildLoadingView(),
+          if (_showScrollToTop && !_isLoading && !_hasError)
+            Positioned(
+              left: 16,
+              bottom: 32 + MediaQuery.of(context).viewPadding.bottom,
+              child: SafeArea(
+                child: FloatingActionButton(
+                  onPressed: _scrollToTop,
+                  backgroundColor: Color(0xFF633e3d),
+                  heroTag: 'scrollToTop',
+                  child: Icon(Icons.arrow_upward, color: Colors.white),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -108,14 +120,12 @@ class WebViewPageState extends State<WebViewPage> {
 
   Widget _buildLoadingView() {
     return Container(
-      color: Colors.white,
+      color: Color(0xFFF7F5F2),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF633e3d)),
-            ),
+            CustomSpinner(size: 50.0),
             SizedBox(height: 16),
             Text(
               'جاري التحميل...',
@@ -196,6 +206,6 @@ class WebViewPageState extends State<WebViewPage> {
       _hasError = false;
       _errorMessage = '';
     });
-    _controller.reload();
+    _controller?.reload();
   }
 } 

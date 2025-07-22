@@ -2048,11 +2048,12 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
         onLogoPressed: () => Navigator.pop(context),
         title: title,
         showLogo: false,
-        titleStyle: const TextStyle(
-          fontSize: 22,
+        onlyText: true,
+        titleStyle: TextStyle(
+          fontSize: MediaQuery.of(context).size.width > 400 ? 22.0 : 20.0,
           fontWeight: FontWeight.bold,
           fontFamily: 'Cairo',
-          color: Color(0xFF1A1A1A), // Adding black color
+          color: const Color(0xFF1A1A1A), // Adding black color
         ),
       ),
       body: _isLoading

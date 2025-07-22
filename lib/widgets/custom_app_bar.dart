@@ -16,6 +16,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showLogo = true,
     this.titleStyle,
     this.onLogoPressed,
+    this.onlyText = false,
   });
 
   final VoidCallback? onNotificationPressed;
@@ -31,6 +32,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showLogo;
   final TextStyle? titleStyle;
   final VoidCallback? onLogoPressed;
+  final bool onlyText;
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +65,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           if (showBackButton) SizedBox(width: isSmallScreen ? 4 : 8),
           if (showLogo)
             GestureDetector(
-              onTap: onLogoPressed,
+              onTap: onLogoPressed ?? () {
+                final ModalRoute<Object?>? route = ModalRoute.of(context);
+                if (route != null && route.settings.name != '/home' && Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
+              },
               child: Image.asset(
                 'assets/images/logo.png',
                 height: logoHeight,
@@ -85,7 +92,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
           
-          const Spacer(),
+          if (!onlyText) const Spacer(),
           
           // Icons on the left side (RTL)
           if (onFavoritesPressed != null)

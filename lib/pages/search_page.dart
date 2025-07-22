@@ -1192,10 +1192,11 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
 
         // Search button
         Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              CustomButton(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          child: Center(
+            child: SizedBox(
+              width: double.infinity,
+              child: CustomButton(
                 title: availableSearchTypes.isEmpty 
                     ? 'لا تتوفر خدمات في هذه المنطقة'
                     : !availableSearchTypes.any((option) => option.id == 'share')
@@ -1213,7 +1214,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                 isLoading: _isSearching,
                 height: 45,
               ),
-            ],
+            ),
           ),
         ),
       ],
@@ -1619,10 +1620,11 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
         ),
         // Search button (keep as is, or update to use new form data)
         Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              CustomButton(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          child: Center(
+            child: SizedBox(
+              width: double.infinity,
+              child: CustomButton(
                 title: availableSearchTypes.isEmpty 
                     ? 'لا تتوفر خدمات في هذه المنطقة'
                     : !availableSearchTypes.any((option) => option.id == 'apartment')
@@ -1640,7 +1642,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                 isLoading: _isSearching,
                 height: 45,
               ),
-            ],
+            ),
           ),
         ),
       ],

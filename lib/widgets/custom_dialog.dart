@@ -293,36 +293,59 @@ Future<void> showIntentionDialog({
                           // Buttons
                           Row(
                             children: [
-                              CustomButton(
-                                title: 'أريد أن أشتري',
-                                hasGradient: true,
-                                height: 48,
-                                borderRadius: 12,
-                                gradientColors: const [
-                                  Color(0xff2E7D32),
-                                  Color(0xff4CAF50),
-                                  Color(0xff66BB6A),
-                                ],
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                  onBuyPressed();
-                                },
+                              Expanded(
+                                child: CustomButton(
+                                  title: 'أريد أن أشتري',
+                                  hasGradient: true,
+                                  height: 48,
+                                  borderRadius: 12,
+                                  gradientColors: const [
+                                    Color(0xff633e3d),
+                                    Color(0xff774b46),
+                                    Color(0xff8d5e52),
+                                    Color(0xffa47764),
+                                    Color(0xffbda28c),
+                                  ],
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                    onBuyPressed();
+                                  },
+                                ),
                               ),
                               const SizedBox(width: 12),
-                              CustomButton(
-                                title: 'أريد أن أبيع',
-                                hasGradient: true,
-                                height: 48,
-                                borderRadius: 12,
-                                gradientColors: const [
-                                  Color(0xff1976D2),
-                                  Color(0xff2196F3),
-                                  Color(0xff42A5F5),
-                                ],
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                  onSellPressed();
-                                },
+                              Expanded(
+                                child: Container(
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFFF7F5F2),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Color(0xFFE0E0E0),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
+                                      onTap: () {
+                                        Navigator.of(context).pop();
+                                        onSellPressed();
+                                      },
+                                      child: const Center(
+                                        child: Text(
+                                          'أريد أن أبيع',
+                                          style: TextStyle(
+                                            fontFamily: 'Cairo',
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                            color: Color(0xFF8C7A6A),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ],
                           ),

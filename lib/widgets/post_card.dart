@@ -377,8 +377,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 71, 47, 45).withValues(alpha: 0.9),
           borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(4),
-            topRight: Radius.circular(4),
+            topLeft: Radius.circular(15),
+            topRight: Radius.circular(15),
             bottomLeft: Radius.circular(8),
             bottomRight: Radius.circular(8),
           ),

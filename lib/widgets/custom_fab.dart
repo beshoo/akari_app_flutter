@@ -73,14 +73,14 @@ class _CustomFABState extends State<CustomFAB> with SingleTickerProviderStateMix
           // Dark overlay with fade animation
           Positioned.fill(
             child: AnimatedOpacity(
-              opacity: _isOpen ? 0.75 : 0.0,
+              opacity: _isOpen ? 0.87 : 0.0,
               duration: const Duration(milliseconds: 200),
               child: IgnorePointer(
                 ignoring: !_isOpen,
                 child: GestureDetector(
                   onTap: _toggleFAB,
                   child: Container(
-                    color: Colors.black,
+                    color: const Color.fromARGB(255, 0, 0, 0),
                   ),
                 ),
               ),

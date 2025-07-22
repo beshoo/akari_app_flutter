@@ -525,9 +525,17 @@ class _ContactUsPageState extends State<ContactUsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F5F2),
       appBar: CustomAppBar(
-        title: 'اختر طريقة التواصل',
+        title: 'إختر طريقة التواصل',
         showBackButton: true,
+        showLogo: false,
+        onlyText: true,
         onBackPressed: () => Navigator.of(context).pop(),
+        titleStyle: TextStyle(
+          fontSize: MediaQuery.of(context).size.width > 400 ? 22.0 : 20.0,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Cairo',
+          color: const Color(0xFF1A1A1A),
+        ),
       ),
       body: SingleChildScrollView(
         child: Padding(

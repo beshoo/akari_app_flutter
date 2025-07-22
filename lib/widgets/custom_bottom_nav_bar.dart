@@ -150,7 +150,16 @@ class CustomBottomNavBar extends StatelessWidget {
             color: Colors.transparent,
             child: BottomNavigationBar(
               currentIndex: currentIndex,
-              onTap: onTap,
+              onTap: (index) {
+                final item = items[index];
+                if (item.route == '/more') {
+                  if (ModalRoute.of(context)?.settings.name != '/more') {
+                    Navigator.pushNamed(context, '/more');
+                  }
+                } else {
+                  onTap(index);
+                }
+              },
               backgroundColor: Colors.transparent,
               elevation: 0,
               type: BottomNavigationBarType.fixed,

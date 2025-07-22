@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../pages/property_details_page.dart';
 import '../utils/logger.dart';
+import '../services/secure_storage.dart';
 
 class FirebaseMessagingService {
   static final FirebaseMessagingService instance = FirebaseMessagingService._internal();
@@ -32,6 +33,36 @@ class FirebaseMessagingService {
   
   // Option to handle notifications immediately in foreground (without showing notification)
   bool handleForegroundImmediately = false;
+
+  // Add a persistent flag for notification state
+  static const String _notificationEnabledKey = 'notifications_enabled';
+
+  // Get notification enabled state from storage
+  static Future<bool> isNotificationEnabled() async {
+    final value = await SecureStorage.getUserData(_notificationEnabledKey);
+    return value == 'true';
+  }
+
+  // Enable notifications: request permission and subscribe
+  Future<void> enableNotifications() async {
+    Logger.log('🔔 Enabling notifications');
+    await _firebaseMessagingInstance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    await _firebaseMessagingInstance.subscribeToTopic('all');
+    await SecureStorage.setUserData(_notificationEnabledKey, 'true');
+    Logger.log('🔔 Notifications enabled');
+  }
+
+  // Disable notifications: unsubscribe from topic
+  Future<void> disableNotifications() async {
+    Logger.log('🔕 Disabling notifications');
+    await _firebaseMessagingInstance.unsubscribeFromTopic('all');
+    await SecureStorage.setUserData(_notificationEnabledKey, 'false');
+    Logger.log('🔕 Notifications disabled');
+  }
 
   String? get fcmToken => _token;
   static RemoteMessage? get initialMessage => _initialMessage;

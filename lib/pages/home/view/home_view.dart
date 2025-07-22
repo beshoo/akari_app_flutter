@@ -433,8 +433,9 @@ class _HomeViewState extends State<HomeView> {
                                                 ),
                                                 child: Image.asset(
                                                   'assets/images/icons/updates.png',
-                                                  height: 25,
-                                                  width: 25,
+                           height: MediaQuery.of(context).size.width > 400 ? 30.0 : 25.0,
+                                                        width: MediaQuery.of(context).size.width > 400 ? 30.0 : 25.0,
+                             
                                                   color: Colors.white,
                                                 ),
                                               ),
@@ -442,7 +443,7 @@ class _HomeViewState extends State<HomeView> {
                                               AutoSizeText(
                                                 'عدد العقارات المتاحة حسب النوع',
                                                 textAlign: TextAlign.center,
-                                                maxLines: 2,
+                                                maxLines: 1,
                                                 minFontSize: 14,
                                                 maxFontSize: 18,
                                                 style: TextStyle(
@@ -501,9 +502,9 @@ class _HomeViewState extends State<HomeView> {
                                                       ),
                                                       child: Image.asset(
                                                         'assets/images/icons/building_1.png',
-                                                        height: MediaQuery.of(context).size.width > 400 ? 30.0 : 24.0,
-                                                        width: MediaQuery.of(context).size.width > 400 ? 30.0 : 24.0,
-                                                        color: Colors.white,
+                                                                      height: MediaQuery.of(context).size.width > 400 ? 35.0 : 25.0,
+                                                        width: MediaQuery.of(context).size.width > 400 ? 35.0 : 25.0,
+                                           color: Colors.white,
                                                       ),
                                                     ),
                                                     const SizedBox(height: 10.0),
@@ -700,7 +701,7 @@ class _HomeViewState extends State<HomeView> {
 
     return Container(
       width: double.infinity,
-      height: height ?? 120,
+      height: height ?? 130, // Increased height to accommodate content
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -720,7 +721,7 @@ class _HomeViewState extends State<HomeView> {
       ),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20), // Increased vertical padding
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           gradient: const LinearGradient(

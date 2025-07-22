@@ -1297,10 +1297,11 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
 
         // Submit button
         Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              CustomButton(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24), // adjust as needed
+          child: Center(
+            child: SizedBox(
+              width: double.infinity, // or a fixed width if you prefer
+              child: CustomButton(
                 title: widget.mode == ApartmentFormMode.create 
                     ? 'إضافة إعلان ${_currentType == 'buy' ? 'الشراء' : 'البيع'}'
                     : 'تحديث الإعلان',
@@ -1316,7 +1317,7 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
                 isLoading: _isSubmitting,
                 height: 45,
               ),
-            ],
+            ),
           ),
         ),
       ],
