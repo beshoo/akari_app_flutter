@@ -5,10 +5,10 @@ import 'package:akari_app/pages/home/bloc/home_bloc.dart';
 import 'package:akari_app/pages/home/bloc/home_event.dart';
 import 'package:akari_app/pages/home/bloc/home_state.dart';
 import 'package:akari_app/pages/region_page.dart';
-import 'package:akari_app/pages/search_page.dart';
 import 'package:akari_app/pages/search_results_page.dart';
 import 'package:akari_app/pages/share_form_page.dart';
 import 'package:akari_app/services/api_service.dart';
+import 'package:akari_app/services/firebase_messaging_service.dart';
 import 'package:akari_app/stores/notification_store.dart';
 import 'package:akari_app/widgets/custom_app_bar.dart';
 import 'package:akari_app/widgets/custom_bottom_nav_bar.dart';
@@ -20,7 +20,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
-import 'package:akari_app/services/firebase_messaging_service.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -81,7 +80,6 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    final notificationCount = Provider.of<NotificationStore>(context).notificationCount;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (bool didPop, dynamic _) async {
@@ -100,25 +98,10 @@ class _HomeViewState extends State<HomeView> {
               appBar: CustomAppBar(
                 showBackButton: true,
                 onBackPressed: () => _showExitDialog(context),
-                onFavoritesPressed: () {
-                  // TODO: Handle favorites press
-                },
-                onSearchPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SearchPage(),
-                    ),
-                  );
-                },
-                onNotificationPressed: () async {
-                  Navigator.pushNamed(context, '/notifications');
-                  await _fetchNotificationCount();
-                },
-                onHelpPressed: () {
-                  // TODO: Handle help press
-                },
-                notificationCount: notificationCount,
+                showFavoritesButton: true,
+                showSearchButton: true,
+                showNotificationButton: true,
+                showHelpButton: true,
               ),
               body: BlocBuilder<HomeBloc, HomeState>(
                 builder: (context, state) {

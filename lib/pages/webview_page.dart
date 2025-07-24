@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_spinner.dart';
 
@@ -54,6 +55,8 @@ class WebViewPageState extends State<WebViewPage> {
         onBackPressed: () => Navigator.pop(context),
         showAddAdButton: false,
         title: null,
+        showNotificationButton: true,
+        // onNotificationPressed removed to use default
       ),
       body: Stack(
         children: [

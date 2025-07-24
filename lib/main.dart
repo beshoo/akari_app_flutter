@@ -28,6 +28,8 @@ import 'stores/enums_store.dart';
 import 'stores/notification_store.dart';
 import 'stores/reaction_store.dart';
 import 'utils/logger.dart';
+import 'pages/favorites_page.dart';
+import 'pages/search_page.dart';
 
 // Background message handler (must be top-level function)
 @pragma('vm:entry-point')
@@ -233,6 +235,8 @@ class MyApp extends StatelessWidget {
           '/notifications': (context) => const NotificationsPage(),
           '/more': (context) => const MorePage(),
           '/support_page': (context) => const SupportPage(),
+          '/favorites': (context) => const FavoritesPage(),
+          '/search': (context) => const SearchPage(),
         },
         
         onGenerateRoute: (settings) {

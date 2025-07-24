@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:akari_app/utils/logger.dart';
 import 'package:akari_app/pages/webview_page.dart';
+import 'package:akari_app/stores/notification_store.dart';
+import 'package:provider/provider.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppBar({
     super.key,
-    this.onNotificationPressed,
-    this.onSearchPressed,
+    this.showFavoritesButton = false,
     this.onFavoritesPressed,
+    this.showSearchButton = false,
+    this.onSearchPressed,
+    this.showNotificationButton = false,
+    this.onNotificationPressed,
+    this.showHelpButton = false,
     this.onHelpPressed,
+    this.showSortButton = false,
     this.onSortPressed,
     this.showAddAdButton = false,
     this.onAddAdPressed,
+    this.showDeleteNotificationsButton = false,
+    this.onDeleteNotificationsPressed,
     this.showBackButton = true,
     this.onBackPressed,
     this.title,
@@ -19,16 +28,26 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.titleStyle,
     this.onLogoPressed,
     this.onlyText = false,
-    this.notificationCount = 0,
+    this.notificationCount,
   });
 
-  final VoidCallback? onNotificationPressed;
-  final VoidCallback? onSearchPressed;
+  /// Which action buttons to show
+  final bool showFavoritesButton;
+  final bool showSearchButton;
+  final bool showNotificationButton;
+  final bool showHelpButton;
+  final bool showSortButton;
+  final bool showAddAdButton;
+  final bool showDeleteNotificationsButton;
+
+  /// Optional overrides for action handlers
   final VoidCallback? onFavoritesPressed;
+  final VoidCallback? onSearchPressed;
+  final VoidCallback? onNotificationPressed;
   final VoidCallback? onHelpPressed;
   final VoidCallback? onSortPressed;
-  final bool showAddAdButton;
   final VoidCallback? onAddAdPressed;
+  final VoidCallback? onDeleteNotificationsPressed;
   final bool showBackButton;
   final VoidCallback? onBackPressed;
   final String? title;
@@ -36,33 +55,30 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final TextStyle? titleStyle;
   final VoidCallback? onLogoPressed;
   final bool onlyText;
-  final int notificationCount;
+  final int? notificationCount;
 
   @override
   Widget build(BuildContext context) {
-   // Logger.log('CustomAppBar notificationCount: ' + notificationCount.toString());
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 360;
     final logoHeight = isSmallScreen ? 28.0 : 35.0;
-    
+    final int effectiveNotificationCount = notificationCount ?? Provider.of<NotificationStore>(context).notificationCount;
     return AppBar(
       automaticallyImplyLeading: false,
       elevation: 0,
-      backgroundColor: const Color(0xFFF7F5F2), // A color similar to the image
+      backgroundColor: const Color(0xFFF7F5F2),
       surfaceTintColor: const Color(0xFFF7F5F2),
       title: Row(
         children: [
-          // This will be on the right in RTL
           if (showBackButton)
             GestureDetector(
-              onTap: onBackPressed ??
-                  () {
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
-                    }
-                  },
+              onTap: onBackPressed ?? () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
+              },
               child: const Icon(
-                Icons.arrow_back_ios, // This is <, but renders as > in RTL
+                Icons.arrow_back_ios,
                 color: Color(0xFF8C7A6A),
                 size: 20,
               ),
@@ -96,17 +112,18 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 maxLines: 2,
               ),
             ),
-          
           if (!onlyText) const Spacer(),
-          
-          // Icons on the left side (RTL)
-          if (onFavoritesPressed != null)
+          // Action buttons
+          if (showFavoritesButton)
             IconButton(
               icon: const Icon(
                 Icons.star_border_outlined,
                 color: Color(0xFF8C7A6A),
               ),
-              onPressed: onFavoritesPressed,
+              onPressed: onFavoritesPressed ?? () {
+                // Default: navigate to favorites page (replace with your route)
+                Navigator.pushNamed(context, '/favorites');
+              },
               iconSize: isSmallScreen ? 20 : 24,
               padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
               constraints: BoxConstraints(
@@ -114,13 +131,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 minHeight: isSmallScreen ? 32 : 48,
               ),
             ),
-          if (onSearchPressed != null)
+          if (showSearchButton)
             IconButton(
               icon: const Icon(
                 Icons.search,
                 color: Color(0xFF8C7A6A),
               ),
-              onPressed: onSearchPressed,
+              onPressed: onSearchPressed ?? () {
+                Navigator.pushNamed(context, '/search');
+              },
               iconSize: isSmallScreen ? 20 : 24,
               padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
               constraints: BoxConstraints(
@@ -128,7 +147,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 minHeight: isSmallScreen ? 32 : 48,
               ),
             ),
-          if (onSortPressed != null)
+          if (showSortButton)
             IconButton(
               icon: const Icon(
                 Icons.sort,
@@ -142,7 +161,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 minHeight: isSmallScreen ? 32 : 48,
               ),
             ),
-          if (onNotificationPressed != null)
+          if (showNotificationButton)
             Stack(
               clipBehavior: Clip.none,
               children: [
@@ -151,7 +170,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     Icons.notifications_none_outlined,
                     color: Color(0xFF8C7A6A),
                   ),
-                  onPressed: onNotificationPressed,
+                  onPressed: onNotificationPressed ?? () {
+                    Navigator.pushNamed(context, '/notifications');
+                  },
                   iconSize: isSmallScreen ? 20 : 24,
                   padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
                   constraints: BoxConstraints(
@@ -159,7 +180,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     minHeight: isSmallScreen ? 32 : 48,
                   ),
                 ),
-                if (notificationCount > 0)
+                if (effectiveNotificationCount > 0)
                   Positioned(
                     top: 2,
                     right: 2,
@@ -177,7 +198,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                           minHeight: 16,
                         ),
                         child: Text(
-                          notificationCount > 99 ? '99+' : notificationCount.toString(),
+                          effectiveNotificationCount > 99 ? '99+' : effectiveNotificationCount.toString(),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -190,7 +211,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
               ],
             ),
-          if (onHelpPressed != null)
+          if (showHelpButton)
             SizedBox(
               width: isSmallScreen ? 32 : 36,
               height: isSmallScreen ? 32 : 36,
@@ -204,7 +225,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     color: const Color(0xFF8C7A6A),
                     size: isSmallScreen ? 16 : 20,
                   ),
-                  onPressed: () {
+                  onPressed: onHelpPressed ?? () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -217,7 +238,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
             ),
-          // Add button with fixed width
           if (showAddAdButton)
             SizedBox(
               width: isSmallScreen ? 100 : 140,
@@ -256,6 +276,55 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                     child: Text(
                       isSmallScreen ? 'أضف إعلان' : 'أضف إعلانك الآن',
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        color: Colors.white,
+                        fontSize: isSmallScreen ? 11 : 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          if (showDeleteNotificationsButton)
+            SizedBox(
+              width: isSmallScreen ? 100 : 140,
+              child: Padding(
+                padding: EdgeInsets.only(right: isSmallScreen ? 4.0 : 8.0),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFFA72B22),
+                        Color(0xFFBDA28C),
+                      ],
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ElevatedButton(
+                    onPressed: onDeleteNotificationsPressed,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      elevation: 0,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmallScreen ? 8 : 12, 
+                        vertical: 4
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      isSmallScreen ? 'حذف الإشعارات' : 'حذف الإشعارات',
                       style: TextStyle(
                         fontFamily: 'Cairo',
                         color: Colors.white,

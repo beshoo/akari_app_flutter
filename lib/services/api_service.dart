@@ -7,6 +7,7 @@ import 'package:get/get.dart' hide Response;
 import '../config/environment.dart';
 import 'secure_storage.dart';
 import 'package:akari_app/utils/logger.dart';
+import '../data/models/notification_model.dart';
 
 class ApiService {
   static late Dio dio;
@@ -183,7 +184,7 @@ class ApiService {
       final response = await dio.get('/notification/count');
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
-        Logger.log('Notification count raw value: $data (type: ${data.runtimeType})');
+        Logger.log('Notification count raw value: $data (type:  [36m [1m [4m [7m${data.runtimeType} [0m)');
         if (data is int) {
           return data;
         } else if (data is String) {
@@ -198,6 +199,42 @@ class ApiService {
     } catch (e, st) {
       Logger.log('Failed to fetch notification count: $e');
       return 0;
+    }
+  }
+
+  // Delete all notifications
+  static Future<bool> deleteAllNotifications() async {
+    try {
+      final response = await dio.delete('/notification/empty');
+      if (response.statusCode == 200) {
+        Logger.log('All notifications deleted successfully');
+        return true;
+      }
+      Logger.error('Failed to delete all notifications: ${response.statusCode}');
+      return false;
+    } catch (e) {
+      Logger.error('Failed to delete all notifications', e);
+      return false;
+    }
+  }
+  
+  // Fetch notifications with pagination
+  static Future<Map<String, dynamic>> fetchNotifications({int page = 1}) async {
+    try {
+      final response = await dio.get('/notification/list', queryParameters: {'page': page});
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        final List<NotificationItem> notifications = (data['data'] as List<dynamic>?)?.map((item) => NotificationItem.fromJson(item)).toList() ?? [];
+        final String? nextPageUrl = data['next_page_url'];
+        return {
+          'notifications': notifications,
+          'nextPageUrl': nextPageUrl,
+        };
+      }
+      return {'notifications': <NotificationItem>[], 'nextPageUrl': null};
+    } catch (e) {
+      Logger.error('Failed to fetch notifications', e);
+      return {'notifications': <NotificationItem>[], 'nextPageUrl': null};
     }
   }
   

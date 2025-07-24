@@ -819,7 +819,9 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
             }
           }
         },
-        onSearchPressed: () {
+        showSearchButton: true,
+        showSortButton: true,
+         onSearchPressed: () {
           // Determine which tab to open based on available services
           String? currentTab;
           if (widget.hasShare && widget.hasApartment) {
