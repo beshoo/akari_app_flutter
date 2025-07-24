@@ -1,26 +1,24 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart' as share_plus;
 import 'package:shimmer/shimmer.dart';
-import 'dart:io';
+
 import '../data/models/apartment_model.dart';
 import '../data/models/share_model.dart';
 import '../data/repositories/apartment_repository.dart';
 import '../data/repositories/share_repository.dart';
 import '../stores/auth_store.dart';
 import '../stores/reaction_store.dart';
-import '../widgets/custom_app_bar.dart';
-import '../widgets/custom_spinner.dart';
-import '../utils/toast_helper.dart';
-import 'apartment_form_page.dart';
-import 'share_form_page.dart';
-import '../widgets/custom_bottom_sheet.dart';
-import '../widgets/custom_dialog.dart';
-import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import '../utils/logger.dart';
+import '../utils/toast_helper.dart';
+import '../widgets/custom_app_bar.dart';
+import '../widgets/custom_dialog.dart';
+import '../widgets/custom_spinner.dart';
+import 'apartment_form_page.dart';
 import 'contact_us_page.dart';
+import 'share_form_page.dart';
 
 class PropertyDetailsPage extends StatefulWidget {
   final int id;
@@ -141,25 +139,6 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     }
   }
 
-  String _getTransactionText() {
-    if (_itemData == null) return '';
-    
-    final baseText = widget.itemType == "apartment" ? "عقار" : "اسهم تنظيمية";
-    final transactionType = _itemData.transactionType == 'sell' ? 'بيع' : 'شراء';
-    final sectorCode = _itemData.sector.code?.viewCode ?? _itemData.sector.code?.code ?? '';
-    final regionName = _itemData.region.name;
-    
-    if (widget.itemType == "apartment") {
-      final equity = _itemData.equity;
-      final price = '${_formatNumber(_itemData.priceKey.toString())} ل.س';
-      final apartmentTypeName = _itemData.apartmentType?.name ?? '';
-      return "نرغب ب$transactionType $baseText $apartmentTypeName في $sectorCode بكمية $equity حصة سهمية بسعر $price في منطقة $regionName";
-    } else {
-      final quantity = _itemData.quantity;
-      final price = '${_formatNumber(_itemData.priceKey.toString())} ل.س';
-      return "نرغب ب$transactionType $baseText في $sectorCode بكمية $quantity سهم بسعر $price بالسهم في منطقة $regionName";
-    }
-  }
 
   Widget _buildTransactionRichText() {
     if (_itemData == null) return const SizedBox.shrink();
@@ -559,49 +538,6 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     }
   }
 
-  Widget _buildReactionSummary() {
-    if (_itemData.reactionCounts.totalCount <= 0) {
-      return const SizedBox.shrink();
-    }
-
-    final reactions = _getVisibleReactions();
-    return GestureDetector(
-      onTap: () => _showReactionModal(),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            if (reactions.isNotEmpty)
-              Row(
-                children: [
-                  for (int i = 0; i < reactions.length; i++)
-                    Transform.translate(
-                      offset: Offset(5.0 * i, 0),
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        child: Text(
-                          _reactionEmojis[reactions[i]]!,
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            if (reactions.isNotEmpty) const SizedBox(width: 8),
-            Text(
-              '${_itemData.reactionCounts.totalCount}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF666666),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildReactionPanel() {
     Logger.log('🎨 Building reaction panel, _showReactions: $_showReactions');
@@ -1157,7 +1093,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
       shareDetailBoxes.add(_buildGridBox(
         iconPath: 'section_number.png',
         title: 'رقم المقسم',
-        value: share.sector.code.code ?? '',
+        value: share.sector.code.code,
         textAlign: TextAlign.right,
       ));
     }
@@ -1166,7 +1102,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
       shareDetailBoxes.add(_buildGridBox(
         iconPath: 'sector.png',
         title: 'القطاع',
-        value: share.sector.code.name ?? '',
+        value: share.sector.code.name,
         textAlign: TextAlign.right,
       ));
     }
@@ -1807,7 +1743,6 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
           );
         }
       });
-      final message = isFavorited ? 'تمت الإضافة إلى المفضلة' : 'تمت الإزالة من المفضلة';
      // ToastHelper.showToast(context, message, isError: false);
     } else {
      // ToastHelper.showToast(context, result['message'] ?? 'فشل تحديث المفضلة', isError: true);
@@ -1823,79 +1758,8 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     }
   }
 
-  List<String> _getVisibleReactions() {
-    final counts = _itemData.reactionCounts;
-    final reactionCountsMap = <String, int>{
-      'like': counts.likeCount,
-      'love': counts.loveCount,
-      'wow': counts.wowCount,
-      'sad': counts.sadCount,
-      'angry': counts.angryCount,
-    };
 
-    final sortedReactions = reactionCountsMap.entries
-        .where((entry) => entry.value > 0)
-        .toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
 
-    return sortedReactions.map((entry) => entry.key).take(3).toList();
-  }
-
-  int _getReactionCount(String reaction) {
-    final counts = _itemData.reactionCounts;
-    switch (reaction) {
-      case 'like':
-        return counts.likeCount;
-      case 'love':
-        return counts.loveCount;
-      case 'wow':
-        return counts.wowCount;
-      case 'sad':
-        return counts.sadCount;
-      case 'angry':
-        return counts.angryCount;
-      default:
-        return 0;
-    }
-  }
-
-  void _showReactionModal() {
-    showMaterialModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => CustomBottomSheet(
-        title: 'التفاعلات',
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: _reactionEmojis.entries.where((entry) {
-            return _getReactionCount(entry.key) > 0;
-          }).map((reactionEntry) {
-            final count = _getReactionCount(reactionEntry.key);
-            return Container(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '$count',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    reactionEntry.value,
-                    style: const TextStyle(fontSize: 24),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
 
   void _navigateToEdit() async {
     if (widget.itemType == "apartment") {

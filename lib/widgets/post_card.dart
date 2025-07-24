@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
@@ -526,7 +525,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   Widget _buildActionButtons(ReactionStore reactionStore, AuthStore authStore) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final buttonWidth = constraints.maxWidth / 4; // Each button gets 1/4 of available width
+// Each button gets 1/4 of available width
         
         return Container(
           width: double.infinity,
@@ -751,10 +750,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     return isAdminOrOwner && _currentPostData.isUnderReview;
   }
 
-  bool _shouldShowOwnerRow(AuthStore authStore) {
-    return authStore.userPrivilege == 'admin' || 
-           authStore.userPrivilege == 'owner';
-  }
 
   List<String> _getVisibleReactions() {
     final counts = _currentPostData.reactionCounts;
@@ -890,8 +885,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       } else {
         Logger.warn('⚠️ No reaction_summary found, using fallback');
         // Fallback if reaction_summary is missing (should not happen)
-        final newPostData =
-            _currentPostData.withReaction(reaction, {'total_count': 0});
+        _currentPostData.withReaction(reaction, {'total_count': 0});
       }
     } else {
       // Show error message if reaction failed
@@ -924,66 +918,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
   }
 
-  Map<String, dynamic> _updateReactionCounts(String newReaction) {
-    final counts = _currentPostData.reactionCounts;
-    final currentReaction = _currentPostData.currentUserReaction;
-    
-    Map<String, int> newCounts = {
-      'like_count': counts.likeCount,
-      'love_count': counts.loveCount,
-      'wow_count': counts.wowCount,
-      'sad_count': counts.sadCount,
-      'angry_count': counts.angryCount,
-      'total_count': counts.totalCount,
-    };
 
-    // Remove old reaction if exists
-    if (currentReaction != null) {
-      newCounts['${currentReaction}_count'] = newCounts['${currentReaction}_count']! - 1;
-      newCounts['total_count'] = newCounts['total_count']! - 1;
-    }
 
-    // Add new reaction
-    newCounts['${newReaction}_count'] = newCounts['${newReaction}_count']! + 1;
-    newCounts['total_count'] = newCounts['total_count']! + 1;
-
-    return newCounts;
-  }
-
-  Map<String, dynamic> _decrementReactionCounts(String removedReaction) {
-    final counts = _currentPostData.reactionCounts;
-    
-    Map<String, int> newCounts = {
-      'like_count': counts.likeCount,
-      'love_count': counts.loveCount,
-      'wow_count': counts.wowCount,
-      'sad_count': counts.sadCount,
-      'angry_count': counts.angryCount,
-      'total_count': counts.totalCount,
-    };
-
-    // Remove the reaction
-    newCounts['${removedReaction}_count'] = (newCounts['${removedReaction}_count']! - 1).clamp(0, double.infinity).toInt();
-    newCounts['total_count'] = (newCounts['total_count']! - 1).clamp(0, double.infinity).toInt();
-
-    return newCounts;
-  }
-
-  void _updateFromReactionSummary(Map<String, dynamic> reactionSummary, [String? newUserReaction]) {
-    if (kDebugMode) {
-      Logger.log('📊 Updating reaction summary: $reactionSummary');
-      Logger.log('🔄 New user reaction: $newUserReaction');
-    }
-    
-    setState(() {
-      _currentPostData = _currentPostData.withReaction(newUserReaction, reactionSummary);
-    });
-    
-    if (kDebugMode) {
-      Logger.log('✅ Share updated - Current user reaction: ${_currentPostData.currentUserReaction}');
-      Logger.log('✅ Total reactions: ${_currentPostData.reactionCounts.totalCount}');
-    }
-  }
 
   void _toggleFavorite(ReactionStore reactionStore) async {
     final result = await reactionStore.toggleFavorite(

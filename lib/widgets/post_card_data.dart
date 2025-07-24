@@ -241,7 +241,6 @@ class ApartmentPostAdapter implements PostCardData {
     }
     
     // Show apartment details based on type fields
-    final apartmentDetails = <String>[];
     
     if (_apartment.apartmentType.fields.contains('floor') && _apartment.floor > 0) {
      // apartmentDetails.add('الطابق: ${_apartment.floor}');

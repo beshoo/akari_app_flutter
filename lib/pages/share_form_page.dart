@@ -73,7 +73,6 @@ class _ShareFormPageState extends State<ShareFormPage> {
   // Error states
   final Map<String, String> _errors = {};
   final Map<String, bool> _hasErrors = {};
-  String? _generalError;
 
   // Selected values for dependent dropdowns
   region_model.Region? _selectedRegion;
@@ -145,8 +144,8 @@ class _ShareFormPageState extends State<ShareFormPage> {
     // Set sector info
     _selectedSector = SectorOption(
       id: share.sectorId,
-      name: share.sector.sectorName.name ?? '',
-      code: share.sector.code.code ?? '',
+      name: share.sector.sectorName.name,
+      code: share.sector.code.code,
     );
   }
 
@@ -305,7 +304,6 @@ class _ShareFormPageState extends State<ShareFormPage> {
 
   // Generate confirmation message
   String _getConfirmationMessage() {
-    final action = _currentType == 'buy' ? 'شراء' : 'بيع';
     final actionVerb = _currentType == 'buy' ? 'تشتري' : 'تبيع';
     final regionName = _selectedRegion?.name ?? '';
     final sectorTypeName = _selectedSectorType?.name ?? '';

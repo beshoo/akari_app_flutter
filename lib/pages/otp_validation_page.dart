@@ -366,47 +366,8 @@ class OtpValidationPageState extends State<OtpValidationPage> {
     });
   }
   
-  void _onNumberPadTap(String number) {
-    if (_currentIndex < 6) {
-      _otpControllers[_currentIndex].text = number;
-      setState(() {
-        _otp = _otpControllers.map((controller) => controller.text).join();
-        _currentIndex++;
-      });
-      
-      // Check if OTP is complete (6 digits)
-      if (_otp.length == 6) {
-        // Hide keyboard
-        FocusScope.of(context).unfocus();
-        // Auto submit with a small delay for better UX
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) {
-            _loginWithOtp();
-          }
-        });
-      }
-    }
-  }
-  
-  void _onBackspaceTap() {
-    if (_currentIndex > 0) {
-      _currentIndex--;
-      _otpControllers[_currentIndex].text = '';
-      setState(() {
-        _otp = _otpControllers.map((controller) => controller.text).join();
-      });
-    }
-  }
-  
-  void _onClearAll() {
-    for (var controller in _otpControllers) {
-      controller.clear();
-    }
-    setState(() {
-      _otp = '';
-      _currentIndex = 0;
-    });
-  }
+
+
   
   @override
   Widget build(BuildContext context) {
@@ -549,10 +510,10 @@ class OtpValidationPageState extends State<OtpValidationPage> {
               ),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: RawKeyboardListener(
+            child: KeyboardListener(
               focusNode: FocusNode(),
-              onKey: (RawKeyEvent event) {
-                if (event is RawKeyDownEvent && 
+              onKeyEvent: (KeyEvent event) {
+                if (event is KeyDownEvent && 
                     event.logicalKey == LogicalKeyboardKey.backspace) {
                   _handleKeyPress(index);
                 }

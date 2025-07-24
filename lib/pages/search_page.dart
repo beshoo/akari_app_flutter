@@ -108,12 +108,12 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
   Map<String, dynamic>? _pendingRegionChange;
 
   // Apartment tab state
-  List<SectorTypeOption> _apartmentSectorTypes = [];
+  final List<SectorTypeOption> _apartmentSectorTypes = [];
   List<SectorOption> _apartmentSectors = [];
   SectorTypeOption? _apartmentSelectedSectorType;
   SectorOption? _apartmentSelectedSector;
   Map<String, dynamic>? _apartmentMainSectors;
-  bool _apartmentIsLoadingSectors = false;
+  final bool _apartmentIsLoadingSectors = false;
 
   // 1. Add Apartment Search State Variables and Stores
   String _apartmentTransactionType = '1';
@@ -584,41 +584,6 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _loadApartmentSectorsForRegion(int regionId) async {
-    setState(() {
-      _apartmentIsLoadingSectors = true;
-    });
-
-    try {
-      final response = await _shareRepository.fetchSectorsByRegion(regionId);
-      _apartmentMainSectors = response.data;
-
-      final sectorTypesSelection = <SectorTypeOption>[];
-      if (_apartmentMainSectors?['data'] != null) {
-        final data = _apartmentMainSectors!['data'] as List;
-        for (int index = 0; index < data.length; index++) {
-          final sectorItem = data[index] as Map<String, dynamic>;
-          sectorTypesSelection.add(SectorTypeOption(
-            id: index.toString(),
-            name: sectorItem['key'] ?? '',
-          ));
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          _apartmentSectorTypes = sectorTypesSelection;
-          _apartmentIsLoadingSectors = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _apartmentIsLoadingSectors = false;
-        });
-      }
-    }
-  }
 
   void _onApartmentSectorTypeChanged(SectorTypeOption? sectorType) {
     if (sectorType != null && _apartmentMainSectors != null) {

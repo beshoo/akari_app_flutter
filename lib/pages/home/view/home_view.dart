@@ -4,6 +4,7 @@ import 'package:akari_app/pages/apartment_form_page.dart';
 import 'package:akari_app/pages/home/bloc/home_bloc.dart';
 import 'package:akari_app/pages/home/bloc/home_event.dart';
 import 'package:akari_app/pages/home/bloc/home_state.dart';
+import 'package:akari_app/pages/network_error_page.dart';
 import 'package:akari_app/pages/region_page.dart';
 import 'package:akari_app/pages/search_results_page.dart';
 import 'package:akari_app/pages/share_form_page.dart';
@@ -42,8 +43,9 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Future<void> _fetchNotificationCount() async {
-    final count = await ApiService.getNotificationCount();
     final store = Provider.of<NotificationStore>(context, listen: false);
+    final count = await ApiService.getNotificationCount();
+    if (!mounted) return;
     store.setNotificationCount(count);
   }
 
@@ -109,20 +111,10 @@ class _HomeViewState extends State<HomeView> {
                     return const Center(child: CustomSpinner(size: 50.0));
                   }
                   if (state is HomeFailure) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('Failed to load data: ${state.message}'),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () {
-                              context.read<HomeBloc>().add(LoadHomeData());
-                            },
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
+                    return NetworkErrorPage(
+                      onRetry: () async {
+                        context.read<HomeBloc>().add(LoadHomeData());
+                      },
                     );
                   }
                   if (state is HomeSuccess) {
@@ -626,30 +618,6 @@ class _HomeViewState extends State<HomeView> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildGradientCard({required Widget child, double? height}) {
-    const colors = [
-      Color(0xFF633e3d),
-      Color(0xFF774b46),
-      Color(0xFF8d5e52),
-      Color(0xFFa47764),
-      Color(0xFFbda28c)
-    ];
-
-    return Container(
-      height: height,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
-        gradient: const LinearGradient(
-          colors: colors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: child,
     );
   }
 

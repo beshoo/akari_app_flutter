@@ -10,7 +10,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../pages/property_details_page.dart';
 import '../utils/logger.dart';
 import '../services/secure_storage.dart';
-import '../stores/notification_store.dart';
 
 class FirebaseMessagingService {
   static final FirebaseMessagingService instance = FirebaseMessagingService._internal();

@@ -152,9 +152,17 @@ class CustomBottomNavBar extends StatelessWidget {
               currentIndex: currentIndex,
               onTap: (index) {
                 final item = items[index];
-                if (item.route == '/more') {
+                if (item.route == '/home') {
+                  if (ModalRoute.of(context)?.settings.name != '/home') {
+                    Navigator.pushNamed(context, '/home');
+                  }
+                } else if (item.route == '/more') {
                   if (ModalRoute.of(context)?.settings.name != '/more') {
                     Navigator.pushNamed(context, '/more');
+                  }
+                } else if (item.route == '/sectors') {
+                  if (ModalRoute.of(context)?.settings.name != '/sectors') {
+                    Navigator.pushNamed(context, '/sectors');
                   }
                 } else {
                   onTap(index);

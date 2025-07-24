@@ -1,12 +1,14 @@
 {
-    "files.autoSave": "afterDelay",
-    "files.autoSaveDelay": 500,
-    "dart.flutterHotReloadOnSave": true,
-    "dart.hotReloadOnSave": true,
-    "dart.previewHotReloadOnSaveWatcher": true,
-    "dart.flutterHotRestartOnSave": false,
+    "files.autoSave": "onFocusChange",
+    "dart.flutterHotReloadOnSave": "always",
+    "dart.hotReloadOnSave": "always",
+    "dart.flutterHotRestartOnSave": "never",
+    "dart.saveOnHotReload": true,
+    "dart.automaticCommentSlashes": "tripleSlash",
     "debug.toolBarLocation": "floating",
     "debug.showSubSessionsInToolBar": false,
     "window.commandCenter": true,
-    "dart.showDevToolsDebugToolBarButtons": true
+    "dart.showDevToolsDebugToolBarButtons": true,
+    "dart.previewFlutterUiGuides": true,
+    "dart.previewFlutterUiGuidesCustomTracking": true
 } 

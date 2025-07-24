@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:akari_app/utils/logger.dart';
 import 'package:akari_app/pages/webview_page.dart';
 import 'package:akari_app/stores/notification_store.dart';
 import 'package:provider/provider.dart';

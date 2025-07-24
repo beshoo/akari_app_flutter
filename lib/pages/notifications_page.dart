@@ -1,20 +1,20 @@
+import 'dart:async';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../widgets/custom_app_bar.dart';
-import '../utils/logger.dart';
-import '../widgets/custom_dialog.dart';
-import '../services/api_service.dart';
-import '../utils/toast_helper.dart';
 import '../data/models/notification_model.dart';
-import '../widgets/custom_spinner.dart';
+import '../services/api_service.dart';
 import '../stores/notification_store.dart';
+import '../utils/logger.dart';
+import '../utils/toast_helper.dart';
+import '../widgets/custom_app_bar.dart';
+import '../widgets/custom_dialog.dart';
+import '../widgets/custom_spinner.dart';
 import 'property_details_page.dart';
-import '../services/firebase_messaging_service.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'dart:async';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -135,11 +135,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       isDeleting = true;
                     });
                     
+                    final store = Provider.of<NotificationStore>(context, listen: false);
                     final success = await ApiService.deleteAllNotifications();
                     
+                    if (!mounted) return;
                     if (success) {
                       // Reset notification count in store
-                      final store = Provider.of<NotificationStore>(context, listen: false);
                       store.clear();
                       
                       setState(() {
@@ -148,16 +149,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         isRefreshing = false;
                         isDeleting = false;
                       });
-                      if (mounted) {
-                        ToastHelper.showToast(context, 'تم حذف جميع الإشعارات بنجاح', isError: false);
-                      }
+                      ToastHelper.showToast(context, 'تم حذف جميع الإشعارات بنجاح', isError: false);
                     } else {
                       setState(() {
                         isDeleting = false;
                       });
-                      if (mounted) {
-                        ToastHelper.showToast(context, 'فشل في حذف الإشعارات', isError: true);
-                      }
+                      ToastHelper.showToast(context, 'فشل في حذف الإشعارات', isError: true);
                     }
                   },
                   isWarning: true,

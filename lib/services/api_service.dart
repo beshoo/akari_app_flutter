@@ -196,7 +196,7 @@ class ApiService {
         }
       }
       return 0;
-    } catch (e, st) {
+    } catch (e) {
       Logger.log('Failed to fetch notification count: $e');
       return 0;
     }
