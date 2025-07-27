@@ -12,6 +12,7 @@ import '../widgets/custom_dropdown.dart';
 import '../widgets/custom_radio_buttons.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_dialog.dart';
+import 'property_details_page.dart';
 
 enum ShareFormMode { create, update }
 
@@ -404,11 +405,18 @@ class _ShareFormPageState extends State<ShareFormPage> {
                 // For update mode, return a result to trigger reload
                 Navigator.of(context).pop(true); // Return true to indicate successful update
               } else {
-                // For create mode, just pop back
-                Navigator.of(context).pop();
-                // Optionally navigate to specific share page
+                // For create mode, navigate to details page
+                Navigator.of(context).pop(); // Close the form page
                 if (response.containsKey('id')) {
                   // Navigate to share details page with ID: response['id']
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => PropertyDetailsPage(
+                        id: response['id'],
+                        itemType: "share",
+                      ),
+                    ),
+                  );
                 }
               }
             },

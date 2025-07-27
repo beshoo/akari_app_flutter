@@ -2,34 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:akari_app/pages/webview_page.dart';
 import 'package:akari_app/stores/notification_store.dart';
 import 'package:provider/provider.dart';
+import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
+import '../utils/navigation_helper.dart';
+import 'custom_bottom_sheet.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const CustomAppBar({
-    super.key,
-    this.showFavoritesButton = false,
-    this.onFavoritesPressed,
-    this.showSearchButton = false,
-    this.onSearchPressed,
-    this.showNotificationButton = false,
-    this.onNotificationPressed,
-    this.showHelpButton = false,
-    this.onHelpPressed,
-    this.showSortButton = false,
-    this.onSortPressed,
-    this.showAddAdButton = false,
-    this.onAddAdPressed,
-    this.showDeleteNotificationsButton = false,
-    this.onDeleteNotificationsPressed,
-    this.showBackButton = true,
-    this.onBackPressed,
-    this.title,
-    this.showLogo = true,
-    this.titleStyle,
-    this.onLogoPressed,
-    this.onlyText = false,
-    this.notificationCount,
-  });
-
   /// Which action buttons to show
   final bool showFavoritesButton;
   final bool showSearchButton;
@@ -56,6 +33,145 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool onlyText;
   final int? notificationCount;
 
+  const CustomAppBar({
+    super.key,
+    this.showFavoritesButton = false,
+    this.onFavoritesPressed,
+    this.showSearchButton = false,
+    this.onSearchPressed,
+    this.showNotificationButton = false,
+    this.onNotificationPressed,
+    this.showHelpButton = false,
+    this.onHelpPressed,
+    this.showSortButton = false,
+    this.onSortPressed,
+    this.showAddAdButton = false,
+    this.onAddAdPressed,
+    this.showDeleteNotificationsButton = false,
+    this.onDeleteNotificationsPressed,
+    this.showBackButton = true,
+    this.onBackPressed,
+    this.title,
+    this.showLogo = true,
+    this.titleStyle,
+    this.onLogoPressed,
+    this.onlyText = false,
+    this.notificationCount,
+  });
+
+  void _showAddAdOptions(BuildContext context) {
+    showMaterialModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CustomBottomSheet(
+        title: 'اختر نوع الإعلان',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 16),
+            _buildOptionButton(
+              context: context,
+              icon: Icons.trending_up,
+              title: 'إعلان أسهم تنظيمية',
+              subtitle: 'إضافة إعلان عن أسهم تنظيمية',
+              onTap: () {
+                Navigator.pop(context);
+                NavigationHelper.navigateToCreateShare(context);
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildOptionButton(
+              context: context,
+              icon: Icons.home_outlined,
+              title: 'إعلان عقار',
+              subtitle: 'إضافة إعلان عن عقار',
+              onTap: () {
+                Navigator.pop(context);
+                NavigationHelper.navigateToCreateApartment(context);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptionButton({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFFE5E5E5),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF7F5F2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: const Color(0xFF633e3d),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF633e3d),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 14,
+                        color: Color(0xFF888888),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: Color(0xFFBDBDBD),
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -72,8 +188,18 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           if (showBackButton)
             GestureDetector(
               onTap: onBackPressed ?? () {
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
+                final ModalRoute<Object?>? route = ModalRoute.of(context);
+                final currentRoute = route?.settings.name;
+                
+                // Check if we're on a main navigation page
+                if (currentRoute == '/sectors' || currentRoute == '/my-posts' || currentRoute == '/more' || currentRoute == '/orders' || currentRoute == '/favorites') {
+                  // For main navigation pages, navigate to home since there's no back route
+                  Navigator.pushReplacementNamed(context, '/home');
+                } else {
+                  // For other pages, use normal back navigation
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  }
                 }
               },
               child: const Icon(
@@ -87,8 +213,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             GestureDetector(
               onTap: onLogoPressed ?? () {
                 final ModalRoute<Object?>? route = ModalRoute.of(context);
-                if (route != null && route.settings.name != '/home' && Navigator.canPop(context)) {
-                  Navigator.pop(context);
+                if (route != null && route.settings.name != '/home') {
+                  // Check if we're on a main navigation page
+                  final currentRoute = route.settings.name;
+                  if (currentRoute == '/sectors' || currentRoute == '/my-posts' || currentRoute == '/more' || currentRoute == '/orders' || currentRoute == '/favorites') {
+                    // For main navigation pages, use pushReplacementNamed to replace current route
+                    Navigator.pushReplacementNamed(context, '/home');
+                  } else {
+                    // For other pages, use pushNamed to preserve navigation stack
+                    Navigator.pushNamed(context, '/home');
+                  }
                 }
               },
               child: Image.asset(
@@ -258,7 +392,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: ElevatedButton(
-                    onPressed: onAddAdPressed,
+                    onPressed: onAddAdPressed ?? () => _showAddAdOptions(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,

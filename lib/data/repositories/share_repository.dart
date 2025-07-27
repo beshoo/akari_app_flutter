@@ -354,7 +354,7 @@ class ShareRepository {
 
   /// Close a share
   Future<Map<String, dynamic>> closeShare(int shareId) async {
-    final response = await _dio.post('/share/close/$shareId');
+    final response = await _dio.post('/admin/close_share/$shareId');
 
     if (kDebugMode) {
       print("------- Close Share Response -------");

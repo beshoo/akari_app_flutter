@@ -44,26 +44,126 @@ class ApiService {
         final rand = Random().nextInt(900000) + 100000;
         options.queryParameters['rand'] = rand.toString();
         
-        // Log request in debug mode
-        Logger.log('🚀 REQUEST: ${options.method} ${options.uri}');
-        Logger.log('📤 Headers: ${options.headers}');
-        if (options.data != null) {
-          Logger.log('📦 Payload: ${options.data}');
+        // Enhanced detailed logging for requests
+        Logger.log('');
+        Logger.log('🚀 ═══════════════════════════════════════════════════════════════');
+        Logger.log('🚀 REQUEST: ${options.method.toUpperCase()} ${options.baseUrl}${options.path}');
+        Logger.log('🚀 ═══════════════════════════════════════════════════════════════');
+        
+        // Log headers (excluding sensitive authorization)
+        if (options.headers.isNotEmpty) {
+          Logger.log('📤 HEADERS:');
+          options.headers.forEach((key, value) {
+            if (key.toLowerCase() == 'authorization') {
+              Logger.log('   $key: Bearer ***TOKEN***');
+            } else {
+              Logger.log('   $key: $value');
+            }
+          });
         }
+        
+        // Log query parameters for GET requests
+        if (options.queryParameters.isNotEmpty) {
+          Logger.log('🔍 QUERY PARAMETERS:');
+          options.queryParameters.forEach((key, value) {
+            Logger.log('   $key: $value');
+          });
+        }
+        
+        // Log request body for POST/PUT/PATCH requests
+        if (options.data != null) {
+          Logger.log('📦 REQUEST BODY:');
+          if (options.data is Map) {
+            final data = options.data as Map;
+            data.forEach((key, value) {
+              // Hide sensitive fields
+              if (key.toString().toLowerCase().contains('password') || 
+                  key.toString().toLowerCase().contains('token')) {
+                Logger.log('   $key: ***HIDDEN***');
+              } else {
+                Logger.log('   $key: $value');
+              }
+            });
+          } else {
+            Logger.log('   ${options.data}');
+          }
+        }
+        
+        Logger.log('🚀 ═══════════════════════════════════════════════════════════════');
+        Logger.log('');
         
         handler.next(options);
       },
       onResponse: (response, handler) {
-        // Log response in debug mode
-        Logger.log('✅ RESPONSE: ${response.statusCode} ${response.requestOptions.uri}');
-        Logger.log('📨 Data: ${response.data}');
+        // Enhanced detailed logging for responses
+        Logger.log('');
+        Logger.log('✅ ═══════════════════════════════════════════════════════════════');
+        Logger.log('✅ RESPONSE: ${response.statusCode} ${response.requestOptions.method.toUpperCase()} ${response.requestOptions.uri}');
+        Logger.log('✅ ═══════════════════════════════════════════════════════════════');
+        
+        // Log response headers
+        if (response.headers.map.isNotEmpty) {
+          Logger.log('📨 RESPONSE HEADERS:');
+          response.headers.map.forEach((key, value) {
+            Logger.log('   $key: ${value.join(', ')}');
+          });
+        }
+        
+        // Log response data
+        if (response.data != null) {
+          Logger.log('📨 RESPONSE DATA:');
+          if (response.data is Map) {
+            final data = response.data as Map;
+            data.forEach((key, value) {
+              // Format different types of values
+              if (value is List && value.length > 3) {
+                Logger.log('   $key: [${value.length} items] ${value.take(3).toList()}...');
+              } else if (value is Map && value.length > 5) {
+                final keys = value.keys.take(5).toList();
+                Logger.log('   $key: {${value.length} fields} showing: $keys...');
+              } else {
+                Logger.log('   $key: $value');
+              }
+            });
+          } else if (response.data is List) {
+            final list = response.data as List;
+            Logger.log('   Array with ${list.length} items');
+            if (list.isNotEmpty) {
+              Logger.log('   First item: ${list.first}');
+            }
+          } else {
+            Logger.log('   ${response.data}');
+          }
+        }
+        
+        Logger.log('✅ ═══════════════════════════════════════════════════════════════');
+        Logger.log('');
         
         handler.next(response);
       },
       onError: (error, handler) async {
-        // Log error in debug mode
-        Logger.error('❌ ERROR: ${error.response?.statusCode} ${error.requestOptions.uri}', error.message, StackTrace.current);
-        Logger.error('📝 Response: ${error.response?.data}');
+        // Enhanced error logging
+        Logger.log('');
+        Logger.log('❌ ═══════════════════════════════════════════════════════════════');
+        Logger.log('❌ ERROR: ${error.response?.statusCode ?? 'NO_STATUS'} ${error.requestOptions.method.toUpperCase()} ${error.requestOptions.uri}');
+        Logger.log('❌ ═══════════════════════════════════════════════════════════════');
+        Logger.log('❌ Error Type: ${error.type}');
+        Logger.log('❌ Error Message: ${error.message}');
+        
+        if (error.response?.data != null) {
+          Logger.log('❌ ERROR RESPONSE DATA:');
+          if (error.response!.data is Map) {
+            final data = error.response!.data as Map;
+            data.forEach((key, value) {
+              Logger.log('   $key: $value');
+            });
+          } else {
+            Logger.log('   ${error.response!.data}');
+          }
+        }
+        
+        Logger.log('❌ ═══════════════════════════════════════════════════════════════');
+        Logger.log('');
 
         // --- Network Error Handling ---
         final isNetworkError = error.type == DioExceptionType.connectionTimeout ||
@@ -157,7 +257,10 @@ class ApiService {
   // Send error report for 500 errors
   static Future<void> _sendErrorReport(DioException error) async {
     try {
-      Logger.info('📊 Sending error report for 500 error');
+      Logger.log('');
+      Logger.log('📊 ═══════════════════════════════════════════════════════════════');
+      Logger.log('📊 SENDING ERROR REPORT FOR 500 ERROR');
+      Logger.log('📊 ═══════════════════════════════════════════════════════════════');
       
       final errorData = {
         'timestamp': DateTime.now().toIso8601String(),
@@ -170,9 +273,27 @@ class ApiService {
         'platform': defaultTargetPlatform.toString(),
       };
       
+      Logger.log('📊 ERROR REPORT DATA:');
+      errorData.forEach((key, value) {
+        if (key == 'request_data' && value is Map) {
+          Logger.log('   $key:');
+          (value).forEach((reqKey, reqValue) {
+            if (reqKey.toString().toLowerCase().contains('password') || 
+                reqKey.toString().toLowerCase().contains('token')) {
+              Logger.log('     $reqKey: ***HIDDEN***');
+            } else {
+              Logger.log('     $reqKey: $reqValue');
+            }
+          });
+        } else {
+          Logger.log('   $key: $value');
+        }
+      });
+      
       // You can implement your error reporting service here
       // For example, send to Firebase Crashlytics, Sentry, etc.
-      Logger.log('📈 Error report data: $errorData');
+      Logger.log('📊 ═══════════════════════════════════════════════════════════════');
+      Logger.log('');
     } catch (e) {
       Logger.error('❌ Failed to send error report', e);
     }

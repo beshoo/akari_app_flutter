@@ -1,48 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../stores/favorites_store.dart';
+import '../stores/orders_store.dart';
 import '../utils/navigation_helper.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import '../widgets/custom_spinner.dart';
 
-class FavoritesPage extends StatelessWidget {
-  const FavoritesPage({super.key});
+class OrderAppointmentsPage extends StatelessWidget {
+  const OrderAppointmentsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => FavoritesStore(),
-      child: const _FavoritesView(),
+      create: (_) => OrdersStore(),
+      child: const _OrderAppointmentsView(),
     );
   }
 }
 
-class _FavoritesView extends StatefulWidget {
-  const _FavoritesView();
+class _OrderAppointmentsView extends StatefulWidget {
+  const _OrderAppointmentsView();
 
   @override
-  State<_FavoritesView> createState() => _FavoritesViewState();
+  State<_OrderAppointmentsView> createState() => _OrderAppointmentsViewState();
 }
 
-class _FavoritesViewState extends State<_FavoritesView> with TickerProviderStateMixin {
-  late FavoritesStore store;
+class _OrderAppointmentsViewState extends State<_OrderAppointmentsView> with TickerProviderStateMixin {
+  late OrdersStore store;
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    store = Provider.of<FavoritesStore>(context, listen: false);
+    store = Provider.of<OrdersStore>(context, listen: false);
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) return;
       store.setTab(_tabController.index);
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        store.loadFavorites();
-      }
+      store.loadOrders();
     });
   }
 
@@ -74,18 +72,18 @@ class _FavoritesViewState extends State<_FavoritesView> with TickerProviderState
         ),
         body: Column(
           children: [
-            Consumer<FavoritesStore>(
+            Consumer<OrdersStore>(
               builder: (context, store, _) => _buildTabs(store),
             ),
             Expanded(
-              child: Consumer<FavoritesStore>(
-                builder: (context, store, _) => _buildFavoritesList(store),
+              child: Consumer<OrdersStore>(
+                builder: (context, store, _) => _buildOrderList(store),
               ),
             ),
           ],
         ),
         bottomNavigationBar: CustomBottomNavBar(
-          currentIndex: 2, // Favorites tab (index 2 in the updated nav bar)
+          currentIndex: 1, // Appointments tab
           onTap: (index) {
             // Navigation is handled by CustomBottomNavBar
           },
@@ -94,7 +92,7 @@ class _FavoritesViewState extends State<_FavoritesView> with TickerProviderState
     );
   }
 
-  Widget _buildTabs(FavoritesStore store) {
+  Widget _buildTabs(OrdersStore store) {
     return Container(
       color: Colors.white,
       child: TabBar(
@@ -104,21 +102,21 @@ class _FavoritesViewState extends State<_FavoritesView> with TickerProviderState
         unselectedLabelColor: const Color(0xFFBDBDBD),
         labelStyle: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 16),
         tabs: const [
-          Tab(text: 'الأسهم المفضلة'),
-          Tab(text: 'العقارات المفضلة'),
+          Tab(text: 'مواعيد الأسهم'),
+          Tab(text: 'مواعيد العقارات'),
         ],
       ),
     );
   }
 
-  Widget _buildFavoritesList(FavoritesStore store) {
+  Widget _buildOrderList(OrdersStore store) {
     if (store.isLoading) {
       return const Center(child: CustomSpinner(size: 50.0));
     }
-    final favorites = store.currentTab == 0 ? store.shareFavorites : store.apartmentFavorites;
-    if (favorites.isEmpty) {
+    final orders = store.currentTab == 0 ? store.shareOrders : store.apartmentOrders;
+    if (orders.isEmpty) {
       return RefreshIndicator(
-        onRefresh: () => store.loadFavorites(force: true),
+        onRefresh: () => store.loadOrders(force: true),
         color: const Color(0xFF633e3d),
         backgroundColor: const Color(0xFFF7F5F2),
         child: SingleChildScrollView(
@@ -131,24 +129,24 @@ class _FavoritesViewState extends State<_FavoritesView> with TickerProviderState
       );
     }
     return RefreshIndicator(
-      onRefresh: () => store.loadFavorites(force: true),
+      onRefresh: () => store.loadOrders(force: true),
       color: const Color(0xFF633e3d),
       backgroundColor: const Color(0xFFF7F5F2),
       child: NotificationListener<ScrollNotification>(
         onNotification: (ScrollNotification scrollInfo) {
           if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
             if (store.hasMoreData && !store.isLoadingMore) {
-              store.loadMoreFavorites();
+              store.loadMoreOrders();
             }
           }
           return false;
         },
         child: ListView.builder(
           physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: favorites.length + (store.hasMoreData ? 1 : 0),
+          itemCount: orders.length + (store.hasMoreData ? 1 : 0),
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
           itemBuilder: (context, index) {
-            if (index == favorites.length) {
+            if (index == orders.length) {
               // Show loading indicator at the bottom
               return Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -159,20 +157,12 @@ class _FavoritesViewState extends State<_FavoritesView> with TickerProviderState
                 ),
               );
             }
-            final favorite = favorites[index];
-            return _FavoriteListItem(
-              favorite: favorite,
+            final order = orders[index];
+            return _OrderListItem(
+              order: order,
               type: store.currentTab == 0 ? 'share' : 'apartment',
-              onDelete: () {
-                if (mounted) {
-                  store.confirmDelete(context, favorite, store.currentTab == 0 ? 'share' : 'apartment');
-                }
-              },
-              onTap: () {
-                if (mounted) {
-                  NavigationHelper.navigateToDetails(context, favorite['favoritable']['id'], store.currentTab == 0 ? 'share' : 'apartment');
-                }
-              },
+              onDelete: () => store.confirmDelete(context, order, store.currentTab == 0 ? 'share' : 'apartment'),
+              onTap: () => NavigationHelper.navigateToDetails(context, order['model_id'], store.currentTab == 0 ? 'share' : 'apartment'),
             );
           },
         ),
@@ -182,8 +172,8 @@ class _FavoritesViewState extends State<_FavoritesView> with TickerProviderState
 
   Widget _buildEmptyState(int tab) {
     final instructions = tab == 0
-        ? 'يمكنك إضافة أسهم إلى المفضلة من صفحة تفاصيل السهم، ثم ستظهر هنا'
-        : 'يمكنك إضافة عقارات إلى المفضلة من صفحة تفاصيل العقار، ثم ستظهر هنا';
+        ? 'يمكنك ترتيب موعد لعرض أو شراء أسهم تنظيمية من صفحة تفاصيل السهم، ثم التواصل مع فريق عقاري ومن ثم ترتيب موعد '
+        : 'يمكنك ترتيب موعد لعرض أو شراء عقار من صفحة تفاصيل العقار ، ثم التواصل مع فريق عقاري ومن ثم ترتيب موعد';
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
@@ -193,7 +183,7 @@ class _FavoritesViewState extends State<_FavoritesView> with TickerProviderState
             Image.asset('assets/images/no_data.png', width: 120, height: 120),
             const SizedBox(height: 24),
             const Text(
-              'لا توجد عناصر في المفضلة',
+              'لم تقم بترتيب مواعيد حتى الآن',
               style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFF633e3d)),
               textAlign: TextAlign.center,
             ),
@@ -210,14 +200,14 @@ class _FavoritesViewState extends State<_FavoritesView> with TickerProviderState
   }
 }
 
-class _FavoriteListItem extends StatelessWidget {
-  final Map<String, dynamic> favorite;
+class _OrderListItem extends StatelessWidget {
+  final Map<String, dynamic> order;
   final String type;
   final VoidCallback onDelete;
   final VoidCallback onTap;
 
-  const _FavoriteListItem({
-    required this.favorite,
+  const _OrderListItem({
+    required this.order,
     required this.type,
     required this.onDelete,
     required this.onTap,
@@ -225,19 +215,15 @@ class _FavoriteListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final favoritable = favorite['favoritable'];
-    final sector = favoritable['sector'];
-    final region = favoritable['region'];
-    final media = sector?['media'] as List<dynamic>?;
-    final coverImg = media?.isNotEmpty == true ? media!.first['original_url'] : '';
+    final sector = order['orderable']['sector'];
+    final region = order['orderable']['region'];
+    final coverImg = sector?['cover']?['img'] ?? '';
     final imageUrl = coverImg.isNotEmpty ? coverImg : 'assets/images/no_photo.jpg';
-    final transactionType = favoritable['transaction_type'] == 2 ? 'نية بيع' : 'نية شراء';
+    final transactionType = order['orderable']['transaction_type'] == 'sell' ? 'نية بيع' : 'نية شراء';
     final sectorName = sector?['sector_name']?['name'] ?? '';
-    final sectorCode = sector?['code'] ?? '';
-    final price = favoritable['price'].toString();
+    final sectorCode = sector?['sector_name']?['code'] ?? '';
+    final price = order['orderable']['price'].toString();
     final regionName = region?['name'] ?? '';
-    final ownerName = favoritable['owner_name'] ?? '';
-    
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -286,8 +272,6 @@ class _FavoriteListItem extends StatelessWidget {
                     Text('$sectorName - $sectorCode', style: const TextStyle(fontFamily: 'Cairo', fontSize: 15, color: Color(0xFF888888))),
                     const SizedBox(height: 4),
                     Text('السعر: $price', style: const TextStyle(fontFamily: 'Cairo', fontSize: 15, color: Color(0xFF633e3d))),
-                    const SizedBox(height: 4),
-                    Text('المالك: $ownerName', style: const TextStyle(fontFamily: 'Cairo', fontSize: 14, color: Color(0xFF888888))),
                   ],
                 ),
               ),
@@ -299,7 +283,7 @@ class _FavoriteListItem extends StatelessWidget {
                   color: Colors.red,
                 ),
                 onPressed: onDelete,
-                tooltip: 'حذف من المفضلة',
+                tooltip: 'حذف',
               ),
             ],
           ),

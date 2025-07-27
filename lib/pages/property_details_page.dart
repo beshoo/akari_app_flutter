@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart' as share_plus;
 import 'package:shimmer/shimmer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../data/models/apartment_model.dart';
 import '../data/models/share_model.dart';
@@ -66,6 +67,8 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     'sad': 'أحزنني',
     'angry': 'أغضبني',
   };
+
+  bool _isClosingDeal = false;
 
   @override
   void initState() {
@@ -397,7 +400,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                 shape: BoxShape.circle,
                 color: _currentPhotoIndex == entry.key
                     ? const Color(0xFF8B6F47)
-                    : const Color(0xFF8B6F47).withOpacity(0.3),
+                    : const Color(0xFF8B6F47).withValues(alpha: 0.3),
               ),
             ),
           );
@@ -549,7 +552,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 12,
             spreadRadius: 2,
             offset: const Offset(0, 4),
@@ -580,7 +583,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                     height: 40,
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF1877F2).withOpacity(0.1)
+                          ? const Color(0xFF1877F2).withValues(alpha: 0.1)
                           : Colors.transparent,
                       shape: BoxShape.circle,
                     ),
@@ -718,7 +721,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: const Color(0xFF8B6F47).withOpacity(0.1),
+                color: const Color(0xFF8B6F47).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
@@ -1371,13 +1374,26 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   double _getBottomButtonsHeight() {
     final authStore = Provider.of<AuthStore>(context, listen: false);
     final isOwner = authStore.userId == _itemData?.userId.toString();
-    final isAdmin = authStore.userPrivilege == 'admin' || authStore.userPrivilege == 'owner';
+    final isAdmin = authStore.userPrivilege == 'admin';
     final canEditDelete = isOwner || isAdmin;
-    
+    final isAdminOnly = authStore.userPrivilege == 'admin';
     final buttonHeight = 50.0;
     final padding = 20.0;
     final spacing = 12.0;
-    final numberOfRows = canEditDelete ? 2 : 1;
+    int numberOfRows = 0;
+    
+    // Contact button row (only for non-owners)
+    if (!isOwner) numberOfRows += 1;
+    
+    // Edit/Delete row (for owners and admins)
+    if (canEditDelete) numberOfRows += 1;
+    
+    // Admin-only row (إتمام الصفقة and تواصل مع)
+    if (isAdminOnly) numberOfRows += 1;
+    
+    // If no buttons, return minimum height
+    if (numberOfRows == 0) return padding * 2;
+    
     return (numberOfRows * buttonHeight) + ((numberOfRows - 1) * spacing) + (padding * 2);
   }
 
@@ -1386,16 +1402,30 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     
     final authStore = Provider.of<AuthStore>(context);
     final isOwner = authStore.userId == _itemData.userId.toString();
-    final isAdmin = authStore.userPrivilege == 'admin' || authStore.userPrivilege == 'owner';
+    final isAdmin = authStore.userPrivilege == 'admin';
     final canEditDelete = isOwner || isAdmin;
+    final isAdminOnly = authStore.userPrivilege == 'admin';
     
     // Calculate proper height based on number of button rows
     final buttonHeight = 50.0;
     final padding = 20.0;
     final spacing = 12.0;
-    final numberOfRows = canEditDelete ? 2 : 1;
-    final totalHeight = (numberOfRows * buttonHeight) + ((numberOfRows - 1) * spacing) + (padding * 2);
-    final backgroundHeight = totalHeight * 0.6; // Cover more area to hide content
+    // Calculate number of rows for background height
+    int numberOfRows = 0;
+    
+    // Contact button row (only for non-owners)
+    if (!isOwner) numberOfRows += 1;
+    
+    // Edit/Delete row (for owners and admins)
+    if (canEditDelete) numberOfRows += 1;
+    
+    // Admin-only row (إتمام الصفقة and تواصل مع)
+    if (isAdminOnly) numberOfRows += 1;
+    
+    final totalHeight = numberOfRows > 0 
+        ? (numberOfRows * buttonHeight) + ((numberOfRows - 1) * spacing) + (padding * 2)
+        : padding * 2;
+    final backgroundHeight = totalHeight;
     
     // Log the permission check
     Logger.log('🔒 Permission Check:');
@@ -1424,46 +1454,48 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Contact owner button (always visible)
-              Container(
-                height: buttonHeight,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color.fromARGB(255, 175, 140, 90),
-                      Color.fromARGB(255, 151, 117, 78),
-                    ],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFa47764).withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+              // Contact owner button (hidden for owners viewing their own items)
+              if (!isOwner) ...[
+                Container(
+                  height: buttonHeight,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color.fromARGB(255, 175, 140, 90),
+                        Color.fromARGB(255, 151, 117, 78),
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
                     ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
                     borderRadius: BorderRadius.circular(12),
-                    onTap: _contactOwner,
-                    child: const Center(
-                      child: Text(
-                        'تواصل مع فريق عقاري',
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFa47764).withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: _contactOwner,
+                      child: const Center(
+                        child: Text(
+                          'تواصل مع فريق عقاري',
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
+              ],
               
               // Owner/Admin-specific buttons
               if (canEditDelete) ...[
@@ -1485,7 +1517,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFECB03D).withOpacity(0.3),
+                              color: const Color(0xFFECB03D).withValues(alpha: 0.3),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -1528,7 +1560,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.red.withOpacity(0.3),
+                              color: Colors.red.withValues(alpha: 0.3),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -1538,6 +1570,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                           color: Colors.transparent,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(8),
+                          
                             onTap: _showDeleteDialog,
                             child: const Center(
                               child: Text(
@@ -1549,6 +1582,124 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                                   fontWeight: FontWeight.w600,
                                 ),
                                 textAlign: TextAlign.right,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              
+              // Admin-only buttons (إتمام الصفقة and تواصل مع)
+              if (isAdminOnly) ...[
+                SizedBox(height: spacing),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: buttonHeight,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color.fromARGB(255, 76, 111, 175), Color.fromARGB(255, 11, 51, 88)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: _itemData.closed == 1 || _isClosingDeal
+                                ? null
+                                : () {
+                                    showCustomDialog(
+                                      context: context,
+                                      title: 'تأكيد إتمام الصفقة',
+                                      message: 'هل أنت متأكد أنك تريد إتمام الصفقة لهذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.',
+                                      okButtonText: 'إتمام الصفقة',
+                                      cancelButtonText: 'إلغاء',
+                                      isWarning: true,
+                                      onOkPressed: _handleCloseDeal,
+                                    );
+                                  },
+                            child: Center(
+                              child: _isClosingDeal
+                                  ? SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : Text(
+                                      _itemData.closed == 1 ? 'تمت الصفقة' : 'إتمام الصفقة',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontFamily: 'Cairo',
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      textAlign: TextAlign.right,
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        height: buttonHeight,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color.fromARGB(255, 40, 127, 72), Color.fromARGB(255, 8, 60, 22)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () => _proceedWithWhatsApp(context),
+                            child: Center(
+                              child: Text(
+                                () {
+                                  final name = _itemData.user?.name ?? "المالك";
+                                  if (name.length > 10) {
+                                    return 'تواصل مع ${name.substring(0, 10)}...';
+                                  } else {
+                                    return 'تواصل مع $name';
+                                  }
+                                }(),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Cairo',
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.right,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ),
                           ),
@@ -1858,6 +2009,76 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
         builder: (context) => ContactUsPage(itemData: _itemData),
       ),
     );
+  }
+
+  Future<void> _handleCloseDeal() async {
+    if (_isClosingDeal || _itemData.closed == 1) return;
+    setState(() { _isClosingDeal = true; });
+    try {
+      Map<String, dynamic> result;
+      if (widget.itemType == "apartment") {
+        result = await _apartmentRepository.closeApartment(_itemData.id);
+      } else {
+        result = await _shareRepository.closeShare(_itemData.id);
+      }
+      Logger.log('✅ Close deal API result: $result');
+      if (result['success'] == true || result['closed'] == true || result['message']?.toString().contains('تم') == true) {
+        ToastHelper.showToast(context, 'تم إتمام الصفقة بنجاح', isError: false);
+        await _loadItemDetails();
+      } else {
+        ToastHelper.showToast(context, result['message']?.toString() ?? 'فشل إتمام الصفقة', isError: true);
+      }
+    } catch (e) {
+      Logger.error('❌ Error closing deal', e);
+      ToastHelper.showToast(context, 'حدث خطأ أثناء إتمام الصفقة', isError: true);
+    } finally {
+      if (mounted) setState(() { _isClosingDeal = false; });
+    }
+  }
+
+  void _proceedWithWhatsApp(BuildContext context) async {
+    final authStore = Provider.of<AuthStore>(context, listen: false);
+    final cleanedPhoneNumber = _cleanPhoneNumber(authStore.supportPhone);
+    Logger.log('💬 Support phone from auth store: [33m[1m[4m${authStore.supportPhone}[0m');
+    Logger.log('💬 Cleaned phone number: $cleanedPhoneNumber');
+    if (cleanedPhoneNumber.isNotEmpty) {
+      // Access question_message from the details response (apartment or share) - this is the clean WhatsApp message
+      final question = _itemData?.questionMessage;
+      final defaultMessage = 'أود الاستفسار عن العقار المعروض';
+      final message = question ?? defaultMessage;
+      final whatsappUrl = Uri.parse('whatsapp://send?phone=$cleanedPhoneNumber&text=${Uri.encodeComponent(message)}');
+      Logger.log('💬 Question message from itemData: $question');
+      Logger.log('💬 Final message: $message');
+      Logger.log('💬 WhatsApp URL: $whatsappUrl');
+      try {
+        final supported = await canLaunchUrl(whatsappUrl);
+        Logger.log('💬 WhatsApp URL supported: $supported');
+        if (supported) {
+          final launched = await launchUrl(whatsappUrl);
+          Logger.log('💬 WhatsApp launch result: $launched');
+        } else {
+          Logger.log('💬 WhatsApp not supported');
+          if (mounted) {
+            ToastHelper.showToast(context, 'تطبيق واتساب غير مثبت على هذا الجهاز', isError: true);
+          }
+        }
+      } catch (error) {
+        Logger.log('💬 Error launching WhatsApp: $error');
+        if (mounted) {
+          ToastHelper.showToast(context, 'حدث خطأ أثناء فتح واتساب', isError: true);
+        }
+      }
+    } else {
+      Logger.log('💬 No phone number available');
+      if (mounted) {
+        ToastHelper.showToast(context, 'رقم الهاتف غير متوفر', isError: true);
+      }
+    }
+  }
+
+  String _cleanPhoneNumber(String? phone) {
+    if (phone == null) return '';
+    return phone.replaceAll('+', '').replaceAll(' ', '').replaceAll('-', '');
   }
 
   String _formatNumber(String number) {

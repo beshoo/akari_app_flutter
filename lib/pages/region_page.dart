@@ -766,59 +766,6 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         onBackPressed: () => Navigator.pop(context),
         onLogoPressed: () => Navigator.pop(context),
         showAddAdButton: true,
-        onAddAdPressed: () {
-          // Check which tab is currently active and navigate accordingly
-          if (_tabController != null && _tabs.length > 1) {
-            // Multiple tabs - check current tab index
-            final currentTabIndex = _tabController!.index;
-            if (widget.hasShare && widget.hasApartment) {
-              if (currentTabIndex == 0) {
-                // Shares tab - navigate to share form
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ShareFormPage(
-                      mode: ShareFormMode.create,
-                    ),
-                  ),
-                );
-              } else {
-                // Apartments tab - navigate to apartment form
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ApartmentFormPage(
-                      mode: ApartmentFormMode.create,
-                    ),
-                  ),
-                );
-              }
-            }
-          } else if (_tabs.length == 1) {
-            // Single tab - check which type it is
-            if (widget.hasShare) {
-              // Only shares available - navigate to share form
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ShareFormPage(
-                    mode: ShareFormMode.create,
-                  ),
-                ),
-              );
-            } else if (widget.hasApartment) {
-              // Only apartments available - navigate to apartment form
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ApartmentFormPage(
-                    mode: ApartmentFormMode.create,
-                  ),
-                ),
-              );
-            }
-          }
-        },
         showSearchButton: true,
         showSortButton: true,
          onSearchPressed: () {
@@ -1083,14 +1030,15 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   Widget _buildShareItem(Share share, int index) {
     final authStore = Provider.of<AuthStore>(context, listen: false);
     final bool canShowOwner =
-        authStore.userPrivilege == 'admin' || authStore.userPrivilege == 'owner';
+        authStore.userPrivilege == 'admin' || authStore.userId == share.userId.toString();
 
     return PostCard(
       key: ValueKey('share_${share.id}'),
       postData: SharePostAdapter(share, showOwner: canShowOwner),
       scrollController: _scrollController,
-      onNavigateToDetails: _navigateToPropertyDetails,
+      onNavigateToDetails: (authStore.userPrivilege == 'admin' || !share.isClosed) ? _navigateToPropertyDetails : null,
       onPostUpdated: (updatedPost) {
+        
         if (updatedPost is SharePostAdapter) {
           if (mounted) {
             setState(() {
@@ -1201,13 +1149,13 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
   Widget _buildApartmentItem(Apartment apartment, int index) {
     final authStore = Provider.of<AuthStore>(context, listen: false);
     final bool canShowOwner =
-        authStore.userPrivilege == 'admin' || authStore.userPrivilege == 'owner';
+        authStore.userPrivilege == 'admin' || authStore.userId == apartment.userId.toString();
 
     return PostCard(
       key: ValueKey('apartment_${apartment.id}'),
       postData: ApartmentPostAdapter(apartment, showOwner: canShowOwner),
       scrollController: _scrollController,
-      onNavigateToDetails: _navigateToPropertyDetails,
+      onNavigateToDetails: (authStore.userPrivilege == 'admin' || !apartment.isClosed) ? _navigateToPropertyDetails : null,
       onPostUpdated: (updatedPost) {
         if (updatedPost is ApartmentPostAdapter) {
           if (mounted) {

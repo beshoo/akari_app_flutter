@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
-import 'package:shimmer/shimmer.dart';
 import '../data/models/region_model.dart';
 import '../data/models/sector_model.dart';
 import '../data/repositories/home_repository.dart';
@@ -55,6 +54,7 @@ class _SectorsPageState extends State<SectorsPage> with TickerProviderStateMixin
   // State management
   bool _isInitialLoading = false;
   bool _isLoadingMoreSectors = false;
+  bool _isRegionSwitching = false; // Add this new state
   String? _errorMessage;
   int _currentPage = 1;
   bool _hasMorePages = true;
@@ -162,6 +162,7 @@ class _SectorsPageState extends State<SectorsPage> with TickerProviderStateMixin
       _selectedRegion = region;
       _selectedSectorType = null;
       _selectedSectorCode = null;
+      _isRegionSwitching = true; // Set loading state
       _sectorResponse = null;
       _filteredSectors = [];
       _sectorCodeOptions = [];
@@ -183,8 +184,17 @@ class _SectorsPageState extends State<SectorsPage> with TickerProviderStateMixin
       _setupSectorTypeTabs();
       _updateSectorCodeOptions();
       _applyFilters();
+      setState(() {
+        _isRegionSwitching = false; // Clear loading state
+      });
     } else {
-      await _loadSectors(refresh: true);
+      try {
+        await _loadSectors(refresh: true);
+      } finally {
+        setState(() {
+          _isRegionSwitching = false; // Clear loading state
+        });
+      }
     }
   }
 
@@ -474,9 +484,9 @@ class _SectorsPageState extends State<SectorsPage> with TickerProviderStateMixin
             child: _buildBody(),
           ),
           bottomNavigationBar: CustomBottomNavBar(
-            currentIndex: 3, // Sectors tab index
+            currentIndex: 4, // Sectors tab index (المقاسم)
             onTap: (index) {
-              // Optionally handle navigation if needed
+              // Navigation is handled by CustomBottomNavBar
             },
           ),
         ),
@@ -658,6 +668,11 @@ class _SectorsPageState extends State<SectorsPage> with TickerProviderStateMixin
   }
 
   Widget _buildSectorsList() {
+    // Show loading spinner during region switching
+    if (_isRegionSwitching) {
+      return const Center(child: CustomSpinner(size: 50.0));
+    }
+    
     if (_filteredSectors.isEmpty) {
       return _buildEmptyState();
     }
@@ -901,7 +916,7 @@ class _SectorsPageState extends State<SectorsPage> with TickerProviderStateMixin
         Text(
           text,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 15,
             color: Colors.white,
             fontFamily: 'Cairo',
           ),
@@ -1117,59 +1132,4 @@ class _SectorsPageState extends State<SectorsPage> with TickerProviderStateMixin
   }
 
 
-  Widget _buildSectorSkeletonCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-      child: Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[100]!,
-        period: const Duration(milliseconds: 1500),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              height: 350,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              height: 24,
-              width: 120,
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Container(
-                  height: 18,
-                  width: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Container(
-                  height: 18,
-                  width: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
 } 

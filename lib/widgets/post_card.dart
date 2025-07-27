@@ -13,6 +13,7 @@ import '../utils/navigation_helper.dart';
 import '../utils/toast_helper.dart';
 import './post_card_data.dart';
 import 'custom_bottom_sheet.dart';
+import 'custom_spinner.dart';
 
 class PostCard extends StatefulWidget {
   final PostCardData postData;
@@ -315,30 +316,35 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   Widget _buildClosedOverlay() {
+    final authStore = Provider.of<AuthStore>(context, listen: false);
+    final bool isAdmin = authStore.userPrivilege == 'admin';
     return Positioned.fill(
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          gradient: LinearGradient(
-            colors: _closedGradient,
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      child: IgnorePointer(
+        ignoring: isAdmin,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            gradient: LinearGradient(
+              colors: _closedGradient,
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
           ),
-        ),
-        child: Center(
-          child: Text(
-            _currentPostData.closedText,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 60,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                  offset: Offset(2, 2),
-                  blurRadius: 4,
-                  color: Colors.black26,
-                ),
-              ],
+          child: Center(
+            child: Text(
+              _currentPostData.closedText,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 60,
+                fontWeight: FontWeight.bold,
+                shadows: [
+                  Shadow(
+                    offset: Offset(2, 2),
+                    blurRadius: 4,
+                    color: Colors.black26,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -745,9 +751,10 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   // Helper methods
   bool _shouldShowApprovalBadge(AuthStore authStore) {
-    final isAdminOrOwner = authStore.userPrivilege == 'admin' || 
-                          authStore.userPrivilege == 'owner';
-    return isAdminOrOwner && _currentPostData.isUnderReview;
+    final isAdmin = authStore.userPrivilege == 'admin';
+    final isCardOwner = authStore.userId != null && 
+                       int.tryParse(authStore.userId!) == _currentPostData.userId;
+    return (isAdmin || isCardOwner) && _currentPostData.isUnderReview;
   }
 
 

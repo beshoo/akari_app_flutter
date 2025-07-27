@@ -268,7 +268,7 @@ class _MorePageState extends State<MorePage> {
                         _MoreSettingsItemWithIcon(
                           icon: Icons.star,
                           title: 'المفضلة',
-                          onTap: () => Navigator.pushNamed(context, '/myfavorites'),
+                          onTap: () => Navigator.pushNamed(context, '/favorites'),
                         ),
                         _MoreSettingsItem(
                           icon: 'assets/images/icons/notifications.png',
@@ -400,9 +400,9 @@ class _MorePageState extends State<MorePage> {
             Align(
               alignment: Alignment.bottomCenter,
               child: CustomBottomNavBar(
-                currentIndex: 4, // More tab index
+                currentIndex: 5, // More tab index (المزيد)
                 onTap: (index) {
-                  // Navigation is handled by the CustomBottomNavBar widget
+                  // Navigation is handled by CustomBottomNavBar
                 },
               ),
             ),

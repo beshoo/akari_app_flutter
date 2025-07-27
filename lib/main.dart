@@ -24,6 +24,7 @@ import 'services/api_service.dart';
 import 'services/firebase_messaging_service.dart';
 import 'services/version_service.dart';
 import 'stores/auth_store.dart';
+import 'stores/chat_store.dart';
 import 'stores/enums_store.dart';
 import 'stores/notification_store.dart';
 import 'stores/reaction_store.dart';
@@ -31,6 +32,10 @@ import 'utils/logger.dart';
 import 'pages/favorites_page.dart';
 import 'pages/search_page.dart';
 import 'pages/sectors_page.dart';
+import 'pages/chat_page.dart';
+import 'pages/property_details_page.dart';
+import 'pages/order_appointments_page.dart';
+import 'pages/my_ads_page.dart';
 
 // Background message handler (must be top-level function)
 @pragma('vm:entry-point')
@@ -115,6 +120,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthStore()),
+        ChangeNotifierProvider(create: (_) => ChatStore()),
         ChangeNotifierProvider(create: (_) => EnumsStore()),
         ChangeNotifierProvider(create: (_) => ReactionStore()),
       ],
@@ -239,6 +245,9 @@ class MyApp extends StatelessWidget {
           '/favorites': (context) => const FavoritesPage(),
           '/search': (context) => const SearchPage(),
           '/sectors': (context) => const SectorsPage(),
+          '/chat': (context) => const ChatPage(),
+          '/orders': (context) => const OrderAppointmentsPage(),
+          '/my-posts': (context) => const MyAdsPage(),
         },
         
         onGenerateRoute: (settings) {
@@ -260,6 +269,26 @@ class MyApp extends StatelessWidget {
               builder: (context) => WebViewPage(
                 url: args['url'],
                 title: args['title'],
+              ),
+            );
+          }
+
+          // Add dynamic property and share details routes
+          if (settings.name == '/property_details') {
+            final referenceId = settings.arguments;
+            return MaterialPageRoute(
+              builder: (context) => PropertyDetailsPage(
+                id: int.tryParse(referenceId.toString()) ?? 0,
+                itemType: 'apartment',
+              ),
+            );
+          }
+          if (settings.name == '/share_details') {
+            final referenceId = settings.arguments;
+            return MaterialPageRoute(
+              builder: (context) => PropertyDetailsPage(
+                id: int.tryParse(referenceId.toString()) ?? 0,
+                itemType: 'share',
               ),
             );
           }

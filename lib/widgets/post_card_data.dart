@@ -11,6 +11,7 @@ class InfoRowData {
 
 abstract class PostCardData {
   int get id;
+  int get userId;
   String get postType;
   bool get isFavorited;
   String? get currentUserReaction;
@@ -47,6 +48,8 @@ class SharePostAdapter implements PostCardData {
 
   @override
   int get id => _share.id;
+  @override
+  int get userId => _share.userId;
   @override
   String get postType => _share.postType;
   @override
@@ -176,6 +179,8 @@ class ApartmentPostAdapter implements PostCardData {
 
   @override
   int get id => _apartment.id;
+  @override
+  int get userId => _apartment.userId;
   @override
   String get postType => _apartment.postType;
   @override

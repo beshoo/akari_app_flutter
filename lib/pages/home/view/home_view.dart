@@ -30,7 +30,7 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  int _selectedIndex = 0;
+  final int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -120,12 +120,12 @@ class _HomeViewState extends State<HomeView> {
                   if (state is HomeSuccess) {
                     return Column(
                       children: [
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Text(
+                              const Text(
                                 "لا تضيع فرصة الاستثمار",
                                 textAlign: TextAlign.right,
                                 style: TextStyle(
@@ -133,19 +133,24 @@ class _HomeViewState extends State<HomeView> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              SizedBox(height: 8),
-                              Text(
+                              const SizedBox(height: 8),
+                              const Text(
                                 "كل الوحدات متاحة, اختر الوحدة التي تناسبك",
                                 textAlign: TextAlign.right,
                                 style: TextStyle(
                                   fontSize: 16,
                                 ),
                               ),
-                              SizedBox(height: 16),
-                              Image(
-                                image: AssetImage('assets/images/akari_ai.png'),
+                              const SizedBox(height: 16),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.pushNamed(context, '/chat');
+                                },
+                                child: const Image(
+                                  image: AssetImage('assets/images/akari_ai.png'),
+                                ),
                               ),
-                              SizedBox(height: 16),
+                              const SizedBox(height: 5),
                             ],
                           ),
                         ),
@@ -569,49 +574,59 @@ class _HomeViewState extends State<HomeView> {
                       ],
                     );
                   }
-                  return Container();
+                  return const SizedBox.shrink();
                 },
               ),
             ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: 25 + MediaQuery.of(context).viewPadding.bottom, // Matches the bottom margin of the nav bar + safe area
-                color: const Color(0xFFF7F5F2), // The screen's background color
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: CustomBottomNavBar(
-                currentIndex: _selectedIndex,
-                onTap: (index) {
-                  setState(() {
-                    _selectedIndex = index;
-                  });
-                },
-              ),
-            ),
-            CustomFAB(
-              onAddApartment: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ApartmentFormPage(
-                      mode: ApartmentFormMode.create,
+            // Conditionally show bottom navigation and FAB only when not in error state
+            BlocBuilder<HomeBloc, HomeState>(
+              builder: (context, state) {
+                if (state is HomeFailure) {
+                  return const SizedBox.shrink();
+                }
+                return Stack(
+                  children: [
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 25 + MediaQuery.of(context).viewPadding.bottom, // Matches the bottom margin of the nav bar + safe area
+                        color: const Color(0xFFF7F5F2), // The screen's background color
+                      ),
                     ),
-                  ),
-                );
-              },
-              onAddShare: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ShareFormPage(
-                      mode: ShareFormMode.create,
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: CustomBottomNavBar(
+                        currentIndex: _selectedIndex,
+                        onTap: (index) {
+                          // Navigation is handled by CustomBottomNavBar
+                        },
+                      ),
                     ),
-                  ),
+                    CustomFAB(
+                      onAddApartment: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ApartmentFormPage(
+                              mode: ApartmentFormMode.create,
+                            ),
+                          ),
+                        );
+                      },
+                      onAddShare: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ShareFormPage(
+                              mode: ShareFormMode.create,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 );
               },
             ),

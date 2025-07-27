@@ -373,9 +373,9 @@ class AuthStore extends ChangeNotifier {
           Logger.log('🔐 AuthStore: Support Phone: ${_user?['support_phone']}');
           Logger.log('🔐 AuthStore: User Privilege: ${_user?['privilege']}');
           
-          // Send version update to server (non-blocking)
-          VersionService.instance.sendVersionUpdate().catchError((e) {
-            Logger.log('⚠️ AuthStore: Version update failed but continuing: $e');
+          // Update Firebase token on server (non-blocking)
+          _updateFirebaseToken().catchError((e) {
+            Logger.log('⚠️ AuthStore: Firebase token update failed but continuing: $e');
           });
         } else {
           Logger.log('❌ AuthStore: /user/auth_data endpoint returned failure, deleting token');
@@ -619,5 +619,46 @@ class AuthStore extends ChangeNotifier {
     _loginError = null;
     _otpError = null;
     notifyListeners();
+  }
+  
+  // Update Firebase token on server
+  Future<void> _updateFirebaseToken() async {
+    try {
+      Logger.log('🔥 AuthStore: Updating Firebase token on server...');
+      
+      // Get FCM token safely
+      String? fcmToken;
+      try {
+        if (FirebaseMessagingService.instance.isInitialized) {
+          fcmToken = FirebaseMessagingService.instance.fcmToken;
+        } else {
+          Logger.log('⚠️ AuthStore: Firebase Messaging not initialized, skipping FCM token update');
+          return;
+        }
+      } catch (e) {
+        Logger.log('⚠️ AuthStore: Could not get FCM token: $e');
+        return;
+      }
+      
+      if (fcmToken == null || fcmToken.isEmpty) {
+        Logger.log('⚠️ AuthStore: FCM token is null or empty, skipping update');
+        return;
+      }
+      
+      Logger.log('🔥 AuthStore: FCM token available, sending to server: $fcmToken');
+      
+      final response = await ApiService.instance.post('/user/update_firebase', data: {
+        'firebase': fcmToken,
+      });
+      
+      if (response.data['success'] == true) {
+        Logger.log('✅ AuthStore: Firebase token updated successfully on server');
+      } else {
+        Logger.log('⚠️ AuthStore: Firebase token update failed - ${response.data['message'] ?? 'Unknown error'}');
+      }
+    } catch (e) {
+      Logger.log('❌ AuthStore: Error updating Firebase token: $e');
+      // Don't throw error - Firebase update shouldn't block app functionality
+    }
   }
 } 

@@ -35,26 +35,30 @@ class OnboardingPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 4),
               child: Row(
                 children: [
-                  // Signup Button (Left in RTL)
-                  CustomButton(
-                    title: "حساب جديد",
-                    hasGradient: true,
-                    onPressed: () {
-                      // Navigate to signup page
-                      Navigator.pushNamed(context, '/signup');
-                    },
+                  // Signup Button (Left in RTL) - Expanded to fill space
+                  Expanded(
+                    child: CustomButton(
+                      title: "حساب جديد",
+                      hasGradient: true,
+                      onPressed: () {
+                        // Navigate to signup page
+                        Navigator.pushNamed(context, '/signup');
+                      },
+                    ),
                   ),
                   
                   const SizedBox(width: 16),
                   
-                  // Login Button (Right in RTL)
-                  CustomButton(
-                    title: "تسجيل الدخول",
-                    hasGradient: false,
-                    onPressed: () {
-                      // Navigate to login page
-                      Navigator.pushNamed(context, '/login');
-                    },
+                  // Login Button (Right in RTL) - Expanded to fill space
+                  Expanded(
+                    child: CustomButton(
+                      title: "تسجيل الدخول",
+                      hasGradient: false,
+                      onPressed: () {
+                        // Navigate to login page
+                        Navigator.pushNamed(context, '/login');
+                      },
+                    ),
                   ),
                 ],
               ),

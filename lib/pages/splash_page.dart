@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:akari_app/stores/auth_store.dart';
 import 'package:akari_app/services/firebase_messaging_service.dart';
+import 'package:akari_app/services/version_service.dart';
+import 'package:akari_app/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -26,12 +28,24 @@ class _SplashPageState extends State<SplashPage> {
 
     final authStore = Provider.of<AuthStore>(context, listen: false);
     
+    // Always check for version updates first, regardless of authentication
+    try {
+      Logger.log('🔄 Splash: Starting version check...');
+      await VersionService.instance.checkAndHandleVersionUpdate(context);
+      Logger.log('✅ Splash: Version check completed');
+    } catch (e) {
+      Logger.log('❌ Splash: Version check failed: $e');
+      // Don't block navigation if version check fails
+    }
+
+    if (!mounted) return;
+    
     // Check authentication status and refresh user data from server
     await authStore.checkAuthStatus();
 
     if (!mounted) return;
 
-    // Check for initial notification AFTER auth check
+    // Check for initial notification AFTER auth check and version check
     final hasInitialNotification = FirebaseMessagingService.initialMessage != null;
     
     if (hasInitialNotification) {

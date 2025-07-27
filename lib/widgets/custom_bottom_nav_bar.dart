@@ -31,6 +31,12 @@ class DefaultNavItems {
       route: '/appointments',
     ),
     BottomNavItem(
+      label: 'المفضلة',
+      inactiveIcon: 'assets/images/icons/star_unactive.png',
+      activeIcon: 'assets/images/icons/star_active.png',
+      route: '/favorites',
+    ),
+    BottomNavItem(
       label: 'إعلاناتي',
       inactiveIcon: 'assets/images/icons/order_screen_unactive.png',
       activeIcon: 'assets/images/icons/order_screen_active.png',
@@ -152,20 +158,37 @@ class CustomBottomNavBar extends StatelessWidget {
               currentIndex: currentIndex,
               onTap: (index) {
                 final item = items[index];
-                if (item.route == '/home') {
-                  if (ModalRoute.of(context)?.settings.name != '/home') {
-                    Navigator.pushNamed(context, '/home');
-                  }
-                } else if (item.route == '/more') {
-                  if (ModalRoute.of(context)?.settings.name != '/more') {
-                    Navigator.pushNamed(context, '/more');
-                  }
-                } else if (item.route == '/sectors') {
-                  if (ModalRoute.of(context)?.settings.name != '/sectors') {
-                    Navigator.pushNamed(context, '/sectors');
-                  }
-                } else {
-                  onTap(index);
+                final currentRoute = ModalRoute.of(context)?.settings.name;
+                
+                // Don't navigate if already on the target route
+                if (currentRoute == item.route) {
+                  return;
+                }
+                
+                // Handle navigation for each route
+                switch (item.route) {
+                  case '/home':
+                    Navigator.pushReplacementNamed(context, '/home');
+                    break;
+                  case '/appointments':
+                    Navigator.pushReplacementNamed(context, '/orders');
+                    break;
+                  case '/favorites':
+                    Navigator.pushReplacementNamed(context, '/favorites');
+                    break;
+                  case '/my-posts':
+                    Navigator.pushReplacementNamed(context, '/my-posts');
+                    break;
+                  case '/sectors':
+                    Navigator.pushReplacementNamed(context, '/sectors');
+                    break;
+                  case '/more':
+                    Navigator.pushReplacementNamed(context, '/more');
+                    break;
+                  default:
+                    // Fallback to custom onTap if provided
+                    onTap(index);
+                    break;
                 }
               },
               backgroundColor: Colors.transparent,

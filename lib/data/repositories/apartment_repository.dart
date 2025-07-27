@@ -468,4 +468,25 @@ class ApartmentRepository {
       };
     }
   }
+
+  /// Close an apartment (admin action)
+  Future<Map<String, dynamic>> closeApartment(int apartmentId) async {
+    try {
+      final response = await _dio.post('/admin/close_apartment/$apartmentId');
+      Logger.log("------- Close Apartment Response -------");
+      Logger.log("Status Code: ${response.statusCode}");
+      Logger.log("URL: ${response.requestOptions.uri}");
+      Logger.log("Apartment ID: $apartmentId");
+      Logger.log("Response: ${response.data}");
+      Logger.log("----------------------------------------");
+      if (response.statusCode == 200) {
+        return response.data ?? {};
+      } else {
+        throw Exception('API returned status code ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      Logger.error('Error closing apartment', e.response?.data);
+      rethrow;
+    }
+  }
 } 

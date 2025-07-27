@@ -9,6 +9,7 @@ import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_dialog.dart';
 import '../data/repositories/share_repository.dart';
 import '../data/repositories/apartment_repository.dart';
+import 'chat_page.dart';
 
 class ContactUsPage extends StatefulWidget {
   final dynamic itemData;
@@ -344,8 +345,12 @@ class _ContactUsPageState extends State<ContactUsPage> {
   }
 
   void _handleAIChatPress(BuildContext context) {
-    // AI button bypasses intention check
-    ToastHelper.showToast(context, 'ميزة الدردشة قيد التطوير', isError: false);
+    // Navigate to chat page
+    Navigator.of(context).push(
+      MaterialPageRoute(
+                        builder: (context) => const ChatPage(),
+      ),
+    );
   }
 
   void _handleDatePress(BuildContext context) {
@@ -547,7 +552,7 @@ class _ContactUsPageState extends State<ContactUsPage> {
                 padding: const EdgeInsets.all(8),
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: Colors.yellow.withOpacity(0.2),
+                  color: Colors.yellow.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(

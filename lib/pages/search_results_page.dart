@@ -75,16 +75,18 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
     });
 
     try {
-      final data = widget.searchData!['data'] as List<dynamic>? ?? [];
-      _currentPage = widget.searchData!['current_page'] ?? 1;
-      _totalPages = widget.searchData!['last_page'] ?? 1;
-      _totalResults = widget.searchData!['total'] ?? 0;
+      final data = widget.searchData?['data'] as List<dynamic>? ?? [];
+      _currentPage = widget.searchData?['current_page'] ?? 1;
+      _totalPages = widget.searchData?['last_page'] ?? 1;
+      _totalResults = widget.searchData?['total'] ?? 0;
 
       Logger.log('📊 Parsing ${widget.searchType} search results: ${data.length} items');
       Logger.log('📄 Page $_currentPage of $_totalPages (Total: $_totalResults)');
 
       final authStore = Provider.of<AuthStore>(context, listen: false);
-      final showOwner = authStore.userPrivilege == 'admin' || authStore.userPrivilege == 'owner';
+      // Handle case where searchData might be null (when navigating from sectors page)
+      final userId = widget.searchData?['user_id'];
+      final showOwner = authStore.userPrivilege == 'admin' || (userId != null && authStore.userId == userId);
 
       if (widget.searchType == 'apartment') {
         _searchResults = data.map((item) {
@@ -125,7 +127,9 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
 
     try {
       final authStore = Provider.of<AuthStore>(context, listen: false);
-      final showOwner = authStore.userPrivilege == 'admin' || authStore.userPrivilege == 'owner';
+      // Handle case where searchData might be null (when navigating from sectors page)
+      final userId = widget.searchData?['user_id'];
+      final showOwner = authStore.userPrivilege == 'admin' || (userId != null && authStore.userId == userId);
 
       if (widget.searchType == 'apartment') {
         final params = widget.originalSearchParams!;
@@ -243,7 +247,9 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
 
     if (mounted) {
       final authStore = Provider.of<AuthStore>(context, listen: false);
-      final showOwner = authStore.userPrivilege == 'admin' || authStore.userPrivilege == 'owner';
+      // Handle case where searchData might be null (when navigating from sectors page)
+      final userId = widget.searchData?['user_id'];
+      final showOwner = authStore.userPrivilege == 'admin' || (userId != null && authStore.userId == userId);
 
       final newResults = response.shares.map((share) {
         return SharePostAdapter(share, showOwner: showOwner);
@@ -285,7 +291,9 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
 
     if (mounted) {
       final authStore = Provider.of<AuthStore>(context, listen: false);
-      final showOwner = authStore.userPrivilege == 'admin' || authStore.userPrivilege == 'owner';
+      // Handle case where searchData might be null (when navigating from sectors page)
+      final userId = widget.searchData?['user_id'];
+      final showOwner = authStore.userPrivilege == 'admin' || (userId != null && authStore.userId == userId);
 
       final newResults = response.apartments.map((apartment) {
         return ApartmentPostAdapter(apartment, showOwner: showOwner);

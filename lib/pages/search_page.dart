@@ -922,9 +922,9 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFA17462).withOpacity(0.1),
+                      color: const Color(0xFFA17462).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFA17462).withOpacity(0.5)),
+                      border: Border.all(color: const Color(0xFFA17462).withValues(alpha: 0.5)),
                     ),
                     child: Text(
                       'الأسهم التنظيمية غير متوفرة في منطقة ${_selectedRegion?.name ?? ''}',
@@ -1222,9 +1222,9 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFA17462).withOpacity(0.1),
+                      color: const Color(0xFFA17462).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFA17462).withOpacity(0.5)),
+                      border: Border.all(color: const Color(0xFFA17462).withValues(alpha: 0.5)),
                     ),
                     child: Text(
                       'العقارات غير متوفرة في منطقة ${_selectedRegion?.name ?? ''}',

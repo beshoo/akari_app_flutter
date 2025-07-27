@@ -14,7 +14,7 @@ Future<void> showCustomDialog({
     context: context,
     barrierDismissible: true,
     barrierLabel: '',
-    barrierColor: Colors.black.withOpacity(0.4),
+    barrierColor: Colors.black.withValues(alpha: 0.4),
     transitionDuration: const Duration(milliseconds: 300),
     pageBuilder: (context, animation1, animation2) => const SizedBox.shrink(),
     transitionBuilder: (context, animation1, animation2, child) {
@@ -39,7 +39,7 @@ Future<void> showCustomDialog({
         builder: (context, child) => Container(
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
-          color: Colors.black.withOpacity(0.4 * opacityAnimation.value),
+          color: Colors.black.withValues(alpha: 0.4 * opacityAnimation.value),
           child: Center(
             child: Transform.scale(
               scale: scaleAnimation.value,
@@ -62,18 +62,18 @@ Future<void> showCustomDialog({
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.25),
+                          color: Colors.black.withValues(alpha: 0.25),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                           spreadRadius: 2,
                         ),
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.12),
+                          color: Colors.black.withValues(alpha: 0.12),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
+                          color: Colors.black.withValues(alpha: 0.08),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -206,7 +206,7 @@ Future<void> showIntentionDialog({
     context: context,
     barrierDismissible: true,
     barrierLabel: 'إغلاق',
-    barrierColor: Colors.black.withOpacity(0.4),
+    barrierColor: Colors.black.withValues(alpha: 0.4),
     transitionDuration: const Duration(milliseconds: 300),
     pageBuilder: (context, animation1, animation2) => const SizedBox.shrink(),
     transitionBuilder: (context, animation1, animation2, child) {
@@ -250,18 +250,18 @@ Future<void> showIntentionDialog({
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.25),
+                        color: Colors.black.withValues(alpha: 0.25),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                         spreadRadius: 2,
                       ),
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
+                        color: Colors.black.withValues(alpha: 0.12),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withValues(alpha: 0.08),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
