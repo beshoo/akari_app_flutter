@@ -16,9 +16,17 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
         isCoreLibraryDesugaringEnabled = true
     }
+    
+    // Suppress deprecation and unchecked warnings
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.addAll(listOf("-Xlint:none"))
+        options.compilerArgs.addAll(listOf("-Xlint:-deprecation"))
+        options.compilerArgs.addAll(listOf("-Xlint:-unchecked"))
+    }
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()
+        freeCompilerArgs += listOf("-Xsuppress-version-warnings")
     }
 
     defaultConfig {

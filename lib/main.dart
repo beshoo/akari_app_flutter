@@ -126,7 +126,7 @@ class MyApp extends StatelessWidget {
       ],
       child: ToastificationWrapper(
       child: GetMaterialApp(
-        title: 'Akari App',
+        title: 'عقاري',
         debugShowCheckedModeBanner: false,
         
         // RTL Configuration

@@ -177,7 +177,7 @@ class FirebaseMessagingService {
       
       // Display the notification with proper payload encoding
       await _showNotification(
-        title: message.notification!.title ?? 'Akari App',
+        title: message.notification!.title ?? 'عقاري',
         body: message.notification!.body ?? 'You have a new message',
         payload: _encodePayload(message.data),
       );

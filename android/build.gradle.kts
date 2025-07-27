@@ -3,6 +3,13 @@ allprojects {
         google()
         mavenCentral()
     }
+    
+    // Suppress deprecation and unchecked warnings for all projects
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.addAll(listOf("-Xlint:none"))
+        options.compilerArgs.addAll(listOf("-Xlint:-deprecation"))
+        options.compilerArgs.addAll(listOf("-Xlint:-unchecked"))
+    }
 }
 
 val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()

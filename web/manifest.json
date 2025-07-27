@@ -1,11 +1,11 @@
 {
-    "name": "akari_app",
-    "short_name": "akari_app",
+    "name": "عقاري",
+    "short_name": "عقاري",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "عقاري - تطبيق العقارات",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

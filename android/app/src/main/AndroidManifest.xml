@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.CALL_PRIVILEGED"/>
     
     <application
-        android:label="akari_app"
+        android:label="عقاري"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
