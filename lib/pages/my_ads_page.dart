@@ -3,9 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 
 import '../stores/ads_store.dart';
-import '../services/api_service.dart';
-import '../data/models/share_model.dart';
-import '../data/models/apartment_model.dart';
 import '../data/repositories/share_repository.dart';
 import '../data/repositories/apartment_repository.dart';
 import '../utils/navigation_helper.dart';
@@ -364,13 +361,6 @@ class _AdListItem extends StatelessWidget {
     'angry': '😠',
   };
 
-  final Map<String, String> _reactionNames = const {
-    'like': 'أعجبني',
-    'love': 'أحببته',
-    'wow': 'أدهشني',
-    'sad': 'أحزنني',
-    'angry': 'أغضبني',
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -400,101 +390,100 @@ class _AdListItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                            Stack(
                 children: [
                   Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          imageUrl,
-                          width: 72,
-                          height: 72,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              width: 72,
-                              height: 72,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF0F0F0),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Column(
+                            children: [
+                              ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF633e3d)),
+                                child: Image.network(
+                                  imageUrl,
+                                  width: 72,
+                                  height: 72,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      width: 72,
+                                      height: 72,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF0F0F0),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF633e3d)),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) => Image.asset('assets/images/no_photo.jpg', width: 72, height: 72, fit: BoxFit.cover),
                                 ),
                               ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) => Image.asset('assets/images/no_photo.jpg', width: 72, height: 72, fit: BoxFit.cover),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        width: 72,
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        decoration: BoxDecoration(
-                          color: approve ? Colors.green : Colors.orange,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          approve ? 'مُعتمد' : 'قيد المراجعة',
-                          style: const TextStyle(
-                            fontFamily: 'Cairo',
-                            fontSize: 10,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                              const SizedBox(height: 4),
+                              Container(
+                                width: 72,
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: approve ? Colors.green : Colors.orange,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  approve ? 'مُعتمد' : 'قيد المراجعة',
+                                  style: const TextStyle(
+                                    fontFamily: 'Cairo',
+                                    fontSize: 10,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
                           ),
-                          textAlign: TextAlign.center,
-                        ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '$regionName - $transactionType',
+                                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 16),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '$sectorName - $sectorCode', 
+                                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 15, color: Color.fromARGB(255, 51, 51, 51)),
+                                  maxLines: 2,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'السعر: $price', 
+                                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 15, color: Color(0xFF633e3d)),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$regionName - $transactionType',
-                          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 16),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                        const SizedBox(height: 4),
-                        Text('$sectorName - $sectorCode', style: const TextStyle(fontFamily: 'Cairo', fontSize: 15, color: Color(0xFF888888))),
-                        const SizedBox(height: 4),
-                        Text('السعر: $price', style: const TextStyle(fontFamily: 'Cairo', fontSize: 15, color: Color(0xFF633e3d))),
-                      ],
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Image.asset(
-                          'assets/images/icons/edit.png', 
-                          width: 28, 
-                          height: 28,
-                          color: isClosed ? const Color(0xFFBDBDBD) : null,
-                        ),
-                        onPressed: isClosed ? null : () => _navigateToEdit(context),
-                        tooltip: isClosed ? 'لا يمكن التعديل - الإعلان مُباع' : 'تعديل',
-                      ),
-                      IconButton(
-                        icon: Image.asset(
-                          'assets/images/icons/delete_icon.png', 
-                          width: 28, 
-                          height: 28,
-                          color: isClosed ? const Color(0xFFBDBDBD) : Colors.red,
-                        ),
-                        onPressed: isClosed ? null : onDelete,
-                        tooltip: isClosed ? 'لا يمكن الحذف - الإعلان مُباع' : 'حذف',
-                      ),
-                    ],
+                  // iOS-style three-dot menu in top-left corner
+                  Positioned(
+                    top: -5,
+                    left: -3,
+                    child: _buildThreeDotMenu(context, isClosed),
                   ),
                 ],
               ),
@@ -567,7 +556,6 @@ class _AdListItem extends StatelessWidget {
     
     // Generate some mock reactions based on the total count
     final reactions = <String>[];
-    final random = DateTime.now().millisecond;
     
     if (totalCount > 0) reactions.add('like');
     if (totalCount > 3) reactions.add('love');
@@ -711,33 +699,155 @@ class _AdListItem extends StatelessWidget {
     }
   }
 
+  Widget _buildThreeDotMenu(BuildContext context, bool isClosed) {
+    return PopupMenuButton<String>(
+      icon: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 252, 246, 246).withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.more_vert,
+          size: 20,
+          color: Color(0xFF633e3d),
+        ),
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 8,
+      color: const Color.fromARGB(255, 250, 246, 246),
+      offset: const Offset(10, 45),
+      onSelected: (value) {
+        switch (value) {
+          case 'edit':
+            if (!isClosed) _navigateToEdit(context);
+            break;
+          case 'delete':
+            if (!isClosed) onDelete();
+            break;
+        }
+      },
+      itemBuilder: (context) => [
+        if (!isClosed) ...[
+          PopupMenuItem<String>(
+            value: 'edit',
+            child: Row(
+              children: [
+                Image.asset(
+                  'assets/images/icons/edit.png',
+                  width: 20,
+                  height: 20,
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'تعديل',
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF633e3d),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem<String>(
+            value: 'delete',
+            child: Row(
+              children: [
+                Image.asset(
+                  'assets/images/icons/delete_icon.png',
+                  width: 20,
+                  height: 20,
+                  color: Colors.red,
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'حذف',
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          PopupMenuItem<String>(
+            value: 'sold',
+            enabled: false,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.lock,
+                  size: 20,
+                  color: const Color(0xFFBDBDBD),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'مُباع',
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFBDBDBD),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   void _navigateToEdit(BuildContext context) async {
     final adId = ad['id'];
-    final shareRepository = ShareRepository();
-    final apartmentRepository = ApartmentRepository();
+    
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CustomSpinner(size: 50.0),
+      ),
+    );
     
     try {
       if (type == 'share') {
-        // Fetch share data using repository
+        final shareRepository = ShareRepository();
         final share = await shareRepository.fetchShareById(adId);
+        Navigator.pop(context); // Close loading dialog
         if (share != null) {
           NavigationHelper.navigateToUpdateShare(context, share);
         } else {
-          // Fallback to create form if fetch fails
           NavigationHelper.navigateToCreateShare(context);
         }
       } else {
-        // Fetch apartment data using repository
+        final apartmentRepository = ApartmentRepository();
         final apartment = await apartmentRepository.fetchApartmentById(adId);
+        Navigator.pop(context); // Close loading dialog
         if (apartment != null) {
           NavigationHelper.navigateToUpdateApartment(context, apartment);
         } else {
-          // Fallback to create form if fetch fails
           NavigationHelper.navigateToCreateApartment(context);
         }
       }
     } catch (e) {
-      // If there's an error fetching data, fallback to create forms
+      Navigator.pop(context); // Close loading dialog
+      // Fallback to create forms
       if (type == 'share') {
         NavigationHelper.navigateToCreateShare(context);
       } else {

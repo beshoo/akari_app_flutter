@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import '../services/firebase_messaging_service.dart';
 import '../services/secure_storage.dart';
-import '../services/version_service.dart';
 import '../utils/logger.dart';
 
 class AuthStore extends ChangeNotifier {

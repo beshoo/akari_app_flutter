@@ -75,7 +75,7 @@ class _SplashPageState extends State<SplashPage> {
       backgroundColor: Colors.white,
       body: Center(
         child: Transform.scale(
-          scale: 0.8, // Reduce size by 20%
+          scale: 0.6, // Reduce size by 40%
           child: Image.asset(
             'assets/images/splash_1.png',
             fit: BoxFit.contain,

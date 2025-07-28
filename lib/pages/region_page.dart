@@ -12,8 +12,6 @@ import '../widgets/post_card.dart';
 import '../widgets/post_card_data.dart';
 import '../widgets/custom_spinner.dart';
 import '../widgets/custom_bottom_sheet.dart';
-import 'share_form_page.dart';
-import 'apartment_form_page.dart';
 import 'search_page.dart';
 import 'property_details_page.dart';
 

@@ -152,10 +152,10 @@ class MinimalTypingIndicator extends StatefulWidget {
   final double dotSize;
 
   const MinimalTypingIndicator({
-    Key? key,
+    super.key,
     this.dotColor = const Color(0xFF9e9e9e),
     this.dotSize = 4.0,
-  }) : super(key: key);
+  });
 
   @override
   State<MinimalTypingIndicator> createState() => _MinimalTypingIndicatorState();
