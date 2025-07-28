@@ -128,7 +128,7 @@ class _ShareFormPageState extends State<ShareFormPage> {
           // Populate sectors for this sector type
           final sectorCodes = sectorItem['code'] as List?;
           if (sectorCodes != null) {
-            _sectors = sectorCodes.map((code) {
+            List<SectorOption> sectorOptions = sectorCodes.map((code) {
               final codeMap = code as Map<String, dynamic>;
               return SectorOption(
                 id: codeMap['id'] ?? 0,
@@ -136,6 +136,25 @@ class _ShareFormPageState extends State<ShareFormPage> {
                 code: codeMap['code'] ?? '',
               );
             }).toList();
+
+            // Apply filtering logic for "أسهم على الشيوع" sector type
+            if (sectorItem['key'] == 'أسهم على الشيوع') {
+              if (_currentType == 'buy') {
+                // For buy: show only the first item
+                if (sectorOptions.isNotEmpty) {
+                  sectorOptions = [sectorOptions.first];
+                }
+              } else {
+                // For sell: hide the first item, show the rest
+                if (sectorOptions.length > 1) {
+                  sectorOptions = sectorOptions.skip(1).toList();
+                } else {
+                  sectorOptions = []; // If only one item, hide it all
+                }
+              }
+            }
+
+            _sectors = sectorOptions;
           }
           break;
         }
@@ -233,7 +252,7 @@ class _ShareFormPageState extends State<ShareFormPage> {
         final sectorCodes = selectedSectorData['code'] as List?;
         
         if (sectorCodes != null) {
-          final sectorOptions = sectorCodes.map((code) {
+          List<SectorOption> sectorOptions = sectorCodes.map((code) {
             final codeMap = code as Map<String, dynamic>;
             return SectorOption(
               id: codeMap['id'] ?? 0,
@@ -241,6 +260,23 @@ class _ShareFormPageState extends State<ShareFormPage> {
               code: codeMap['code'] ?? '',
             );
           }).toList();
+
+          // Apply filtering logic for "أسهم على الشيوع" sector type
+          if (sectorType.name == 'أسهم على الشيوع') {
+            if (_currentType == 'buy') {
+              // For buy: show only the first item
+              if (sectorOptions.isNotEmpty) {
+                sectorOptions = [sectorOptions.first];
+              }
+            } else {
+              // For sell: hide the first item, show the rest
+              if (sectorOptions.length > 1) {
+                sectorOptions = sectorOptions.skip(1).toList();
+              } else {
+                sectorOptions = []; // If only one item, hide it all
+              }
+            }
+          }
 
           setState(() {
             _sectors = sectorOptions;
@@ -502,6 +538,11 @@ class _ShareFormPageState extends State<ShareFormPage> {
                     setState(() {
                       _currentType = value;
                     });
+                    
+                    // Re-filter sectors if "أسهم على الشيوع" is selected
+                    if (_selectedSectorType?.name == 'أسهم على الشيوع') {
+                      _onSectorTypeChanged(_selectedSectorType);
+                    }
                   },
                 ),
 
