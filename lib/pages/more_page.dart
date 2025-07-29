@@ -1,13 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:app_settings/app_settings.dart';
 
 import '../pages/webview_page.dart';
-import '../services/firebase_messaging_service.dart';
 import '../services/secure_storage.dart';
 import '../stores/auth_store.dart';
 import '../utils/logger.dart';
@@ -531,27 +532,38 @@ class NotificationPermissionSwitcher extends StatelessWidget {
     await showCustomDialog(
       context: context,
       title: 'التحقق من تفعيل الإشعارات',
-      message: 'سيتم توجيهك إلى إعدادات النظام لتفعيل الإشعارات الخاصة بالتطبيق. يرجى التأكد من تفعيل الإشعارات للحصول على التحديثات المهمة.',
+      message: Platform.isAndroid 
+        ? 'سيتم توجيهك إلى إعدادات الإشعارات الخاصة بالتطبيق. يرجى تفعيل الإشعارات للحصول على التحديثات المهمة.'
+        : 'سيتم توجيهك إلى إعدادات التطبيق. اتبع الخطوات التالية:\n\n1- اضغط على "الإشعارات"\n2- فعّل الإشعارات للحصول على التحديثات المهمة',
       okButtonText: 'موافق',
       cancelButtonText: 'إلغاء',
       onOkPressed: () async {
         try {
-          // Use awesome_notifications to show notification settings page
-          await AwesomeNotifications().showNotificationConfigPage();
+          await _openNotificationSettings();
         } catch (e) {
           Logger.error('Error opening notification settings', e);
-          // Fallback to general app settings if notification settings not available
-          try {
-            final Uri settingsUri = Uri.parse('app-settings:');
-            if (await canLaunchUrl(settingsUri)) {
-              await launchUrl(settingsUri, mode: LaunchMode.externalApplication);
-            }
-          } catch (e) {
-            Logger.error('Error opening app settings', e);
-          }
         }
       },
     );
+  }
+
+    Future<void> _openNotificationSettings() async {
+    try {
+      if (Platform.isAndroid) {
+        // For Android: Use app_settings package to open notification settings directly
+        // This opens the notification settings page with app icon and toggle
+        await AppSettings.openAppSettings(type: AppSettingsType.notification);
+      } else {
+        // For iOS: Can only open general app settings
+        // Note: iOS doesn't allow direct navigation to notification settings
+        // User must manually navigate to Notifications > [App Name] from app settings
+        await openAppSettings();
+      }
+    } catch (e) {
+      Logger.error('Error opening notification settings', e);
+      // Fallback to general app settings
+      await openAppSettings();
+    }
   }
 
   @override

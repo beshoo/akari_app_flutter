@@ -28,8 +28,8 @@
 -keep class com.google.firebase.** { *; }
 -keep class com.google.android.gms.** { *; }
 
-# Keep awesome_notifications classes
--keep class me.carda.awesome_notifications.** { *; }
+# Keep flutter_local_notifications classes
+-keep class com.dexterous.** { *; }
 
 # Keep url_launcher classes
 -keep class io.flutter.plugins.urllauncher.** { *; }
