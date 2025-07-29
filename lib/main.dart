@@ -10,6 +10,7 @@ import 'package:phone_form_field/phone_form_field.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
+import 'config/environment.dart';
 import 'pages/home/home_page.dart';
 import 'pages/login_page.dart';
 import 'pages/more_page.dart';
@@ -51,6 +52,9 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   // Ensure Flutter binding is initialized
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize and log environment
+  Environment.initialize();
   
   // Set preferred orientations to portrait only
   await SystemChrome.setPreferredOrientations([

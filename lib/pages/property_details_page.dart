@@ -1397,6 +1397,51 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     return (numberOfRows * buttonHeight) + ((numberOfRows - 1) * spacing) + (padding * 2);
   }
 
+  double _calculateBackgroundHeight() {
+    final authStore = Provider.of<AuthStore>(context, listen: false);
+    final isOwner = authStore.userId == _itemData?.userId.toString();
+    final isAdmin = authStore.userPrivilege == 'admin';
+    final canEditDelete = isOwner || isAdmin;
+    final isAdminOnly = authStore.userPrivilege == 'admin';
+    final buttonHeight = 50.0;
+    final padding = 20.0;
+    final spacing = 12.0;
+    int numberOfRows = 0;
+    
+    // Contact button row (only for non-owners)
+    if (!isOwner) numberOfRows += 1;
+    
+    // Edit/Delete row (for owners and admins)
+    if (canEditDelete) numberOfRows += 1;
+    
+    // Admin-only row (إتمام الصفقة and تواصل مع)
+    if (isAdminOnly) numberOfRows += 1;
+    
+    // If no buttons, return minimum height
+    if (numberOfRows == 0) return padding * 2;
+    
+    // Calculate total height (SafeArea will handle safe area automatically)
+    final totalHeight = (numberOfRows * buttonHeight) + ((numberOfRows - 1) * spacing) + (padding * 2);
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    
+    // Add extra padding based on device pixel ratio for better coverage
+    final extraPadding = (devicePixelRatio > 2.0) ? 20.0 : 15.0; // More padding for high-DPI devices
+    final finalHeight = totalHeight + extraPadding;
+    
+    // Debug logging for height calculation
+    Logger.log('📏 Background Height Calculation:');
+    Logger.log('   - Number of rows: $numberOfRows');
+    Logger.log('   - Button height: $buttonHeight');
+    Logger.log('   - Padding: $padding');
+    Logger.log('   - Spacing: $spacing');
+    Logger.log('   - Device pixel ratio: $devicePixelRatio');
+    Logger.log('   - Extra padding: $extraPadding');
+    Logger.log('   - Total height: $totalHeight');
+    Logger.log('   - Final background height: $finalHeight');
+    
+    return finalHeight;
+  }
+
   Widget _buildBottomActionButtons() {
     if (_itemData == null) return const SizedBox.shrink();
     
@@ -1411,21 +1456,17 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     final padding = 20.0;
     final spacing = 12.0;
     // Calculate number of rows for background height
-    int numberOfRows = 0;
     
     // Contact button row (only for non-owners)
-    if (!isOwner) numberOfRows += 1;
+    if (!isOwner)
     
     // Edit/Delete row (for owners and admins)
-    if (canEditDelete) numberOfRows += 1;
+    if (canEditDelete)
     
     // Admin-only row (إتمام الصفقة and تواصل مع)
-    if (isAdminOnly) numberOfRows += 1;
+    if (isAdminOnly)
     
-    final totalHeight = numberOfRows > 0 
-        ? (numberOfRows * buttonHeight) + ((numberOfRows - 1) * spacing) + (padding * 2)
-        : padding * 2;
-    final backgroundHeight = totalHeight;
+    final backgroundHeight = _calculateBackgroundHeight();
     
     // Log the permission check
     Logger.log('🔒 Permission Check:');
@@ -1440,10 +1481,10 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
       children: [
         // Background container that covers content underneath
         Positioned(
-          bottom: MediaQuery.of(context).viewPadding.bottom,
+          bottom: 0,
           left: 0,
           right: 0,
-          height: backgroundHeight,
+          height: _calculateBackgroundHeight(),
           child: Container(
             color: const Color(0xFFF7F5F2),
           ),
@@ -1499,7 +1540,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
               
               // Owner/Admin-specific buttons
               if (canEditDelete) ...[
-                SizedBox(height: spacing),
+                SizedBox(height: spacing / 2), // Reduced by 50%
                 Row(
                   children: [
                     Expanded(
@@ -2141,90 +2182,93 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
           color: const Color(0xFF1A1A1A), // Adding black color
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CustomSpinner(size: 50))
-          : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Color(0xFF666666),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _errorMessage!,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Cairo',
+      body: SafeArea(
+        bottom: true,
+        child: _isLoading
+            ? const Center(child: CustomSpinner(size: 50))
+            : _errorMessage != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 64,
                           color: Color(0xFF666666),
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadItemDetails,
-                        child: const Text(
-                          'إعادة المحاولة',
-                          style: TextStyle(fontFamily: 'Cairo'),
+                        const SizedBox(height: 16),
+                        Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Cairo',
+                            color: Color(0xFF666666),
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                    ],
-                  ),
-                )
-              : GestureDetector(
-                  onTap: _hideReactionPanel,
-                  child: Stack(
-                    children: [
-                      Column(
-                        children: [
-                          _buildFixedHeader(),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              controller: _scrollController,
-                              child: Column(
-                                children: [
-                                  _buildImageSlider(),
-                                  _buildClickableDots(),
-                                  _buildActionButtons(),
-                                  // _buildReactionSummary(),
-                                  _buildMainDetailsCard(),
-                                  Container(
-                                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                                    child: Column(
-                                      children: [
-                                        if (widget.itemType == "apartment")
-                                          _buildApartmentGridRows()
-                                        else
-                                          _buildShareGridRows(),
-                                        _buildSectorInformation(),
-                                      ],
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadItemDetails,
+                          child: const Text(
+                            'إعادة المحاولة',
+                            style: TextStyle(fontFamily: 'Cairo'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: _hideReactionPanel,
+                    child: Stack(
+                      children: [
+                        Column(
+                          children: [
+                            _buildFixedHeader(),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                controller: _scrollController,
+                                child: Column(
+                                  children: [
+                                    _buildImageSlider(),
+                                    _buildClickableDots(),
+                                    _buildActionButtons(),
+                                    // _buildReactionSummary(),
+                                    _buildMainDetailsCard(),
+                                    Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                                      child: Column(
+                                        children: [
+                                          if (widget.itemType == "apartment")
+                                            _buildApartmentGridRows()
+                                          else
+                                            _buildShareGridRows(),
+                                          _buildSectorInformation(),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(height: _getBottomButtonsHeight() + 20), // Dynamic space for bottom buttons with extra gap
-                                ],
+                                    SizedBox(height: _getBottomButtonsHeight() + 20), // Dynamic space for bottom buttons with extra gap
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      
-                      // Fixed bottom buttons
-                      Positioned(
-                        bottom: MediaQuery.of(context).viewPadding.bottom,
-                        left: 0,
-                        right: 0,
-                        child: _buildBottomActionButtons(),
-                      ),
-                      
-                      // Reaction panel positioned relative to the reaction button
-                      if (_showReactions)
-                        _buildReactionPanelWithPosition(),
-                    ],
+                          ],
+                        ),
+                        
+                        // Fixed bottom buttons
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: _buildBottomActionButtons(),
+                        ),
+                        
+                        // Reaction panel positioned relative to the reaction button
+                        if (_showReactions)
+                          _buildReactionPanelWithPosition(),
+                      ],
+                    ),
                   ),
-                ),
+      ),
     );
   }
 } 

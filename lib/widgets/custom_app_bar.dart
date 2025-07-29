@@ -186,49 +186,70 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: Row(
         children: [
           if (showBackButton)
-            GestureDetector(
-              onTap: onBackPressed ?? () {
-                final ModalRoute<Object?>? route = ModalRoute.of(context);
-                final currentRoute = route?.settings.name;
-                
-                // Check if we're on a main navigation page
-                if (currentRoute == '/sectors' || currentRoute == '/my-posts' || currentRoute == '/more' || currentRoute == '/orders' || currentRoute == '/favorites') {
-                  // For main navigation pages, navigate to home since there's no back route
-                  Navigator.pushReplacementNamed(context, '/home');
-                } else {
-                  // For other pages, use normal back navigation
-                  if (Navigator.canPop(context)) {
-                    Navigator.pop(context);
-                  }
-                }
-              },
-              child: const Icon(
-                Icons.arrow_back_ios,
-                color: Color(0xFF8C7A6A),
-                size: 20,
-              ),
-            ),
-          if (showBackButton) SizedBox(width: isSmallScreen ? 4 : 8),
-          if (showLogo)
-            GestureDetector(
-              onTap: onLogoPressed ?? () {
-                final ModalRoute<Object?>? route = ModalRoute.of(context);
-                if (route != null && route.settings.name != '/home') {
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                onTap: onBackPressed ?? () {
+                  final ModalRoute<Object?>? route = ModalRoute.of(context);
+                  final currentRoute = route?.settings.name;
+                  
                   // Check if we're on a main navigation page
-                  final currentRoute = route.settings.name;
                   if (currentRoute == '/sectors' || currentRoute == '/my-posts' || currentRoute == '/more' || currentRoute == '/orders' || currentRoute == '/favorites') {
-                    // For main navigation pages, use pushReplacementNamed to replace current route
+                    // For main navigation pages, navigate to home since there's no back route
                     Navigator.pushReplacementNamed(context, '/home');
                   } else {
-                    // For other pages, use pushNamed to preserve navigation stack
-                    Navigator.pushNamed(context, '/home');
+                    // For other pages, use normal back navigation
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    }
                   }
-                }
-              },
-              child: Image.asset(
-                'assets/images/logo.png',
-                height: logoHeight,
-                fit: BoxFit.contain,
+                },
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.arrow_back_ios,
+                    color: Color(0xFF8C7A6A),
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+
+          if (showLogo)
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(24),
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                onTap: onLogoPressed ?? () {
+                  final ModalRoute<Object?>? route = ModalRoute.of(context);
+                  if (route != null && route.settings.name != '/home') {
+                    // Check if we're on a main navigation page
+                    final currentRoute = route.settings.name;
+                    if (currentRoute == '/sectors' || currentRoute == '/my-posts' || currentRoute == '/more' || currentRoute == '/orders' || currentRoute == '/favorites') {
+                      // For main navigation pages, use pushReplacementNamed to replace current route
+                      Navigator.pushReplacementNamed(context, '/home');
+                    } else {
+                      // For other pages, use pushNamed to preserve navigation stack
+                      Navigator.pushNamed(context, '/home');
+                    }
+                  }
+                },
+                child: Container(
+                  height: logoHeight + 8,
+                  alignment: Alignment.center,
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    height: logoHeight,
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
             ),
           if (showLogo && title != null) SizedBox(width: isSmallScreen ? 8 : 12),

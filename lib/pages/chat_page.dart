@@ -140,9 +140,11 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                       // Messages list
                       ListView.builder(
                         controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                        padding: EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          top: 8,
+                          bottom: MediaQuery.of(context).viewPadding.bottom + 8,
                         ),
                         itemCount: chatStore.messages.length +
                             (chatStore.isTyping ? 1 : 0),
@@ -167,8 +169,10 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                     ],
                   ),
                 ),
-                // Chat input
-                const ChatInput(),
+                // Chat input with safe area
+                SafeArea(
+                  child: const ChatInput(),
+                ),
               ],
             );
           },

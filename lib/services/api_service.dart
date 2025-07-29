@@ -26,9 +26,9 @@ class ApiService {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      connectTimeout: const Duration(milliseconds: 30000),
-      receiveTimeout: const Duration(milliseconds: 30000),
-      sendTimeout: const Duration(milliseconds: 30000),
+      connectTimeout: const Duration(milliseconds: 120000),
+      receiveTimeout: const Duration(milliseconds: 120000),
+      sendTimeout: const Duration(milliseconds: 120000),
     );
     
     // Add interceptors

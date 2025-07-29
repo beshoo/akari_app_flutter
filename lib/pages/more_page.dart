@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
 
 import '../pages/webview_page.dart';
 import '../services/firebase_messaging_service.dart';
@@ -13,6 +14,7 @@ import '../utils/logger.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import '../widgets/custom_bottom_sheet.dart';
+import '../widgets/custom_dialog.dart';
 
 class MorePage extends StatefulWidget {
   const MorePage({super.key});
@@ -40,7 +42,7 @@ class _MorePageState extends State<MorePage> {
     setState(() => loading = true);
     Logger.log('==================== MORE SCREEN INIT ====================');
     // Check what's in secure store
-    final userDataStr = await SecureStorage.getUserData('user');
+    final userDataStr = await SecureStorage.getUserData('user_data');
     Logger.log('Secure store user data: $userDataStr');
     Map<String, dynamic>? userData;
     if (userDataStr != null) {
@@ -75,8 +77,10 @@ class _MorePageState extends State<MorePage> {
   }
 
   Future<void> _handleLogout() async {
+    final authStore = Provider.of<AuthStore>(context, listen: false);
+    await authStore.logout();
+    // Also clear the old 'user' key for backward compatibility
     await SecureStorage.deleteUserData('user');
-    await SecureStorage.deleteToken();
     if (!mounted) return;
     if (Navigator.canPop(context)) {
       Navigator.popUntil(context, (route) => route.isFirst);
@@ -367,19 +371,23 @@ class _MorePageState extends State<MorePage> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        Center(
-                          child: Text(
-                            'رقم الإصدار $_appVersion ($_buildNumber)',
-                            style: const TextStyle(
-                              color: Color.fromARGB(255, 63, 63, 63),
-                              fontSize: 14,
-                              fontFamily: 'Cairo',
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          title: Center(
+                            child: Text(
+                              'رقم الإصدار $_appVersion ($_buildNumber)',
+                              style: const TextStyle(
+                                color: Color(0xFF633e3d),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Cairo',
+                              ),
                             ),
                           ),
+                          onTap: () {},
                         ),
                         // Add extra bottom padding for bottom navigation bar
-                        const SizedBox(height: 85),
+                        const SizedBox(height: 120),
                       ],
                     ),
                   ),
@@ -516,42 +524,34 @@ class _LogoutInnerItem extends StatelessWidget {
   }
 }
 
-class NotificationPermissionSwitcher extends StatefulWidget {
+class NotificationPermissionSwitcher extends StatelessWidget {
   const NotificationPermissionSwitcher({super.key});
 
-  @override
-  State<NotificationPermissionSwitcher> createState() => _NotificationPermissionSwitcherState();
-}
-
-class _NotificationPermissionSwitcherState extends State<NotificationPermissionSwitcher> {
-  bool _enabled = true;
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadState();
-  }
-
-  Future<void> _loadState() async {
-    final enabled = await FirebaseMessagingService.isNotificationEnabled();
-    setState(() {
-      _enabled = enabled;
-      _loading = false;
-    });
-  }
-
-  Future<void> _toggle(bool value) async {
-    setState(() => _loading = true);
-    if (value) {
-      await FirebaseMessagingService.instance.enableNotifications();
-    } else {
-      await FirebaseMessagingService.instance.disableNotifications();
-    }
-    setState(() {
-      _enabled = value;
-      _loading = false;
-    });
+  Future<void> _showNotificationSettingsDialog(BuildContext context) async {
+    await showCustomDialog(
+      context: context,
+      title: 'التحقق من تفعيل الإشعارات',
+      message: 'سيتم توجيهك إلى إعدادات النظام لتفعيل الإشعارات الخاصة بالتطبيق. يرجى التأكد من تفعيل الإشعارات للحصول على التحديثات المهمة.',
+      okButtonText: 'موافق',
+      cancelButtonText: 'إلغاء',
+      onOkPressed: () async {
+        try {
+          // Use awesome_notifications to show notification settings page
+          await AwesomeNotifications().showNotificationConfigPage();
+        } catch (e) {
+          Logger.error('Error opening notification settings', e);
+          // Fallback to general app settings if notification settings not available
+          try {
+            final Uri settingsUri = Uri.parse('app-settings:');
+            if (await canLaunchUrl(settingsUri)) {
+              await launchUrl(settingsUri, mode: LaunchMode.externalApplication);
+            }
+          } catch (e) {
+            Logger.error('Error opening app settings', e);
+          }
+        }
+      },
+    );
   }
 
   @override
@@ -561,45 +561,24 @@ class _NotificationPermissionSwitcherState extends State<NotificationPermissionS
         backgroundColor: const Color(0xFFEAE2DB),
         child: Image.asset('assets/images/icons/notifications.png', width: 24, height: 24, color: const Color(0xFF633e3d)),
       ),
-      title: Text(
-        _enabled ? 'إيقاف الإشعارات' : 'تفعيل الإشعارات',
-        style: const TextStyle(
+      title: const Text(
+        'التحقق من تفعيل الإشعارات',
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: Color(0xFF633e3d),
           fontFamily: 'Cairo',
         ),
       ),
-      trailing: _loading
-          ? SizedBox(
-              width: 40, // match the Row width when checkbox is shown
-              height: 24,
-              child: Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-            )
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(width: 40),
-                Checkbox(
-                  value: _enabled,
-                  onChanged: (val) {
-                    if (val != null) _toggle(val);
-                  },
-                  activeColor: const Color(0xFF633e3d),
-                  checkColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                ),
-
-              ],
-            ),
+      trailing: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.chevron_right, color: Color(0xFF633e3d)),
+          SizedBox(width: 10),
+        ],
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      onTap: _loading ? null : () => _toggle(!_enabled),
+      onTap: () => _showNotificationSettingsDialog(context),
     );
   }
 } 

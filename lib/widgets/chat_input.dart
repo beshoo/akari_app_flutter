@@ -251,7 +251,7 @@ class _ChatInputState extends State<ChatInput> {
           GestureDetector(
             onTap: () => _proceedWithWhatsApp(context),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 5, bottom: 0),
               decoration: BoxDecoration(
                 color: const Color.fromARGB(255, 255, 255, 255),
               ),

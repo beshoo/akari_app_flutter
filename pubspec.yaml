@@ -72,8 +72,8 @@ dependencies:
   firebase_messaging: ^15.0.3
   firebase_analytics: ^11.2.1
   
-  # Local notifications for foreground Firebase messages
-  flutter_local_notifications: ^17.2.2
+  # Awesome notifications for permission checking and local notifications
+  awesome_notifications: ^0.10.1
 
   # Share functionality
   share_plus: ^7.2.2
@@ -99,6 +99,8 @@ dependencies:
   # For chat functionality
   shared_preferences: ^2.2.2
   intl: ^0.20.2
+
+# No additional package needed - using url_launcher for system settings
 
 dev_dependencies:
   flutter_test:

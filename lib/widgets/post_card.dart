@@ -823,6 +823,16 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   Future<void> _removeCurrentReaction() async {
     final reactionStore = Provider.of<ReactionStore>(context, listen: false);
     
+    // Store original state for potential revert
+    final originalPostData = _currentPostData;
+    final originalReaction = _currentPostData.currentUserReaction;
+    
+    // Optimistic update - immediately update UI
+    _currentPostData = _currentPostData.withManuallyDecrementedReaction(originalReaction!);
+    if (widget.onPostUpdated != null) {
+      widget.onPostUpdated!(_currentPostData);
+    }
+    
     final result = await reactionStore.removeReaction(
       postType: _currentPostData.postType,
       postId: _currentPostData.id,
@@ -832,15 +842,18 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       // Update state based on API response
       if (result['data'] != null && result['data']['reaction_summary'] != null) {
         _currentPostData = _currentPostData.withReaction(null, result['data']['reaction_summary']);
-      } else {
-        // Fallback: manually remove reaction
-        _currentPostData = _currentPostData.withManuallyDecrementedReaction(_currentPostData.currentUserReaction!);
       }
-      
+      // UI is already updated optimistically, just ensure consistency
       if (widget.onPostUpdated != null) {
         widget.onPostUpdated!(_currentPostData);
       }
     } else {
+      // Revert on failure
+      _currentPostData = originalPostData;
+      if (widget.onPostUpdated != null) {
+        widget.onPostUpdated!(_currentPostData);
+      }
+      
       // Show error message if remove reaction failed
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -851,7 +864,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         );
       }
     }
-    // Note: No toast message for successful reactions as requested
   }
 
   Future<void> _selectReaction(String reaction) async {
@@ -864,6 +876,30 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         _reactionAnimationController.reverse();
       });
       return;
+    }
+
+    // Store original state for potential revert
+    final originalPostData = _currentPostData;
+    final originalReaction = _currentPostData.currentUserReaction;
+    
+    // Optimistic update - immediately update UI
+    final currentCounts = _currentPostData.reactionCounts;
+    final reactionSummaryMap = {
+      'like_count': currentCounts.likeCount,
+      'love_count': currentCounts.loveCount,
+      'wow_count': currentCounts.wowCount,
+      'sad_count': currentCounts.sadCount,
+      'angry_count': currentCounts.angryCount,
+      'total_count': currentCounts.totalCount,
+    };
+    
+    // Increment the selected reaction count for optimistic update
+    reactionSummaryMap['${reaction}_count'] = (reactionSummaryMap['${reaction}_count']! + 1);
+    reactionSummaryMap['total_count'] = (reactionSummaryMap['total_count']! + 1);
+    
+    _currentPostData = _currentPostData.withReaction(reaction, reactionSummaryMap);
+    if (widget.onPostUpdated != null) {
+      widget.onPostUpdated!(_currentPostData);
     }
 
     _reactionAnimationController.forward().then((_) {
@@ -894,6 +930,12 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         _currentPostData.withReaction(reaction, {'total_count': 0});
       }
     } else {
+      // Revert on failure
+      _currentPostData = originalPostData;
+      if (widget.onPostUpdated != null) {
+        widget.onPostUpdated!(_currentPostData);
+      }
+      
       // Show error message if reaction failed
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -928,20 +970,39 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
 
   void _toggleFavorite(ReactionStore reactionStore) async {
+    // Store original state for potential revert
+    final originalPostData = _currentPostData;
+    final originalFavoriteState = _currentPostData.isFavorited;
+    
+    // Optimistic update - immediately update UI
+    setState(() {
+      _currentPostData = _currentPostData.withFavorite(!_currentPostData.isFavorited);
+    });
+    
+    if (widget.onPostUpdated != null) {
+      widget.onPostUpdated!(_currentPostData);
+    }
+    
     final result = await reactionStore.toggleFavorite(
       postType: _currentPostData.postType,
       postId: _currentPostData.id,
     );
 
     if (result['success']) {
+      // Success - UI is already updated optimistically
+      if (widget.onPostUpdated != null) {
+        widget.onPostUpdated!(_currentPostData);
+      }
+    } else {
+      // Revert on failure
       setState(() {
-        _currentPostData = _currentPostData.withFavorite(!_currentPostData.isFavorited);
+        _currentPostData = originalPostData;
       });
       
       if (widget.onPostUpdated != null) {
         widget.onPostUpdated!(_currentPostData);
       }
-    } else {
+      
       if (mounted) {
         ToastHelper.showToast(
           context,

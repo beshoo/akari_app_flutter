@@ -777,106 +777,109 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
           onBackPressed: () => Navigator.of(context).pop(),
           onLogoPressed: () => Navigator.of(context).pop(),
         ),
-        body: Stack(
-          children: [
-            Column(
-              children: [
-                // Page title (changes based on selected tab, updates on tab slide as well)
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: AnimatedBuilder(
-                    animation: _tabController,
-                    builder: (context, child) {
-                      final tabIndex = _tabController.index;
-                      final title = tabIndex == 1
-                          ? 'البحث عن عقار'
-                          : 'البحث عن أسهم تنظيمية';
-                      return Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                          fontFamily: 'Cairo',
+        body: SafeArea(
+          bottom: true,
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  // Page title (changes based on selected tab, updates on tab slide as well)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: AnimatedBuilder(
+                      animation: _tabController,
+                      builder: (context, child) {
+                        final tabIndex = _tabController.index;
+                        final title = tabIndex == 1
+                            ? 'البحث عن عقار'
+                            : 'البحث عن أسهم تنظيمية';
+                        return Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                            fontFamily: 'Cairo',
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  // Page title
+                              // Tab bar
+              Column(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.05),
+                          blurRadius: 5,
+                          offset: Offset(0, 5), // Only bottom
+                          spreadRadius: 0,
                         ),
-                      );
-                    },
-                  ),
-                ),
-                // Page title
-                            // Tab bar
-            Column(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.05),
-                        blurRadius: 5,
-                        offset: Offset(0, 5), // Only bottom
-                        spreadRadius: 0,
+                      ],
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      labelColor: const Color(0xFF633e3d),
+                      unselectedLabelColor: const Color(0xFF8C7A6A),
+                      indicatorColor: const Color(0xFF633e3d),
+                      indicatorWeight: 3,
+                      labelStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Cairo',
                       ),
-                    ],
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    labelColor: const Color(0xFF633e3d),
-                    unselectedLabelColor: const Color(0xFF8C7A6A),
-                    indicatorColor: const Color(0xFF633e3d),
-                    indicatorWeight: 3,
-                    labelStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Cairo',
-                    ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Cairo',
-                    ),
-                    onTap: (index) {
-                      if (index == 0) {
-                        if (_selectedRegion?.hasShare == true || _selectedRegion == null) {
-                          setState(() {
-                            _currentSearchType = 'share';
-                          });
+                      unselectedLabelStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Cairo',
+                      ),
+                      onTap: (index) {
+                        if (index == 0) {
+                          if (_selectedRegion?.hasShare == true || _selectedRegion == null) {
+                            setState(() {
+                              _currentSearchType = 'share';
+                            });
+                          }
+                        } else {
+                          if (_selectedRegion?.hasApartment == true || _selectedRegion == null) {
+                            setState(() {
+                              _currentSearchType = 'apartment';
+                            });
+                          }
                         }
-                      } else {
-                        if (_selectedRegion?.hasApartment == true || _selectedRegion == null) {
-                          setState(() {
-                            _currentSearchType = 'apartment';
-                          });
-                        }
-                      }
-                    },
-                    tabs: const [
-                      Tab(text: 'أسهم تنظيمية'),
-                      Tab(text: 'عقارات'),
-                    ],
+                      },
+                      tabs: const [
+                        Tab(text: 'أسهم تنظيمية'),
+                        Tab(text: 'عقارات'),
+                      ],
+                    ),
                   ),
-                ),
-                const Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: Color(0xFFd7c1c0),
-                ),
-              ],
-            ),
+                  const Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Color(0xFFd7c1c0),
+                  ),
+                ],
+              ),
 
-                // Content
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildShareSearchForm(),
-                      _buildApartmentSearchForm(),
-                    ],
+                  // Content
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildShareSearchForm(),
+                        _buildApartmentSearchForm(),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1155,9 +1158,10 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
           ),
         ),
 
-        // Search button
+        // Search button - centered in bottom safe area
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          height: 45 + MediaQuery.of(context).viewPadding.bottom,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Center(
             child: SizedBox(
               width: double.infinity,
@@ -1583,9 +1587,10 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
             ),
           ),
         ),
-        // Search button (keep as is, or update to use new form data)
+        // Search button - centered in bottom safe area
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          height: 45 + MediaQuery.of(context).viewPadding.bottom,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Center(
             child: SizedBox(
               width: double.infinity,

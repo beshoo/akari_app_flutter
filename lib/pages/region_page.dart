@@ -796,138 +796,141 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
           _showSortingBottomSheet();
         },
       ),
-      body: Column(
-        children: [
-          Container(
-            color: const Color(0xFFF7F5F2),
-            child: Column(
-              children: [
-                if (widget.regionName != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
-                    child: Center(
-                      child: Text(
-                        widget.regionName!,
-                        style: const TextStyle(
+      body: SafeArea(
+        bottom: true,
+        child: Column(
+          children: [
+            Container(
+              color: const Color(0xFFF7F5F2),
+              child: Column(
+                children: [
+                  if (widget.regionName != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+                      child: Center(
+                        child: Text(
+                          widget.regionName!,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Cairo',
+                            color: Color(0xFF633e3d),
+                          ),
+                        ),
+                      ),
+                    ),
+                  const Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Color(0xFFd7c1c0),
+                  ),
+                  if (_tabs.length > 1)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                          color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.05),
+                          blurRadius: 5,
+                          offset: Offset(0, 5), // Only bottom
+                          spreadRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: TabBar(
+                        controller: _tabController!,
+                        labelColor: const Color(0xFF633e3d),
+                        unselectedLabelColor: const Color(0xFF8C7A6A),
+                        indicatorColor: const Color(0xFF633e3d),
+                        indicatorWeight: 3,
+                        labelStyle: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           fontFamily: 'Cairo',
-                          color: Color(0xFF633e3d),
                         ),
-                      ),
-                    ),
-                  ),
-                const Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: Color(0xFFd7c1c0),
-                ),
-                if (_tabs.length > 1)
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                        color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.05),
-                        blurRadius: 5,
-                        offset: Offset(0, 5), // Only bottom
-                        spreadRadius: 0,
+                        unselectedLabelStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Cairo',
                         ),
-                      ],
-                    ),
-                    child: TabBar(
-                      controller: _tabController!,
-                      labelColor: const Color(0xFF633e3d),
-                      unselectedLabelColor: const Color(0xFF8C7A6A),
-                      indicatorColor: const Color(0xFF633e3d),
-                      indicatorWeight: 3,
-                      labelStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Cairo',
-                      ),
-                      unselectedLabelStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Cairo',
-                      ),
-                      onTap: (index) {
-                        if (_tabController?.index == index) {
-                          if (widget.hasShare && widget.hasApartment) {
-                            if (index == 0) {
-                              _sharesRefreshKey.currentState?.show();
-                            } else {
-                              _apartmentsRefreshKey.currentState?.show();
-                            }
-                          } else if (widget.hasShare) {
-                             _sharesRefreshKey.currentState?.show();
-                          } else if (widget.hasApartment) {
-                            _apartmentsRefreshKey.currentState?.show();
-                          }
-                        }
-                      },
-                      tabs: _tabs,
-                    ),
-                  )
-                else if (_tabs.length == 1)
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                        color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.05),
-                        blurRadius: 5,
-                        offset: Offset(0, 5), // Only bottom
-                        spreadRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        // Single tab - show it as a header with tap-to-refresh functionality
-                        GestureDetector(
-                          onTap: () {
-                            if (widget.hasShare) {
-                              _sharesRefreshKey.currentState?.show();
+                        onTap: (index) {
+                          if (_tabController?.index == index) {
+                            if (widget.hasShare && widget.hasApartment) {
+                              if (index == 0) {
+                                _sharesRefreshKey.currentState?.show();
+                              } else {
+                                _apartmentsRefreshKey.currentState?.show();
+                              }
+                            } else if (widget.hasShare) {
+                               _sharesRefreshKey.currentState?.show();
                             } else if (widget.hasApartment) {
                               _apartmentsRefreshKey.currentState?.show();
                             }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12.0),
-                            child: Center(
-                              child: Text(
-                                widget.hasShare ? 'الأسهم التنظيمية' : 'العقارات',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Cairo',
-                                  color: Color(0xFF633e3d),
+                          }
+                        },
+                        tabs: _tabs,
+                      ),
+                    )
+                  else if (_tabs.length == 1)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                          color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.05),
+                          blurRadius: 5,
+                          offset: Offset(0, 5), // Only bottom
+                          spreadRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // Single tab - show it as a header with tap-to-refresh functionality
+                          GestureDetector(
+                            onTap: () {
+                              if (widget.hasShare) {
+                                _sharesRefreshKey.currentState?.show();
+                              } else if (widget.hasApartment) {
+                                _apartmentsRefreshKey.currentState?.show();
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12.0),
+                              child: Center(
+                                child: Text(
+                                  widget.hasShare ? 'الأسهم التنظيمية' : 'العقارات',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Cairo',
+                                    color: Color(0xFF633e3d),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                        const Divider(
-                          height: 1,
-                          thickness: 1,
-                          color: Color(0xFFd7c1c0),
-                        ),
-                      ],
+                          const Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Color(0xFFd7c1c0),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: (_tabs.length > 1)
-              ? TabBarView(
-                  controller: _tabController!,
-                  children: tabViews,
-                )
-              : tabViews.first,
-          ),
-        ],
+            Expanded(
+              child: (_tabs.length > 1)
+                ? TabBarView(
+                    controller: _tabController!,
+                    children: tabViews,
+                  )
+                : tabViews.first,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1021,7 +1024,11 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         
         return _buildShareItem(shares[index], index);
       },
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: EdgeInsets.only(
+        left: 16.0,
+        right: 16.0,
+        bottom: MediaQuery.of(context).viewPadding.bottom,
+      ),
     );
   }
 
@@ -1140,7 +1147,11 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         
         return _buildApartmentItem(apartments[index], index);
       },
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: EdgeInsets.only(
+        left: 16.0,
+        right: 16.0,
+        bottom: MediaQuery.of(context).viewPadding.bottom,
+      ),
     );
   }
 

@@ -332,7 +332,10 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
           color: Color.fromARGB(255, 0, 0, 0),
         ),
       ),
-      body: _buildBody(),
+      body: SafeArea(
+        bottom: true,
+        child: _buildBody(),
+      ),
     );
   }
 

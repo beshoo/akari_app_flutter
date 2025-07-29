@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../stores/auth_store.dart';
@@ -7,8 +8,39 @@ import '../utils/toast_helper.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_button.dart';
 
-class SupportPage extends StatelessWidget {
+class SupportPage extends StatefulWidget {
   const SupportPage({super.key});
+
+  @override
+  State<SupportPage> createState() => _SupportPageState();
+}
+
+class _SupportPageState extends State<SupportPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Set the status bar to be transparent and overlay the content
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    // Reset the status bar when leaving the page
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+    );
+    super.dispose();
+  }
 
   String _cleanPhoneNumber(String? number) {
     if (number == null) return '';
@@ -93,122 +125,123 @@ class SupportPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final authStore = Provider.of<AuthStore>(context, listen: false);
     final supportPhone = _cleanPhoneNumber(authStore.supportPhone);
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF7F5F2),
-        appBar: CustomAppBar(
-          title: 'المساعدة والدعم',
-          showBackButton: true,
-          showLogo: false,
-          onlyText: true,
-          onBackPressed: () => Navigator.of(context).pop(),
-          titleStyle: TextStyle(
-            fontSize: MediaQuery.of(context).size.width > 400 ? 22.0 : 20.0,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Cairo',
-            color: const Color(0xFF1A1A1A),
-          ),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F5F2),
+      appBar: CustomAppBar(
+        showLogo: true,
+        showBackButton: true,
+        showFavoritesButton: true,
+        showHelpButton: true,
+        showSearchButton: true,
+        showNotificationButton: true,
+        onlyText: false,
+        onBackPressed: () => Navigator.of(context).pop(),
+        titleStyle: TextStyle(
+          fontSize: MediaQuery.of(context).size.width > 400 ? 22.0 : 20.0,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Cairo',
+          color: const Color(0xFF1A1A1A),
         ),
-        body: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 20),
-              Image.asset(
-                'assets/images/icons/support_2.png',
-                height: 100,
-                color: const Color(0xFFA47764),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 20),
+            Image.asset(
+              'assets/images/icons/support_2.png',
+              height: 100,
+              color: const Color(0xFFA47764),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'المساعدة والدعم',
+              style: TextStyle(
+                fontFamily: 'Cairo',
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
               ),
-              const SizedBox(height: 24),
-              const Text(
-                'المساعدة والدعم',
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'نحن هنا للمساعدة إذا كان لديك سؤال, فريقنا موجود',
+              style: TextStyle(
+                fontFamily: 'Cairo',
+                fontSize: 16,
+                color: Color(0xFF666666),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'نحن هنا للمساعدة إذا كان لديك سؤال, فريقنا موجود',
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 16,
-                  color: Color(0xFF666666),
-                ),
-                textAlign: TextAlign.center,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                children: [
+                  CustomButton(
+                    hasGradient: false,
+                    title: 'واتساب',
+                    onPressed: () => _handleWhatsAppSupport(context),
+                    textColor: Colors.green.shade700,
+                    borderColor: Colors.green.shade700,
+                    height: 45,
+                    borderRadius: 8,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                  const SizedBox(height: 16),
+                  CustomButton(
+                    hasGradient: false,
+                    title: 'اتصال هاتفي: $supportPhone+',
+                    onPressed: () => _handlePhoneSupport(context),
+                    textColor: Colors.blue.shade500,
+                    borderColor: Colors.blue.shade500,
+                    height: 45,
+                    borderRadius: 8,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                ],
               ),
-              const SizedBox(height: 32),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  children: [
-                    CustomButton(
-                      hasGradient: false,
-                      title: 'واتساب',
-                      onPressed: () => _handleWhatsAppSupport(context),
-                      textColor: Colors.green.shade700,
-                      borderColor: Colors.green.shade700,
-                      height: 45,
-                      borderRadius: 8,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    ),
-                    const SizedBox(height: 16),
-                    CustomButton(
-                      hasGradient: false,
-                      title: 'اتصال هاتفي: $supportPhone+',
-                      onPressed: () => _handlePhoneSupport(context),
-                      textColor: Colors.blue.shade500,
-                      borderColor: Colors.blue.shade500,
-                      height: 45,
-                      borderRadius: 8,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: GestureDetector(
-                  onTap: () => _handleGoogleMapsLocation(context),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        'assets/images/management.png',
-                        height: 280,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        alignment: Alignment.topCenter,
+            ),
+            const SizedBox(height: 32),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: GestureDetector(
+                onTap: () => _handleGoogleMapsLocation(context),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      'assets/images/management.png',
+                      height: 280,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'اضغط للوصول إلى موقعنا',
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 14,
-                  color: Color(0xFF666666),
-                ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'اضغط للوصول إلى موقعنا',
+              style: TextStyle(
+                fontFamily: 'Cairo',
+                fontSize: 14,
+                color: Color(0xFF666666),
               ),
-              const SizedBox(height: 24),
-            ],
-          ),
+            ),
+            const SizedBox(height: 24),
+          ],
         ),
       ),
     );

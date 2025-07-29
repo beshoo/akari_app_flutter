@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:provider/provider.dart';
 
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_spinner.dart';
+import '../stores/auth_store.dart';
 
 class WebViewPage extends StatefulWidget {
   final String url;
@@ -48,76 +50,86 @@ class WebViewPageState extends State<WebViewPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        showBackButton: true,
-        showLogo: true,
-        onBackPressed: () => Navigator.pop(context),
-        showAddAdButton: false,
-        title: null,
-        showNotificationButton: true,
-        // onNotificationPressed removed to use default
-      ),
-      body: Stack(
-        children: [
-          if (_hasError)
-            _buildErrorView()
-          else
-            InAppWebView(
-              initialUrlRequest: URLRequest(url: WebUri(widget.url)),
-              initialSettings: InAppWebViewSettings(
-                underPageBackgroundColor: Color(0xFFF7F5F2), // Your desired color
-                transparentBackground: true,
-                verticalScrollBarEnabled: false,
-                horizontalScrollBarEnabled: false, // optional
-              ),
-              pullToRefreshController: _pullToRefreshController,
-              onWebViewCreated: (controller) {
-                _controller = controller;
-              },
-              onLoadStart: (controller, url) {
-                setState(() {
-                  _isLoading = true;
-                  _hasError = false;
-                });
-              },
-              onLoadStop: (controller, url) async {
-                setState(() {
-                  _isLoading = false;
-                });
-                _pullToRefreshController?.endRefreshing();
-              },
-              onReceivedError: (controller, request, error) {
-                setState(() {
-                  _isLoading = false;
-                  _hasError = true;
-                  _errorMessage = error.description;
-                });
-                _pullToRefreshController?.endRefreshing();
-              },
-              onScrollChanged: (controller, x, y) {
-                setState(() {
-                  _showScrollToTop = y > 0;
-                });
-              },
-            ),
-          if (_isLoading)
-            _buildLoadingView(),
-          if (_showScrollToTop && !_isLoading && !_hasError)
-            Positioned(
-              left: 16,
-              bottom: 32 + MediaQuery.of(context).viewPadding.bottom,
-              child: SafeArea(
-                child: FloatingActionButton(
-                  onPressed: _scrollToTop,
-                  backgroundColor: Color(0xFF633e3d),
-                  heroTag: 'scrollToTop',
-                  child: Icon(Icons.arrow_upward, color: Colors.white),
+    return Consumer<AuthStore>(
+      builder: (context, authStore, child) {
+        final isAuthenticated = authStore.isAuthenticated;
+        
+        return Scaffold(
+          appBar: CustomAppBar(
+            showBackButton: true,
+            showLogo: true,
+            onBackPressed: () => Navigator.pop(context),
+            showAddAdButton: false, // Only show if authenticated
+            title: null,
+
+        showFavoritesButton: isAuthenticated,
+        showHelpButton: isAuthenticated,
+        showSearchButton: isAuthenticated,
+        showNotificationButton: isAuthenticated,
+            // onNotificationPressed removed to use default
+          ),
+          body: Stack(
+            children: [
+              if (_hasError)
+                _buildErrorView()
+              else
+                InAppWebView(
+                  initialUrlRequest: URLRequest(url: WebUri(widget.url)),
+                  initialSettings: InAppWebViewSettings(
+                    underPageBackgroundColor: Color(0xFFF7F5F2), // Your desired color
+                    transparentBackground: true,
+                    verticalScrollBarEnabled: false,
+                    horizontalScrollBarEnabled: false, // optional
+                  ),
+                  pullToRefreshController: _pullToRefreshController,
+                  onWebViewCreated: (controller) {
+                    _controller = controller;
+                  },
+                  onLoadStart: (controller, url) {
+                    setState(() {
+                      _isLoading = true;
+                      _hasError = false;
+                    });
+                  },
+                  onLoadStop: (controller, url) async {
+                    setState(() {
+                      _isLoading = false;
+                    });
+                    _pullToRefreshController?.endRefreshing();
+                  },
+                  onReceivedError: (controller, request, error) {
+                    setState(() {
+                      _isLoading = false;
+                      _hasError = true;
+                      _errorMessage = error.description;
+                    });
+                    _pullToRefreshController?.endRefreshing();
+                  },
+                  onScrollChanged: (controller, x, y) {
+                    setState(() {
+                      _showScrollToTop = y > 0;
+                    });
+                  },
                 ),
-              ),
-            ),
-        ],
-      ),
+              if (_isLoading)
+                _buildLoadingView(),
+              if (_showScrollToTop && !_isLoading && !_hasError)
+                Positioned(
+                  left: 16,
+                  bottom: 32 + MediaQuery.of(context).viewPadding.bottom,
+                  child: SafeArea(
+                    child: FloatingActionButton(
+                      onPressed: _scrollToTop,
+                      backgroundColor: Color(0xFF633e3d),
+                      heroTag: 'scrollToTop',
+                      child: Icon(Icons.arrow_upward, color: Colors.white),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 

@@ -115,71 +115,74 @@ class _NotificationsPageState extends State<NotificationsPage> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F5F2),
-        body: Column(
-          children: [
-            // AppBar with back button and delete button
-            CustomAppBar(
-              showBackButton: true,
-              onBackPressed: () => Get.back(),
-              showNotificationButton: true,
-              showDeleteNotificationsButton: true,
-              onDeleteNotificationsPressed: () async {
-                await showCustomDialog(
-                  context: context,
-                  title: 'تأكيد الحذف',
-                  message: 'هل أنت متأكد أنك تريد حذف جميع الإشعارات؟',
-                  okButtonText: 'حذف',
-                  cancelButtonText: 'إلغاء',
-                  onOkPressed: () async {
-                    setState(() {
-                      isDeleting = true;
-                    });
-                    
-                    final store = Provider.of<NotificationStore>(context, listen: false);
-                    final success = await ApiService.deleteAllNotifications();
-                    
-                    if (!mounted) return;
-                    if (success) {
-                      // Reset notification count in store
-                      store.clear();
+        body: SafeArea(
+          bottom: true,
+          child: Column(
+            children: [
+              // AppBar with back button and delete button
+              CustomAppBar(
+                showBackButton: true,
+                onBackPressed: () => Get.back(),
+                showNotificationButton: true,
+                showDeleteNotificationsButton: true,
+                onDeleteNotificationsPressed: () async {
+                  await showCustomDialog(
+                    context: context,
+                    title: 'تأكيد الحذف',
+                    message: 'هل أنت متأكد أنك تريد حذف جميع الإشعارات؟',
+                    okButtonText: 'حذف',
+                    cancelButtonText: 'إلغاء',
+                    onOkPressed: () async {
+                      setState(() {
+                        isDeleting = true;
+                      });
                       
-                      setState(() {
-                        notifications.clear();
-                        isLoading = false;
-                        isRefreshing = false;
-                        isDeleting = false;
-                      });
-                      ToastHelper.showToast(context, 'تم حذف جميع الإشعارات بنجاح', isError: false);
-                    } else {
-                      setState(() {
-                        isDeleting = false;
-                      });
-                      ToastHelper.showToast(context, 'فشل في حذف الإشعارات', isError: true);
-                    }
-                  },
-                  isWarning: true,
-                );
-              },
-            ),
-            // Notifications list
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  Logger.log('Pull to refresh triggered');
-                  await _loadNotifications(refresh: true);
-                  Logger.log('Pull to refresh completed');
+                      final store = Provider.of<NotificationStore>(context, listen: false);
+                      final success = await ApiService.deleteAllNotifications();
+                      
+                      if (!mounted) return;
+                      if (success) {
+                        // Reset notification count in store
+                        store.clear();
+                        
+                        setState(() {
+                          notifications.clear();
+                          isLoading = false;
+                          isRefreshing = false;
+                          isDeleting = false;
+                        });
+                        ToastHelper.showToast(context, 'تم حذف جميع الإشعارات بنجاح', isError: false);
+                      } else {
+                        setState(() {
+                          isDeleting = false;
+                        });
+                        ToastHelper.showToast(context, 'فشل في حذف الإشعارات', isError: true);
+                      }
+                    },
+                    isWarning: true,
+                  );
                 },
-                child: (isLoading && !isRefreshing) || isDeleting
-                    ? const Center(child: CustomSpinner(size: 50.0))
-                    : notifications.isEmpty
-                        ? SizedBox(
-                            height: MediaQuery.of(context).size.height - 100, // Subtract AppBar height
-                            child: _buildEmptyState(),
-                          )
-                        : _buildNotificationsList(),
               ),
-            ),
-          ],
+              // Notifications list
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    Logger.log('Pull to refresh triggered');
+                    await _loadNotifications(refresh: true);
+                    Logger.log('Pull to refresh completed');
+                  },
+                  child: (isLoading && !isRefreshing) || isDeleting
+                      ? const Center(child: CustomSpinner(size: 50.0))
+                      : notifications.isEmpty
+                          ? SizedBox(
+                              height: MediaQuery.of(context).size.height - 100, // Subtract AppBar height
+                              child: _buildEmptyState(),
+                            )
+                          : _buildNotificationsList(),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

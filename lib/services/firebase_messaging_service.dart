@@ -1,15 +1,22 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../pages/property_details_page.dart';
 import '../utils/logger.dart';
 import '../services/secure_storage.dart';
+
+// Static method for handling awesome notification actions
+@pragma("vm:entry-point")
+Future<void> onActionNotificationMethod(ReceivedAction receivedAction) async {
+  Logger.log('📱 Awesome notification action: ${receivedAction.payload}');
+  FirebaseMessagingService.instance.handleAwesomeNotificationAction(receivedAction);
+}
 
 class FirebaseMessagingService {
   static final FirebaseMessagingService instance = FirebaseMessagingService._internal();
@@ -30,7 +37,6 @@ class FirebaseMessagingService {
     return _firebaseMessaging!;
   }
 
-  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
   String? _token;
   static RemoteMessage? _initialMessage; // Static for splash screen access
   
@@ -40,20 +46,56 @@ class FirebaseMessagingService {
   // Add a persistent flag for notification state
   static const String _notificationEnabledKey = 'notifications_enabled';
 
-  // Get notification enabled state from storage
+  // Get notification enabled state - check actual system permission
   static Future<bool> isNotificationEnabled() async {
+    try {
+      // Check if notifications are allowed at the system level
+      final isAllowed = await AwesomeNotifications().isNotificationAllowed();
+      Logger.log('🔔 System notification permission: $isAllowed');
+      
+      // Also check our stored preference
+      final storedValue = await SecureStorage.getUserData(_notificationEnabledKey);
+      final storedEnabled = storedValue == 'true';
+      Logger.log('🔔 Stored notification preference: $storedEnabled');
+      
+      // Return true only if both system permission and stored preference are true
+      return isAllowed && storedEnabled;
+    } catch (e) {
+      Logger.error('Error checking notification permission', e);
+      // Fallback to stored value only
     final value = await SecureStorage.getUserData(_notificationEnabledKey);
     return value == 'true';
+    }
+  }
+
+  // Check if user has disabled notifications at system level
+  static Future<bool> isSystemNotificationEnabled() async {
+    try {
+      return await AwesomeNotifications().isNotificationAllowed();
+    } catch (e) {
+      Logger.error('Error checking system notification permission', e);
+      return false;
+    }
   }
 
   // Enable notifications: request permission and subscribe
   Future<void> enableNotifications() async {
     Logger.log('🔔 Enabling notifications');
+    
+    // Request permission using awesome_notifications
+    final isAllowed = await AwesomeNotifications().requestPermissionToSendNotifications();
+    if (!isAllowed) {
+      Logger.log('🔔 Permission denied by user');
+      throw Exception('Notification permission denied');
+    }
+    
+    // Also request Firebase permission
     await _firebaseMessagingInstance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
+    
     await _firebaseMessagingInstance.subscribeToTopic('all');
     await SecureStorage.setUserData(_notificationEnabledKey, 'true');
     Logger.log('🔔 Notifications enabled');
@@ -76,6 +118,9 @@ class FirebaseMessagingService {
 
   Future<void> initialize() async {
     try {
+      // Initialize awesome notifications
+      await _initializeAwesomeNotifications();
+
       // Request permissions
       await _firebaseMessagingInstance.requestPermission(
         alert: true,
@@ -86,9 +131,6 @@ class FirebaseMessagingService {
         provisional: false,
         sound: true,
       );
-
-      // Initialize local notifications
-      await _initializeLocalNotifications();
 
       // Get FCM token
       _token = await _firebaseMessagingInstance.getToken();
@@ -112,45 +154,28 @@ class FirebaseMessagingService {
     }
   }
 
-  Future<void> _initializeLocalNotifications() async {
-    // Android initialization
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    
-    // iOS initialization
-    const iosSettings = DarwinInitializationSettings(
-      requestSoundPermission: true,
-      requestBadgePermission: true,
-      requestAlertPermission: true,
+  Future<void> _initializeAwesomeNotifications() async {
+    await AwesomeNotifications().initialize(
+      null, // null means use default app icon
+      [
+        NotificationChannel(
+          channelKey: 'akari_notifications',
+          channelName: 'Akari Notifications',
+          channelDescription: 'Notifications from Akari App',
+          defaultColor: const Color(0xff633e3d),
+          ledColor: Colors.white,
+          importance: NotificationImportance.High,
+          channelShowBadge: true,
+          enableVibration: true,
+          enableLights: true,
+        ),
+      ],
     );
 
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
+    // Set up notification action listeners
+    AwesomeNotifications().setListeners(
+      onActionReceivedMethod: onActionNotificationMethod,
     );
-
-    await _localNotifications.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: _onNotificationTapped,
-    );
-
-    // Create notification channel for Android
-    if (Platform.isAndroid) {
-      await _createNotificationChannel();
-    }
-  }
-
-  Future<void> _createNotificationChannel() async {
-    const androidChannel = AndroidNotificationChannel(
-      'akari_notifications', // Channel ID (matches manifest)
-      'Akari Notifications', // Channel name
-      description: 'Notifications from Akari App',
-      importance: Importance.high,
-      sound: RawResourceAndroidNotificationSound('notification'),
-    );
-
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(androidChannel);
   }
 
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
@@ -195,42 +220,25 @@ class FirebaseMessagingService {
     required String body,
     String? payload,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
-      'akari_notifications',
-      'Akari Notifications',
-      channelDescription: 'Notifications from Akari App',
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-      color: Color(0xff633e3d),
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    const notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await _localNotifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      title,
-      body,
-      notificationDetails,
-      payload: payload,
+    await AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        channelKey: 'akari_notifications',
+        title: title,
+        body: body,
+        payload: {'data': payload ?? '{}'},
+        notificationLayout: NotificationLayout.Default,
+      ),
     );
   }
 
-  void _onNotificationTapped(NotificationResponse response) {
-    Logger.log('📱 Notification tapped with payload: ${response.payload}');
+  void handleAwesomeNotificationAction(ReceivedAction receivedAction) {
+    Logger.log('📱 Awesome notification action: ${receivedAction.payload}');
     
-    if (response.payload != null && response.payload!.isNotEmpty) {
+    final payload = receivedAction.payload;
+    if (payload != null && payload['data'] != null) {
       try {
-        final data = _decodePayload(response.payload!);
+        final data = _decodePayload(payload['data'].toString());
         Logger.log('📱 Decoded notification data: $data');
         
         if (data.isNotEmpty) {

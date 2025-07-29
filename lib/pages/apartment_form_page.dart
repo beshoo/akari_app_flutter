@@ -853,7 +853,10 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
           onBackPressed: () => Navigator.of(context).pop(),
           onLogoPressed: () => Navigator.of(context).pop(),
         ),
-        body: _buildFormContent(),
+        body: SafeArea(
+          bottom: true,
+          child: _buildFormContent(),
+        ),
       ),
     );
   }
@@ -1304,12 +1307,13 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
           ),
         ),
 
-        // Submit button
+        // Submit button - centered in bottom safe area
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24), // adjust as needed
+          height: 45 + MediaQuery.of(context).viewPadding.bottom,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Center(
             child: SizedBox(
-              width: double.infinity, // or a fixed width if you prefer
+              width: double.infinity,
               child: CustomButton(
                 title: widget.mode == ApartmentFormMode.create 
                     ? 'إضافة إعلان ${_currentType == 'buy' ? 'الشراء' : 'البيع'}'

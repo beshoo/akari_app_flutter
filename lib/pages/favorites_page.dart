@@ -72,17 +72,20 @@ class _FavoritesViewState extends State<_FavoritesView> with TickerProviderState
             fontFamily: 'Cairo',
           ),
         ),
-        body: Column(
-          children: [
-            Consumer<FavoritesStore>(
-              builder: (context, store, _) => _buildTabs(store),
-            ),
-            Expanded(
-              child: Consumer<FavoritesStore>(
-                builder: (context, store, _) => _buildFavoritesList(store),
+        body: SafeArea(
+          bottom: true,
+          child: Column(
+            children: [
+              Consumer<FavoritesStore>(
+                builder: (context, store, _) => _buildTabs(store),
               ),
-            ),
-          ],
+              Expanded(
+                child: Consumer<FavoritesStore>(
+                  builder: (context, store, _) => _buildFavoritesList(store),
+                ),
+              ),
+            ],
+          ),
         ),
         bottomNavigationBar: CustomBottomNavBar(
           currentIndex: 2, // Favorites tab (index 2 in the updated nav bar)

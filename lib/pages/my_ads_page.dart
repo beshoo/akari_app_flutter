@@ -78,20 +78,23 @@ class _MyAdsViewState extends State<_MyAdsView> with TickerProviderStateMixin {
             fontFamily: 'Cairo',
           ),
         ),
-        body: Column(
-          children: [
-            Consumer<AdsStore>(
-              builder: (context, store, _) => _buildTabs(store),
-            ),
-            Consumer<AdsStore>(
-              builder: (context, store, _) => _buildFilterBar(store),
-            ),
-            Expanded(
-              child: Consumer<AdsStore>(
-                builder: (context, store, _) => _buildAdsList(store),
+        body: SafeArea(
+          bottom: true,
+          child: Column(
+            children: [
+              Consumer<AdsStore>(
+                builder: (context, store, _) => _buildTabs(store),
               ),
-            ),
-          ],
+              Consumer<AdsStore>(
+                builder: (context, store, _) => _buildFilterBar(store),
+              ),
+              Expanded(
+                child: Consumer<AdsStore>(
+                  builder: (context, store, _) => _buildAdsList(store),
+                ),
+              ),
+            ],
+          ),
         ),
         bottomNavigationBar: CustomBottomNavBar(
           currentIndex: 3, // My Ads tab (إعلاناتي)
@@ -391,6 +394,7 @@ class _AdListItem extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
                             Stack(
+                clipBehavior: Clip.none,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -481,8 +485,8 @@ class _AdListItem extends StatelessWidget {
                   ),
                   // iOS-style three-dot menu in top-left corner
                   Positioned(
-                    top: -5,
-                    left: -3,
+                    top: -15,
+                    left: -15,
                     child: _buildThreeDotMenu(context, isClosed),
                   ),
                 ],
