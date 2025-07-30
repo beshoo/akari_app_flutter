@@ -70,6 +70,11 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
 
   bool _isClosingDeal = false;
 
+  AuthStore get authStore => Provider.of<AuthStore>(context, listen: false);
+  bool get isOwner => authStore.userId == _itemData?.userId.toString();
+  bool get isAdmin => authStore.userPrivilege == 'admin';
+  bool get canEditDelete => isOwner || isAdmin;
+
   @override
   void initState() {
     super.initState();
@@ -113,7 +118,6 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
       });
 
       // Log auth information on API call
-      final authStore = Provider.of<AuthStore>(context, listen: false);
       Logger.log('🔐 Auth Info - User ID: ${authStore.userId ?? 'null'}');
       Logger.log('🔐 Auth Info - User Privilege: ${authStore.userPrivilege ?? 'null'}');
       Logger.log('🔐 Auth Info - User Name: ${authStore.userName ?? 'null'}');
@@ -1372,11 +1376,6 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   }
 
   double _getBottomButtonsHeight() {
-    final authStore = Provider.of<AuthStore>(context, listen: false);
-    final isOwner = authStore.userId == _itemData?.userId.toString();
-    final isAdmin = authStore.userPrivilege == 'admin';
-    final canEditDelete = isOwner || isAdmin;
-    final isAdminOnly = authStore.userPrivilege == 'admin';
     final buttonHeight = 50.0;
     final padding = 20.0;
     final spacing = 12.0;
@@ -1389,7 +1388,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     if (canEditDelete) numberOfRows += 1;
     
     // Admin-only row (إتمام الصفقة and تواصل مع)
-    if (isAdminOnly) numberOfRows += 1;
+    if (isAdmin) numberOfRows += 1;
     
     // If no buttons, return minimum height
     if (numberOfRows == 0) return padding * 2;
@@ -1398,11 +1397,6 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   }
 
   double _calculateBackgroundHeight() {
-    final authStore = Provider.of<AuthStore>(context, listen: false);
-    final isOwner = authStore.userId == _itemData?.userId.toString();
-    final isAdmin = authStore.userPrivilege == 'admin';
-    final canEditDelete = isOwner || isAdmin;
-    final isAdminOnly = authStore.userPrivilege == 'admin';
     final buttonHeight = 50.0;
     final padding = 20.0;
     final spacing = 12.0;
@@ -1415,7 +1409,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     if (canEditDelete) numberOfRows += 1;
     
     // Admin-only row (إتمام الصفقة and تواصل مع)
-    if (isAdminOnly) numberOfRows += 1;
+    if (isAdmin) numberOfRows += 1;
     
     // If no buttons, return minimum height
     if (numberOfRows == 0) return padding * 2;
@@ -1445,28 +1439,9 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   Widget _buildBottomActionButtons() {
     if (_itemData == null) return const SizedBox.shrink();
     
-    final authStore = Provider.of<AuthStore>(context);
-    final isOwner = authStore.userId == _itemData.userId.toString();
-    final isAdmin = authStore.userPrivilege == 'admin';
-    final canEditDelete = isOwner || isAdmin;
-    final isAdminOnly = authStore.userPrivilege == 'admin';
-    
-    // Calculate proper height based on number of button rows
     final buttonHeight = 50.0;
     final padding = 20.0;
     final spacing = 12.0;
-    // Calculate number of rows for background height
-    
-    // Contact button row (only for non-owners)
-    if (!isOwner)
-    
-    // Edit/Delete row (for owners and admins)
-    if (canEditDelete)
-    
-    // Admin-only row (إتمام الصفقة and تواصل مع)
-    if (isAdminOnly)
-    
-    final backgroundHeight = _calculateBackgroundHeight();
     
     // Log the permission check
     Logger.log('🔒 Permission Check:');
@@ -1496,7 +1471,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
             mainAxisSize: MainAxisSize.min,
             children: [
               // Contact owner button (hidden for owners viewing their own items)
-              if (!isOwner) ...[
+              if (!isOwner && !isAdmin) ...[
                 Container(
                   height: buttonHeight,
                   decoration: BoxDecoration(
@@ -1634,7 +1609,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
               ],
               
               // Admin-only buttons (إتمام الصفقة and تواصل مع)
-              if (isAdminOnly) ...[
+              if (isAdmin) ...[
                 SizedBox(height: spacing),
                 Row(
                   children: [
@@ -1797,7 +1772,6 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
 
   Future<void> _handleReactionSelected(String reaction) async {
     final reactionStore = Provider.of<ReactionStore>(context, listen: false);
-    final authStore = Provider.of<AuthStore>(context, listen: false);
     final isRemoving = reaction == _itemData.currentUserReaction;
     
     // Log auth info before reaction action
@@ -1908,7 +1882,6 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
 
   Future<void> _handleFavoriteToggle() async {
     final reactionStore = Provider.of<ReactionStore>(context, listen: false);
-    final authStore = Provider.of<AuthStore>(context, listen: false);
     
     // Log auth info before favorite action
     Logger.log('🔐 Auth Info for Favorite - User ID: ${authStore.userId ?? 'null'}');
@@ -2007,7 +1980,6 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     });
 
     // Log auth info before delete action
-    final authStore = Provider.of<AuthStore>(context, listen: false);
     Logger.log('🔐 Auth Info for Delete - User ID: ${authStore.userId ?? 'null'}');
     Logger.log('🔐 Auth Info for Delete - User Privilege: ${authStore.userPrivilege ?? 'null'}');
     Logger.log('🗑️ Attempting to delete ${widget.itemType} ID: ${_itemData.id}');
@@ -2078,7 +2050,6 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   }
 
   void _proceedWithWhatsApp(BuildContext context) async {
-    final authStore = Provider.of<AuthStore>(context, listen: false);
     final cleanedPhoneNumber = _cleanPhoneNumber(authStore.supportPhone);
     Logger.log('💬 Support phone from auth store: [33m[1m[4m${authStore.supportPhone}[0m');
     Logger.log('💬 Cleaned phone number: $cleanedPhoneNumber');
