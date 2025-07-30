@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import '../data/models/region_model.dart' as region_model;
 import '../data/repositories/home_repository.dart';
 import '../data/repositories/share_repository.dart';
@@ -771,11 +772,13 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.rtl,
+      
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F5F2),
         appBar: CustomAppBar(
           onBackPressed: () => Navigator.of(context).pop(),
           onLogoPressed: () => Navigator.of(context).pop(),
+          showAddAdButton: true,
         ),
         body: SafeArea(
           bottom: true,
@@ -1186,6 +1189,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
             ),
           ),
         ),
+        const SizedBox(height: 8),
       ],
     );
   }
@@ -1615,6 +1619,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
             ),
           ),
         ),
+        const SizedBox(height: 8),
       ],
     );
   }

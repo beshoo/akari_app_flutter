@@ -263,7 +263,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   color: const Color(0xFF8C7A6A),
                 ),
                 overflow: TextOverflow.ellipsis,
-                maxLines: 2,
+                maxLines: 1,
               ),
             ),
           if (!onlyText) const Spacer(),

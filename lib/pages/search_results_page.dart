@@ -326,6 +326,8 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
         title: _getPageTitle(),
         showBackButton: true,
         showLogo: false,
+        showAddAdButton: true,
+        onlyText: true,
         titleStyle: const TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
@@ -341,9 +343,9 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
 
   String _getPageTitle() {
     if (widget.searchType == 'apartment') {
-      return 'البحث عن العقارات';
+      return 'عقارات';
     } else {
-      return 'البحث عن الأسهم';
+      return 'أسهم تنظيمية';
     }
   }
 
