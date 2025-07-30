@@ -55,7 +55,7 @@ class VersionService {
       return playStoreUrl;
     } else if (isIOS) {
       // Add your App Store URL here when available
-      return 'https://apps.apple.com/app/your-app-id';
+      return 'https://apps.apple.com/app/akari.versetech.net';
     }
     return playStoreUrl; // Default to Play Store
   }
