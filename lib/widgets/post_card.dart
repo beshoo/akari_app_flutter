@@ -11,8 +11,10 @@ import '../stores/reaction_store.dart';
 import '../utils/logger.dart';
 import '../utils/navigation_helper.dart';
 import '../utils/toast_helper.dart';
+import '../pages/webview_page.dart';
 import './post_card_data.dart';
 import 'custom_bottom_sheet.dart';
+import 'custom_dialog.dart';
 
 class PostCard extends StatefulWidget {
   final PostCardData postData;
@@ -409,11 +411,28 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                 
                 // Verification icon
                 if (_currentPostData.isUserVerified)
-                  Image.asset(
-                    'assets/images/icons/gold.png',
-                    width: 28,
-                    height: 28,
-                    color: _goldColor,
+                  GestureDetector(
+                    onTap: () => _showGoldAccountDialog(context),
+                    child: ShaderMask(
+                      shaderCallback: (Rect bounds) {
+                        return LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.amber.shade200,
+                            Colors.amber.shade400,
+                            Colors.amber.shade600,
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                        ).createShader(bounds);
+                      },
+                      child: Image.asset(
+                        'assets/images/icons/gold.png',
+                        width: 20,
+                        height: 20,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -1015,6 +1034,26 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   void _shareContent() {
     share_plus.Share.share(_currentPostData.shareButtonText);
+  }
+
+  void _showGoldAccountDialog(BuildContext context) {
+    showCustomDialog(
+      context: context,
+      title: 'حساب ذهبي',
+      message: 'يمكنك الحصول على ميزة الحساب الذهبي لتميز عروضك بالشعار الذهبي',
+      okButtonText: 'معلومات أكثر',
+      cancelButtonText: 'إلغاء',
+      onOkPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WebViewPage(
+              url: 'https://akari.versetech.net/golden-account.html',
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _showReactionModal() {

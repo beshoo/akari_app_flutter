@@ -176,7 +176,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 360;
-    final logoHeight = isSmallScreen ? 28.0 : 35.0;
+    final logoHeight = isSmallScreen ? 28.0 : 40.0;
     final int effectiveNotificationCount = notificationCount ?? Provider.of<NotificationStore>(context).notificationCount;
     return AppBar(
       automaticallyImplyLeading: false,

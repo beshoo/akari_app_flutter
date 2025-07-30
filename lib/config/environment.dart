@@ -14,14 +14,11 @@ class Environment {
     kReleaseMode ?  production : development;
   
   static String get baseUrl => 
-    currentEnvironment == development ? devBaseUrl : prodBaseUrl;
+    kReleaseMode ? prodBaseUrl : devBaseUrl;
   
   // Terms URL
-  static String get termsUrl => 
-    currentEnvironment == development 
-      ? 'https://arrows-dev.versetech.net/terms.html'
-      : 'https://akari.versetech.net/terms.html';
-      
+  static String get termsUrl => 'https://akari.versetech.net/terms.html';
+
   // Initialize and log environment
   static void initialize() {
     Logger.info('🌍 Environment: ${currentEnvironment.toUpperCase()}');

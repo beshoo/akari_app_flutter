@@ -2145,6 +2145,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
         onLogoPressed: () => Navigator.pop(context),
         title: title,
         showLogo: false,
+        showAddAdButton: true,
         onlyText: true,
         titleStyle: TextStyle(
           fontSize: MediaQuery.of(context).size.width > 400 ? 22.0 : 20.0,

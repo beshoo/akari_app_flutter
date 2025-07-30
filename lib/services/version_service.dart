@@ -1,6 +1,7 @@
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:io';
 
 import '../utils/logger.dart';
 import 'api_service.dart';
@@ -34,6 +35,30 @@ class VersionService {
   
   // Google Play Store URL
   static const String playStoreUrl = 'https://play.google.com/store/apps/details?id=akari.versetech.net';
+
+  /// Check if the current platform is Android
+  static bool get isAndroid => Platform.isAndroid;
+
+  /// Check if the current platform is iOS
+  static bool get isIOS => Platform.isIOS;
+
+  /// Get the current platform name
+  static String get platformName {
+    if (isAndroid) return 'Android';
+    if (isIOS) return 'iOS';
+    return 'Unknown';
+  }
+
+  /// Get platform-specific store URL
+  static String get storeUrl {
+    if (isAndroid) {
+      return playStoreUrl;
+    } else if (isIOS) {
+      // Add your App Store URL here when available
+      return 'https://apps.apple.com/app/your-app-id';
+    }
+    return playStoreUrl; // Default to Play Store
+  }
 
   /// Get package info with caching
   static Future<PackageInfo?> getPackageInfo() async {
@@ -341,18 +366,18 @@ class VersionService {
     );
   }
 
-  /// Open Google Play Store
+  /// Open platform-specific app store
   Future<void> _openPlayStore() async {
     try {
-      final uri = Uri.parse(playStoreUrl);
+      final uri = Uri.parse(storeUrl);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-        Logger.log('✅ VersionService: Opened Play Store');
+        Logger.log('✅ VersionService: Opened ${platformName} store');
       } else {
-        Logger.log('❌ VersionService: Could not launch Play Store URL');
+        Logger.log('❌ VersionService: Could not launch ${platformName} store URL');
       }
     } catch (e) {
-      Logger.log('❌ VersionService: Error opening Play Store: $e');
+      Logger.log('❌ VersionService: Error opening ${platformName} store: $e');
     }
   }
 
