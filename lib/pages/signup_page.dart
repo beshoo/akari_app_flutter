@@ -585,7 +585,7 @@ class _SignupPageState extends State<SignupPage> {
                 context,
                 '/webview',
                 arguments: {
-                  'url': Environment.termsUrl,
+                  'url': 'https://akari.versetech.net/terms.html',
                   'title': 'شروط الاستخدام',
                 },
               );

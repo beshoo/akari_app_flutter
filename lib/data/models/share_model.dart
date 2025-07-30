@@ -63,22 +63,29 @@ class Share extends Equatable {
   });
 
   factory Share.fromJson(Map<String, dynamic> json) {
+    int _parseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is double) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
     return Share(
-      id: json['id'] ?? 0,
-      userId: json['user_id'] ?? 0,
-      regionId: json['region_id'] ?? 0,
-      sectorId: json['sector_id'] ?? 0,
-      quantity: json['quantity'] ?? '',
+      id: _parseInt(json['id']),
+      userId: _parseInt(json['user_id']),
+      regionId: _parseInt(json['region_id']),
+      sectorId: _parseInt(json['sector_id']),
+      quantity: json['quantity']?.toString() ?? '',
       quantityKey: (json['quantity_key'] ?? '').toString(), // Defensive: always a string
       createdAt: json['created_at'] ?? '',
       updatedAt: json['updated_at'] ?? '',
       ownerName: json['owner_name'] ?? '',
       transactionType: json['transaction_type'] ?? '',
-      price: json['price'] ?? '',
-      views: json['views'] ?? 0,
-      approve: json['approve'] ?? 0,
-      closed: json['closed'] ?? 0,
-      priceKey: json['price_key'] ?? 0,
+      price: json['price']?.toString() ?? '',
+      views: _parseInt(json['views']),
+      approve: _parseInt(json['approve']),
+      closed: _parseInt(json['closed']),
+      priceKey: _parseInt(json['price_key']),
       since: json['since'] ?? '',
       userSentOrder: json['user_sent_order'] ?? false,
       shareButton: json['share_button'] ?? '',

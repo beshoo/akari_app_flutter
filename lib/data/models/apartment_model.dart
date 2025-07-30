@@ -191,32 +191,39 @@ class Apartment {
   });
 
   factory Apartment.fromJson(Map<String, dynamic> json) {
+    int _parseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is double) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
     return Apartment(
-      id: json['id'] ?? 0,
-      userId: json['user_id'] ?? 0,
-      regionId: json['region_id'] ?? 0,
-      sectorId: json['sector_id'] ?? 0,
-      directionId: json['direction_id'] ?? 0,
-      apartmentTypeId: json['apartment_type_id'] ?? 0,
-      paymentMethodId: json['payment_method_id'] ?? 0,
-      floor: json['floor'] ?? 0,
-      area: json['area'] ?? 0,
-      price: json['price'] ?? '',
-      views: json['views'] ?? 0,
-      roomsCount: json['rooms_count'] ?? 0,
-      salonsCount: json['salons_count'] ?? 0,
-      balconyCount: json['balcony_count'] ?? 0,
-      apartmentStatusId: json['apartment_status_id'] ?? 0,
-      isTaras: json['is_taras'] ?? 0,
-      equity: json['equity'] ?? '',
+      id: _parseInt(json['id']),
+      userId: _parseInt(json['user_id']),
+      regionId: _parseInt(json['region_id']),
+      sectorId: _parseInt(json['sector_id']),
+      directionId: _parseInt(json['direction_id']),
+      apartmentTypeId: _parseInt(json['apartment_type_id']),
+      paymentMethodId: _parseInt(json['payment_method_id']),
+      floor: _parseInt(json['floor']),
+      area: _parseInt(json['area']),
+      price: json['price']?.toString() ?? '',
+      views: _parseInt(json['views']),
+      roomsCount: _parseInt(json['rooms_count']),
+      salonsCount: _parseInt(json['salons_count']),
+      balconyCount: _parseInt(json['balcony_count']),
+      apartmentStatusId: _parseInt(json['apartment_status_id']),
+      isTaras: _parseInt(json['is_taras']),
+      equity: json['equity']?.toString() ?? '',
       equityKey: (json['equity_key'] ?? '').toString(), // Defensive: always a string
       transactionType: json['transaction_type'] ?? '',
       ownerName: json['owner_name'] ?? '',
       createdAt: json['created_at'] ?? '',
       updatedAt: json['updated_at'] ?? '',
-      approve: json['approve'] ?? 0,
-      closed: json['closed'] ?? 0,
-      priceKey: json['price_key'] ?? 0,
+      approve: _parseInt(json['approve']),
+      closed: _parseInt(json['closed']),
+      priceKey: _parseInt(json['price_key']),
       since: json['since'] ?? '',
       userSentOrder: json['user_sent_order'] ?? false,
       shareButton: json['share_button'] ?? '',

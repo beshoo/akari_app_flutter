@@ -14,6 +14,7 @@ import '../widgets/custom_spinner.dart';
 import '../widgets/custom_bottom_sheet.dart';
 import 'search_page.dart';
 import 'property_details_page.dart';
+import '../utils/logger.dart'; // Added import for Logger
 
 class RegionPage extends StatefulWidget {
   final int? regionId;
@@ -484,6 +485,13 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
             page: currentSharePage,
           );
 
+      // DEBUG LOGGING: Print the raw response and shares count
+      Logger.log('RegionPage: Raw API response for shares: '
+          'shares count: ${response.shares.length}, hasNextPage: ${response.hasNextPage}');
+      if (response.shares.isNotEmpty) {
+        Logger.log('RegionPage: First share: ${response.shares.first.toString()}');
+      }
+
       if (mounted) {
         setState(() {
           if (refresh) {
@@ -506,6 +514,8 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
           hasLoadedShares = true;
         });
       }
+      // DEBUG LOGGING: Print error message
+      Logger.log('RegionPage: Error loading shares: ${e.toString()}');
     }
   }
 
