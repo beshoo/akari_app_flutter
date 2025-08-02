@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
+
+import '../data/models/apartment_model.dart';
 import '../data/models/region_model.dart' as region_model;
+import '../data/repositories/apartment_repository.dart';
 import '../data/repositories/home_repository.dart';
 import '../data/repositories/share_repository.dart';
-import '../data/repositories/apartment_repository.dart';
-import '../data/models/apartment_model.dart';
+import '../services/secure_storage.dart';
+import '../utils/logger.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_button.dart';
+import '../widgets/custom_dialog.dart';
 import '../widgets/custom_dropdown.dart';
 import '../widgets/custom_radio_buttons.dart';
 import '../widgets/custom_text_field.dart';
-import '../widgets/custom_dialog.dart';
-import '../services/secure_storage.dart';
-import '../utils/logger.dart';
 import 'search_results_page.dart';
 
 // Helper classes for dropdown options

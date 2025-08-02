@@ -7,7 +7,7 @@
     <application
         android:label="عقاري"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -48,7 +48,7 @@
         <!-- Default notification metadata -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_launcher" />
+            android:resource="@mipmap/launcher_icon" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@android:color/transparent" />

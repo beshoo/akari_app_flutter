@@ -29,6 +29,7 @@ import 'stores/chat_store.dart';
 import 'stores/enums_store.dart';
 import 'stores/notification_store.dart';
 import 'stores/reaction_store.dart';
+
 import 'utils/logger.dart';
 import 'pages/favorites_page.dart';
 import 'pages/search_page.dart';
@@ -127,6 +128,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ChatStore()),
         ChangeNotifierProvider(create: (_) => EnumsStore()),
         ChangeNotifierProvider(create: (_) => ReactionStore()),
+
       ],
       child: ToastificationWrapper(
       child: GetMaterialApp(

@@ -62,22 +62,7 @@ class _MyAdsViewState extends State<_MyAdsView> with TickerProviderStateMixin {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F5F2),
-        appBar: CustomAppBar(
-          showBackButton: true,
-          showFavoritesButton: true,
-          showSearchButton: false,
-          showHelpButton: false,
-          showAddAdButton: true,
-
-          showNotificationButton: true,
-          showLogo: true,
-          titleStyle: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF633e3d),
-            fontFamily: 'Cairo',
-          ),
-        ),
+        appBar: _DynamicAppBar(),
         body: SafeArea(
           bottom: true,
           child: Column(
@@ -797,16 +782,16 @@ class _AdListItem extends StatelessWidget {
                 Icon(
                   Icons.lock,
                   size: 20,
-                  color: const Color(0xFFBDBDBD),
+                  color: const Color.fromARGB(255, 102, 97, 97),
                 ),
                 const SizedBox(width: 12),
                 const Text(
-                  'مُباع',
+                  'مغلق',
                   style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFFBDBDBD),
+                    color: Color.fromARGB(255, 74, 74, 74),
                   ),
                 ),
               ],
@@ -833,30 +818,66 @@ class _AdListItem extends StatelessWidget {
       if (type == 'share') {
         final shareRepository = ShareRepository();
         final share = await shareRepository.fetchShareById(adId);
-        Navigator.pop(context); // Close loading dialog
-        if (share != null) {
-          NavigationHelper.navigateToUpdateShare(context, share);
-        } else {
-          NavigationHelper.navigateToCreateShare(context);
+        if (context.mounted) {
+          Navigator.pop(context); // Close loading dialog
+          if (share != null) {
+            NavigationHelper.navigateToUpdateShare(context, share);
+          } else {
+            NavigationHelper.navigateToCreateShare(context);
+          }
         }
       } else {
         final apartmentRepository = ApartmentRepository();
         final apartment = await apartmentRepository.fetchApartmentById(adId);
+        if (context.mounted) {
+          Navigator.pop(context); // Close loading dialog
+          if (apartment != null) {
+            NavigationHelper.navigateToUpdateApartment(context, apartment);
+          } else {
+            NavigationHelper.navigateToCreateApartment(context);
+          }
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
         Navigator.pop(context); // Close loading dialog
-        if (apartment != null) {
-          NavigationHelper.navigateToUpdateApartment(context, apartment);
+        // Fallback to create forms
+        if (type == 'share') {
+          NavigationHelper.navigateToCreateShare(context);
         } else {
           NavigationHelper.navigateToCreateApartment(context);
         }
       }
-    } catch (e) {
-      Navigator.pop(context); // Close loading dialog
-      // Fallback to create forms
-      if (type == 'share') {
-        NavigationHelper.navigateToCreateShare(context);
-      } else {
-        NavigationHelper.navigateToCreateApartment(context);
-      }
     }
   }
-} 
+}
+
+class _DynamicAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const _DynamicAppBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AdsStore>(
+      builder: (context, store, _) {
+        return CustomAppBar(
+          showBackButton: true,
+          showFavoritesButton: true,
+          showSearchButton: false,
+          showHelpButton: false,
+          showAddAdButton: store.currentAds.isNotEmpty,
+          showNotificationButton: true,
+          showLogo: true,
+          titleStyle: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF633e3d),
+            fontFamily: 'Cairo',
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}

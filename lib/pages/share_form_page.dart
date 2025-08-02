@@ -700,8 +700,8 @@ class _ShareFormPageState extends State<ShareFormPage> {
 
         // Submit button - centered in bottom safe area
         Container(
-          height: 45 + MediaQuery.of(context).viewPadding.bottom,
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          height: 45 + MediaQuery.of(context).viewPadding.bottom + 16, // Added 16px for padding
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8), // Added vertical padding
           child: Center(
             child: SizedBox(
               width: double.infinity,

@@ -33,6 +33,9 @@ class VersionService {
   // Cache for package info to avoid multiple calls
   static PackageInfo? _cachedPackageInfo;
   
+  // Flag to track if version check is pending
+  bool _pendingVersionCheck = false;
+  
   // Google Play Store URL
   static const String playStoreUrl = 'https://play.google.com/store/apps/details?id=akari.versetech.net';
 
@@ -80,6 +83,8 @@ class VersionService {
     try {
       final PackageInfo? packageInfo = await getPackageInfo();
       if (packageInfo != null) {
+        Logger.log('📦 VersionService: PackageInfo - version: ${packageInfo.version}, buildNumber: ${packageInfo.buildNumber}');
+        
         // Convert version to int by removing dots (e.g., "1.0.0" -> 100)
         final versionParts = packageInfo.version.split('.');
         int versionNumber = 0;
@@ -92,10 +97,12 @@ class VersionService {
         if (packageInfo.buildNumber.isNotEmpty) {
           final buildNumber = int.tryParse(packageInfo.buildNumber);
           if (buildNumber != null) {
+            Logger.log('📦 VersionService: Using buildNumber as version: $buildNumber');
             return buildNumber;
           }
         }
         
+        Logger.log('📦 VersionService: Using calculated version: $versionNumber');
         return versionNumber;
       }
       return 1; // Fallback version
@@ -109,8 +116,10 @@ class VersionService {
   Future<VersionResponse?> getServerVersion() async {
     try {
       Logger.log('🔄 VersionService: Getting server version...');
+      Logger.log('🔄 VersionService: Making API call to /version/get...');
       
       final response = await ApiService.instance.get('/version/get');
+      Logger.log('🔄 VersionService: API response received: ${response.data}');
       
       if (response.data['success'] == true || response.data.containsKey('version')) {
         final versionResponse = VersionResponse.fromJson(response.data);
@@ -122,6 +131,7 @@ class VersionService {
       }
     } catch (e) {
       Logger.log('❌ VersionService: Error getting server version: $e');
+      Logger.log('❌ VersionService: Error stack trace: ${StackTrace.current}');
       return null;
     }
   }
@@ -132,6 +142,8 @@ class VersionService {
       Logger.log('🔄 VersionService: Starting version check...');
       
       final serverVersionResponse = await getServerVersion();
+      Logger.log('🔄 VersionService: getServerVersion() returned: ${serverVersionResponse?.version ?? 'null'}');
+      
       if (serverVersionResponse == null) {
         Logger.log('⚠️ VersionService: Could not get server version, skipping update check');
         return;
@@ -171,6 +183,8 @@ class VersionService {
         // App version equals server version - no action needed
         Logger.log('✅ VersionService: App version equals server version, no action needed');
       }
+      
+
       
     } catch (e) {
       Logger.log('❌ VersionService: Error in version check: $e');
@@ -470,4 +484,12 @@ class VersionService {
       // Don't throw error - version check shouldn't block app functionality
     }
   }
+
+  /// Set pending version check flag
+  void setPendingVersionCheck(bool pending) {
+    _pendingVersionCheck = pending;
+  }
+
+  /// Get pending version check flag
+  bool get hasPendingVersionCheck => _pendingVersionCheck;
 } 

@@ -2,9 +2,32 @@ import 'package:flutter/material.dart';
 
 import '../widgets/custom_button.dart';
 import '../widgets/parallax_slider.dart';
+import '../services/version_service.dart';
+import '../utils/logger.dart';
 
-class OnboardingPage extends StatelessWidget {
+class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
+
+  @override
+  State<OnboardingPage> createState() => _OnboardingPageState();
+}
+
+class _OnboardingPageState extends State<OnboardingPage> {
+  @override
+  void initState() {
+    super.initState();
+    _checkVersionIfPending();
+  }
+
+  void _checkVersionIfPending() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (VersionService.instance.hasPendingVersionCheck) {
+        Logger.log('🔄 OnboardingPage: Pending version check found, executing...');
+        VersionService.instance.setPendingVersionCheck(false);
+        await VersionService.instance.checkAndHandleVersionUpdate(context);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
