@@ -156,7 +156,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                   prefixIcon: widget.prefixIcon,
                   suffixIcon: effectiveSuffixIcon,
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: widget.enabled ? Colors.white : const Color(0xFFFAFAFA),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 14,
@@ -193,6 +193,12 @@ class _CustomTextFieldState extends State<CustomTextField> {
                 focusedErrorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: Colors.red.withValues(alpha: 0.6), width: 1),
+                ),
+                disabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: const Color(0xFFDBDBDB),
+                  ),
                 ),
                 errorText: widget.hasError ? null : widget.errorText,
                 errorStyle: const TextStyle(

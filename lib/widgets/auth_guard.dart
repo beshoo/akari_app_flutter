@@ -70,7 +70,7 @@ class _AuthGuardState extends State<AuthGuard> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CustomSpinner(size: 50.0),
+              CustomSpinner(size: 40.0),
               const SizedBox(height: 16),
               Text(
                 'التحقق من الهوية...',

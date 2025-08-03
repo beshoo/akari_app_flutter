@@ -136,22 +136,9 @@ class WebViewPageState extends State<WebViewPage> {
   Widget _buildLoadingView() {
     return Container(
       color: Color(0xFFF7F5F2),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CustomSpinner(size: 50.0),
-            SizedBox(height: 16),
-            Text(
-              'جاري التحميل...',
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Cairo',
-                color: Color(0xFF633e3d),
-              ),
-            ),
-          ],
-        ),
+      child: Align(
+        alignment: Alignment(0.0, -0.2),
+        child: CustomSpinner(size: 50.0),
       ),
     );
   }

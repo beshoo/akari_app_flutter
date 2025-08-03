@@ -352,7 +352,7 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
   Widget _buildBody() {
     if (_isLoading && _searchResults.isEmpty) {
       return const Center(
-        child: CustomSpinner(size: 50.0),
+        child: CustomSpinner(size: 40.0),
       );
     }
 

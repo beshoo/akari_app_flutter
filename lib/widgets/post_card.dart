@@ -110,7 +110,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   // Color constants
   static const Color _toastColor = Color(0xFF1F2937);
-  static const Color _goldColor = Color(0xFFEAE2DB);
   static const Color _grayColor = Color(0xFF374151);
 
   // Gradient definitions
@@ -899,8 +898,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     // Store original state for potential revert
     final originalPostData = _currentPostData;
-    final originalReaction = _currentPostData.currentUserReaction;
-    
     // Optimistic update - immediately update UI
     final currentCounts = _currentPostData.reactionCounts;
     final reactionSummaryMap = {
@@ -991,7 +988,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   void _toggleFavorite(ReactionStore reactionStore) async {
     // Store original state for potential revert
     final originalPostData = _currentPostData;
-    final originalFavoriteState = _currentPostData.isFavorited;
     
     // Optimistic update - immediately update UI
     setState(() {

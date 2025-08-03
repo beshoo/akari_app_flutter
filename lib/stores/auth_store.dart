@@ -234,7 +234,18 @@ class AuthStore extends ChangeNotifier {
       if (response.data['success'] == true) {
         // Save access token if provided
         if (response.data['access_token'] != null) {
+          Logger.log('💾 AuthStore: Saving access token...');
           await SecureStorage.setToken(response.data['access_token']);
+          
+          // Verify token was saved
+          final savedToken = await SecureStorage.getToken();
+          Logger.log('🔍 AuthStore: Token saved verification - exists: ${savedToken != null}');
+          Logger.log('🔍 AuthStore: Token saved verification - length: ${savedToken?.length ?? 0}');
+          if (savedToken != null) {
+            Logger.log('🔍 AuthStore: Token saved verification - preview: ${savedToken.substring(0, 50)}...');
+          }
+        } else {
+          Logger.log('⚠️ AuthStore: No access_token in response data');
         }
         
         // Save user data and app settings - ensure all required fields are included
@@ -331,6 +342,9 @@ class AuthStore extends ChangeNotifier {
       final token = await SecureStorage.getToken();
       Logger.log('🔑 AuthStore: Token exists: ${token != null}');
       Logger.log('🔑 AuthStore: Token length: ${token?.length ?? 0}');
+      if (token != null) {
+        Logger.log('🔑 AuthStore: Token preview: ${token.substring(0, 50)}...');
+      }
       
       if (token != null) {
         // First, try to load user data from local storage for faster startup

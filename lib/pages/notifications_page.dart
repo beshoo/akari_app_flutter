@@ -172,7 +172,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     Logger.log('Pull to refresh completed');
                   },
                   child: (isLoading && !isRefreshing) || isDeleting
-                      ? const Center(child: CustomSpinner(size: 50.0))
+                      ? const Center(child: CustomSpinner(size: 40.0))
                       : notifications.isEmpty
                           ? SizedBox(
                               height: MediaQuery.of(context).size.height - 100, // Subtract AppBar height

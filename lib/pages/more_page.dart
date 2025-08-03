@@ -39,9 +39,16 @@ class _MorePageState extends State<MorePage> {
   }
 
   Future<void> _initialize() async {
-    final authStore = Provider.of<AuthStore>(context, listen: false); // moved here
+    final authStore = Provider.of<AuthStore>(context, listen: false);
     setState(() => loading = true);
     Logger.log('==================== MORE SCREEN INIT ====================');
+    
+    // First check if AuthStore has user data, if not try to refresh it
+    if (authStore.user == null || authStore.user!.isEmpty) {
+      Logger.log('AuthStore user data is null/empty, calling checkAuthStatus...');
+      await authStore.checkAuthStatus();
+    }
+    
     // Check what's in secure store
     final userDataStr = await SecureStorage.getUserData('user_data');
     Logger.log('Secure store user data: $userDataStr');
@@ -53,17 +60,24 @@ class _MorePageState extends State<MorePage> {
         Logger.error('Failed to decode user data', e);
       }
     }
-    Logger.log('Secure store user keys:  [38;5;8m [48;5;8m${userData?.keys} [0m');
+    Logger.log('Secure store user keys: ${userData?.keys}');
     Logger.log('Secure store user name: ${userData?['name']}');
+    Logger.log('Secure store user phone: ${userData?['phone']}');
+    
     final response = authStore.user;
-    Logger.log('API response: $response');
-    Logger.log('API response keys: ${response?.keys}');
-    Logger.log('API response name: ${response?['name']}');
+    Logger.log('AuthStore user data: $response');
+    Logger.log('AuthStore user keys: ${response?.keys}');
+    Logger.log('AuthStore user name: ${response?['name']}');
+    Logger.log('AuthStore user phone: ${response?['phone']}');
+    
     if (!mounted) return;
     setState(() {
-      user = response;
+      user = response ?? userData; // Fallback to secure storage data if AuthStore is empty
       loading = false;
     });
+    Logger.log('Final user data: $user');
+    Logger.log('Final user name: ${user?['name']}');
+    Logger.log('Final user phone: ${user?['phone']}');
     Logger.log('=======================================================');
   }
 
@@ -75,6 +89,59 @@ class _MorePageState extends State<MorePage> {
       _appVersion = packageInfo.version;
       _buildNumber = packageInfo.buildNumber;
     });
+  }
+
+  Future<void> _refreshUserData() async {
+    final authStore = Provider.of<AuthStore>(context, listen: false);
+    Logger.log('🔄 MorePage: Manual refresh requested by user');
+    
+    setState(() => loading = true);
+    
+    try {
+      // Refresh user data from server
+      final result = await authStore.refreshUserData();
+      
+      if (result['success'] == true) {
+        Logger.log('✅ MorePage: User data refreshed successfully');
+        setState(() {
+          user = authStore.user;
+          loading = false;
+        });
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم تحديث بيانات المستخدم بنجاح'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        Logger.log('❌ MorePage: Failed to refresh user data: ${result['message']}');
+        setState(() => loading = false);
+        
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('فشل في تحديث البيانات: ${result['message']}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      Logger.error('❌ MorePage: Error refreshing user data', e);
+      setState(() => loading = false);
+      
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('حدث خطأ أثناء تحديث البيانات'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   Future<void> _handleLogout() async {
@@ -130,6 +197,7 @@ class _MorePageState extends State<MorePage> {
                   // User profile
                   GestureDetector(
                     onTap: () => Navigator.pushNamed(context, '/profile'),
+                    onLongPress: () => _refreshUserData(), // Add long press to refresh user data
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
                       padding: const EdgeInsets.only(left: 16, top: 16, right: 16, bottom: 0),
@@ -161,20 +229,20 @@ class _MorePageState extends State<MorePage> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        user?['name'] ?? '',
-                                        style: const TextStyle(
+                                        user?['name']?.toString() ?? 'اسم المستخدم غير متوفر',
+                                        style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
                                           fontFamily: 'Cairo',
-                                          color: Color(0xFF633e3d),
+                                          color: user?['name'] != null ? const Color(0xFF633e3d) : Colors.grey[600],
                                         ),
                                       ),
-                                      if (user?['phone'] != null)
+                                      if (user?['phone'] != null && user!['phone'].toString().isNotEmpty)
                                         Row(
                                           children: isRTL
                                               ? [
                                                   Text(
-                                                    user?['phone'] ?? '',
+                                                    user?['phone']?.toString() ?? '',
                                                     style: const TextStyle(
                                                       fontSize: 14,
                                                       color: Color(0xFF633e3d),
@@ -200,7 +268,7 @@ class _MorePageState extends State<MorePage> {
                                                     ),
                                                   ),
                                                   Text(
-                                                    user?['phone'] ?? '',
+                                                    user?['phone']?.toString() ?? '',
                                                     style: const TextStyle(
                                                       fontSize: 14,
                                                       color: Color(0xFF633e3d),
@@ -208,10 +276,25 @@ class _MorePageState extends State<MorePage> {
                                                     ),
                                                   ),
                                                 ],
+                                        )
+                                      else
+                                        Text(
+                                          'رقم الهاتف غير متوفر',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[600],
+                                            fontFamily: 'Cairo',
+                                          ),
                                         ),
                                     ],
                                   ),
                           ),
+                          if (!loading)
+                            IconButton(
+                              icon: const Icon(Icons.refresh, color: Color(0xFF633e3d)),
+                              onPressed: _refreshUserData,
+                              tooltip: 'تحديث بيانات المستخدم',
+                            ),
                         ],
                       ),
                     ),
@@ -319,6 +402,7 @@ class _MorePageState extends State<MorePage> {
                             ),
                           ),
                         ),
+
                         _LogoutInnerItem(
                           icon: 'assets/images/icons/logout.png',
                           title: 'تسجيل الخروج',

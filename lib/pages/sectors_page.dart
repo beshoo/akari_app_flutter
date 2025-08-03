@@ -496,7 +496,10 @@ class _SectorsPageState extends State<SectorsPage> with TickerProviderStateMixin
 
   Widget _buildBody() {
     if (_isInitialLoading) {
-      return const Center(child: CustomSpinner(size: 50.0));
+      return Align(
+        alignment: Alignment(0.0, -0.1),
+        child: CustomSpinner(size: 50.0),
+      );
     }
 
     if (_errorMessage != null && _regions.isEmpty) {

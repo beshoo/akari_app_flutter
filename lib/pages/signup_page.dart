@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:phone_form_field/phone_form_field.dart';
 import 'package:provider/provider.dart';
 
-import '../config/environment.dart';
 import '../stores/auth_store.dart';
 import '../stores/enums_store.dart';
 import '../utils/toast_helper.dart';

@@ -16,7 +16,12 @@ class SecureStorage {
   // Token management
   static Future<String?> getToken() async {
     try {
-      return await _storage.read(key: 'auth_token');
+      final token = await _storage.read(key: 'auth_token');
+      _logger.d('🔍 SecureStorage: getToken() called - token exists: ${token != null}');
+      if (token != null) {
+        _logger.d('🔍 SecureStorage: getToken() - token length: ${token.length}');
+      }
+      return token;
     } catch (e) {
       _logger.e('Error reading token', error: e);
       return null;
@@ -25,7 +30,9 @@ class SecureStorage {
   
   static Future<void> setToken(String token) async {
     try {
+      _logger.d('💾 SecureStorage: setToken() called - token length: ${token.length}');
       await _storage.write(key: 'auth_token', value: token);
+      _logger.d('✅ SecureStorage: setToken() completed successfully');
     } catch (e) {
       _logger.e('Error saving token', error: e);
     }

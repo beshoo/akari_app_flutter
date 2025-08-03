@@ -108,7 +108,13 @@ class _HomeViewState extends State<HomeView> {
               body: BlocBuilder<HomeBloc, HomeState>(
                 builder: (context, state) {
                   if (state is HomeInitial || state is HomeLoading) {
-                    return const Center(child: CustomSpinner(size: 50.0));
+                    return Container(
+                      height: MediaQuery.of(context).size.height,
+                      child: const Align(
+                        alignment: Alignment(0.0, -0.2),
+                        child: CustomSpinner(size: 40.0),
+                      ),
+                    );
                   }
                   if (state is HomeFailure) {
                     return NetworkErrorPage(

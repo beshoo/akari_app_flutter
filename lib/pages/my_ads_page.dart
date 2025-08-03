@@ -178,7 +178,10 @@ class _MyAdsViewState extends State<_MyAdsView> with TickerProviderStateMixin {
 
   Widget _buildAdsList(AdsStore store) {
     if (store.isLoading) {
-      return const Center(child: CustomSpinner(size: 50.0));
+      return Align(
+        alignment: Alignment(0.0, -0.3),
+        child: CustomSpinner(size: 50.0),
+      );
     }
     
     final ads = store.currentAds;

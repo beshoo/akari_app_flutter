@@ -6,6 +6,7 @@ class CustomDropdown<T> extends StatefulWidget {
   final String Function(T) itemLabel;
   final String Function(T) itemValue;
   final ValueChanged<T?>? onChanged;
+  final VoidCallback? onClear;
   final String? hintText;
   final String? labelText;
   final String? emptyMessage;
@@ -14,6 +15,7 @@ class CustomDropdown<T> extends StatefulWidget {
   final String? errorText;
   final bool hasError;
   final Color? borderColor;
+  final bool showClearButton;
 
   const CustomDropdown({
     super.key,
@@ -22,6 +24,7 @@ class CustomDropdown<T> extends StatefulWidget {
     required this.itemLabel,
     required this.itemValue,
     this.onChanged,
+    this.onClear,
     this.hintText,
     this.labelText,
     this.emptyMessage,
@@ -30,6 +33,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.errorText,
     this.hasError = false,
     this.borderColor,
+    this.showClearButton = true,
   });
 
   @override
@@ -68,6 +72,15 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> with SingleTicker
     ));
   }
 
+  void _clearSelection() {
+    if (widget.onClear != null) {
+      widget.onClear!();
+    }
+    if (widget.onChanged != null) {
+      widget.onChanged!(null);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -95,11 +108,13 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> with SingleTicker
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFFFAFAFA),
+                color: widget.isEnabled ? Colors.white : const Color(0xFFFAFAFA),
                 border: Border.all(
                   color: widget.borderColor ?? (widget.hasError
                       ? Colors.red.withValues(alpha: 0.6)
-                      : const Color.fromARGB(255, 218, 218, 218)),
+                      : widget.isEnabled 
+                          ? const Color.fromARGB(255, 218, 218, 218)
+                          : const Color(0xFFDBDBDB)),
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(12),
@@ -125,6 +140,19 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> with SingleTicker
                       ),
                     ),
                   ),
+                  // Add clear button if enabled and value is selected
+                  if (widget.showClearButton && widget.value != null && widget.isEnabled)
+                    GestureDetector(
+                      onTap: _clearSelection,
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8, right: 8),
+                        child: Icon(
+                          Icons.cancel_rounded,
+                          color: Colors.grey[600],
+                          size: 20,
+                        ),
+                      ),
+                    ),
                   if (widget.isLoading)
                     SizedBox(
                       width: 16,

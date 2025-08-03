@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
+import '../services/local_notification_service.dart';
 import '../stores/chat_store.dart';
-import '../widgets/message_bubble.dart';
-import '../widgets/chat_input.dart';
-import '../widgets/typing_indicator.dart';
-import '../widgets/custom_app_bar.dart';
-import '../widgets/custom_dialog.dart';
 import '../utils/logger.dart';
+import '../widgets/chat_input.dart';
+import '../widgets/custom_app_bar.dart';
+import '../widgets/message_bubble.dart';
+import '../widgets/typing_indicator.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -19,6 +19,7 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
   bool _showScrollToBottom = false;
+  int _previousMessageCount = 0;
 
   @override
   void initState() {
@@ -27,9 +28,18 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     _scrollController.addListener(_onScroll);
     
     // Initialize and refresh chat store
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final chatStore = Provider.of<ChatStore>(context, listen: false);
       chatStore.refreshState();
+      // Set notification flag to false when entering chat page
+      chatStore.setNotificationFlag(false);
+      
+      // Clear any existing chat notifications when entering chat page
+      try {
+        await LocalNotificationService.cancelAll();
+      } catch (e) {
+        Logger.log('ChatPage: Error clearing notifications - $e');
+      }
     });
   }
 
@@ -70,38 +80,23 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   }
 
   Future<bool> _onWillPop() async {
-    bool? shouldExit;
-    await showCustomDialog(
-      context: context,
-      title: 'إغلاق التطبيق',
-      message: 'هل تريد إغلاق التطبيق؟',
-      okButtonText: 'إغلاق',
-      cancelButtonText: 'البقاء',
-      onOkPressed: () {
-        shouldExit = true;
-      },
-    );
-
-    if (shouldExit == true) {
-      SystemNavigator.pop();
-      return true;
-    }
+    // Set notification flag to true when leaving chat page
+    final chatStore = Provider.of<ChatStore>(context, listen: false);
+    chatStore.setNotificationFlag(true);
     
-    return false;
+    // Navigate directly to home page without showing dialog
+    // Use the same pattern as other parts of the app
+    final currentRoute = ModalRoute.of(context)?.settings.name;
+    if (currentRoute != '/home') {
+      Navigator.pushReplacementNamed(context, '/home');
+    }
+    return false; // Return false to let the system handle the transition
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (!didPop) {
-          final shouldExit = await _onWillPop();
-          if (shouldExit && context.mounted) {
-            Navigator.of(context).pop();
-          }
-        }
-      },
+    return WillPopScope(
+      onWillPop: _onWillPop,
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F5F2),
         appBar: const CustomAppBar(
@@ -113,9 +108,20 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         ),
         body: Consumer<ChatStore>(
           builder: (context, chatStore, child) {
-            // Auto-scroll to bottom when messages or typing state changes
+            // Auto-scroll to bottom only when new messages are added
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              _scrollToBottom();
+              if (_scrollController.hasClients) {
+                final currentMessageCount = chatStore.messages.length;
+                
+                // Auto-scroll if new messages were added OR if it's the first load with messages
+                if (currentMessageCount > _previousMessageCount || 
+                    (currentMessageCount > 0 && _previousMessageCount == 0)) {
+                  _scrollToBottom();
+                }
+                
+                // Update the previous message count
+                _previousMessageCount = currentMessageCount;
+              }
             });
             
             // Show loading while store is initializing

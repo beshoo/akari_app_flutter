@@ -1780,6 +1780,21 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
 
     if (isRemoving) {
       Logger.log('🗑️ Removing current reaction: ${_itemData.currentUserReaction}');
+      
+      // Optimistically update the UI for removal
+      final previousReaction = _itemData.currentUserReaction;
+      setState(() {
+        if (widget.itemType == "apartment") {
+          _itemData = (_itemData as Apartment).copyWith(
+            currentUserReaction: () => null,
+          );
+        } else {
+          _itemData = (_itemData as Share).copyWith(
+            currentUserReaction: () => null,
+          );
+        }
+      });
+
       Logger.log('🚀 Calling reactionStore.removeReaction...');
       final result = await reactionStore.removeReaction(
         postType: widget.itemType,
@@ -1792,14 +1807,12 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
         setState(() {
           if (widget.itemType == "apartment") {
             _itemData = (_itemData as Apartment).copyWith(
-              currentUserReaction: () => null,
               reactionCounts: result['data'] != null && result['data']['reaction_summary'] != null
                   ? ReactionCounts.fromJson(result['data']['reaction_summary'])
                   : null,
             );
           } else {
             _itemData = (_itemData as Share).copyWith(
-              currentUserReaction: () => null,
               reactionCounts: result['data'] != null && result['data']['reaction_summary'] != null
                   ? ReactionCounts.fromJson(result['data']['reaction_summary'])
                   : null,
@@ -1807,8 +1820,19 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
           }
         });
       } else {
-      //  ToastHelper.showToast(context, result['message'] ?? 'فشل في إزالة التفاعل', isError: true);
         Logger.error('❌ Failed to remove reaction: ${result['message']}');
+        // Revert optimistic update on failure
+        setState(() {
+          if (widget.itemType == "apartment") {
+            _itemData = (_itemData as Apartment).copyWith(
+              currentUserReaction: () => previousReaction,
+            );
+          } else {
+            _itemData = (_itemData as Share).copyWith(
+              currentUserReaction: () => previousReaction,
+            );
+          }
+        });
       }
     } else {
       // Optimistically update the UI
@@ -1888,6 +1912,20 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     Logger.log('🔐 Auth Info for Favorite - User Privilege: ${authStore.userPrivilege ?? 'null'}');
     Logger.log('⭐ Toggling favorite for ${widget.itemType} ID: ${_itemData.id}');
 
+    // Optimistically update the UI
+    final previousFavoriteState = _itemData.isFavorited;
+    setState(() {
+      if (widget.itemType == "apartment") {
+        _itemData = (_itemData as Apartment).copyWith(
+          isFavorited: !_itemData.isFavorited,
+        );
+      } else {
+        _itemData = (_itemData as Share).copyWith(
+          isFavorited: !_itemData.isFavorited,
+        );
+      }
+    });
+
     final result = await reactionStore.toggleFavorite(
       postType: widget.itemType,
       postId: _itemData.id,
@@ -1896,7 +1934,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
 
     if (result['success']) {
       Logger.log('✅ Favorite toggled successfully');
-      final isFavorited = result['data']?['is_favorited'] ?? !_itemData.isFavorited;
+      final isFavorited = result['data']?['is_favorited'] ?? !previousFavoriteState;
       setState(() {
         if (widget.itemType == "apartment") {
           _itemData = (_itemData as Apartment).copyWith(
@@ -1912,6 +1950,18 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     } else {
      // ToastHelper.showToast(context, result['message'] ?? 'فشل تحديث المفضلة', isError: true);
       Logger.error('❌ Failed to toggle favorite: ${result['message']}');
+      // Revert optimistic update on failure
+      setState(() {
+        if (widget.itemType == "apartment") {
+          _itemData = (_itemData as Apartment).copyWith(
+            isFavorited: previousFavoriteState,
+          );
+        } else {
+          _itemData = (_itemData as Share).copyWith(
+            isFavorited: previousFavoriteState,
+          );
+        }
+      });
     }
   }
 

@@ -23,6 +23,7 @@ import 'pages/support_page.dart';
 import 'pages/webview_page.dart';
 import 'services/api_service.dart';
 import 'services/firebase_messaging_service.dart';
+import 'services/local_notification_service.dart';
 import 'services/version_service.dart';
 import 'stores/auth_store.dart';
 import 'stores/chat_store.dart';
@@ -106,6 +107,14 @@ Future<void> main() async {
         '\ne.toString()'
         '\nStack: '
         '\nstack');
+  }
+  
+  // Initialize local notification service
+  try {
+    await LocalNotificationService.initialize();
+    Logger.log('✅ Local notification service initialized');
+  } catch (e) {
+    Logger.log('Local notification service initialization failed: $e');
   }
   
   runApp(
@@ -266,6 +275,13 @@ class MyApp extends StatelessWidget {
                 countryCode: args['countryCode'],
                 parent: args['parent'],
               ),
+            );
+          }
+          
+          // Handle notification navigation
+          if (settings.name == '/chat_from_notification') {
+            return MaterialPageRoute(
+              builder: (context) => const ChatPage(),
             );
           }
           

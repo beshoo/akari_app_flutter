@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../data/models/chat_message_model.dart';
-import '../providers/chat_provider.dart';
+import '../stores/chat_store.dart';
 
 class MessageBubble extends StatelessWidget {
   final ChatMessage message;
@@ -127,7 +128,7 @@ class MessageBubble extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         if (part.linkType != null && part.referenceId != null) {
-          ChatProvider.of(context, listen: false).handleLinkTap(
+          Provider.of<ChatStore>(context, listen: false).handleLinkTap(
             part.linkType!,
             part.referenceId!,
             context,

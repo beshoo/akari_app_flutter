@@ -116,7 +116,10 @@ class _FavoritesViewState extends State<_FavoritesView> with TickerProviderState
 
   Widget _buildFavoritesList(FavoritesStore store) {
     if (store.isLoading) {
-      return const Center(child: CustomSpinner(size: 50.0));
+      return Align(
+        alignment: Alignment(0.0, -0.2),
+        child: CustomSpinner(size: 50.0),
+      );
     }
     final favorites = store.currentTab == 0 ? store.shareFavorites : store.apartmentFavorites;
     if (favorites.isEmpty) {

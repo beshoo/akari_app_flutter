@@ -136,35 +136,34 @@ class _ChatInputState extends State<ChatInput> {
             ),
             child: Row(
               children: [
-                // Delete button
-                IconButton(
-                  onPressed: () async {
-                    bool? confirmed;
-                    await showCustomDialog(
-                      context: context,
-                      title: 'حذف المحادثة',
-                      message: 'هل أنت متأكد من حذف جميع الرسائل؟ لا يمكن التراجع عن هذا الإجراء.',
-                      okButtonText: 'حذف',
-                      cancelButtonText: 'إلغاء',
-                      onOkPressed: () {
-                        confirmed = true;
-                      },
-                    );
-
-                    if (confirmed == true) {
-                      try {
-                        final chatStore = Provider.of<ChatStore>(context, listen: false);
-                        await chatStore.deleteThread();
-                      } catch (e) {
-                        Logger.log('ChatInput: Error deleting thread - $e');
-                      }
-                    }
+                // Send button
+                Consumer<ChatStore>(
+                  builder: (context, chatStore, child) {
+                    final isBotTyping = chatStore.isTyping;
+                    final isSendEnabled = _hasText && widget.isEnabled && !isBotTyping;
+                                         return IconButton(
+                       onPressed: isSendEnabled ? _sendMessage : null,
+                       icon: Container(
+                         padding: const EdgeInsets.all(10),
+                         decoration: BoxDecoration(
+                           shape: BoxShape.circle,
+                           color: isSendEnabled ? const Color(0xFFA88B67) : Colors.transparent,
+                           border: Border.all(
+                             color: isSendEnabled ? const Color(0xFFA88B67) : const Color(0xFFCCCCCC),
+                             width: 1.5,
+                           ),
+                         ),
+                         child: Transform.scale(
+                           scaleX: -1,
+                           child: Icon(
+                             Icons.send,
+                             color: isSendEnabled ? Colors.white : Colors.grey,
+                             size: 20,
+                           ),
+                         ),
+                       ),
+                     );
                   },
-                  icon: const Icon(
-                    Icons.delete_outline,
-                    color: Colors.grey,
-                    size: 24,
-                  ),
                 ),
                 
                 // Text input field
@@ -226,20 +225,35 @@ class _ChatInputState extends State<ChatInput> {
                   ),
                 ),
                 
-                // Send button
-                Consumer<ChatStore>(
-                  builder: (context, chatStore, child) {
-                    final isBotTyping = chatStore.isTyping;
-                    final isSendEnabled = _hasText && widget.isEnabled && !isBotTyping;
-                    return IconButton(
-                      onPressed: isSendEnabled ? _sendMessage : null,
-                      icon: Icon(
-                        Icons.send,
-                        color: isSendEnabled ? const Color(0xFFA88B67) : Colors.grey,
-                        size: 24,
-                      ),
+                // Delete button
+                IconButton(
+                  onPressed: () async {
+                    bool? confirmed;
+                    await showCustomDialog(
+                      context: context,
+                      title: 'حذف المحادثة',
+                      message: 'هل أنت متأكد من حذف جميع الرسائل؟ لا يمكن التراجع عن هذا الإجراء.',
+                      okButtonText: 'حذف',
+                      cancelButtonText: 'إلغاء',
+                      onOkPressed: () {
+                        confirmed = true;
+                      },
                     );
+
+                    if (confirmed == true) {
+                      try {
+                        final chatStore = Provider.of<ChatStore>(context, listen: false);
+                        await chatStore.deleteThread();
+                      } catch (e) {
+                        Logger.log('ChatInput: Error deleting thread - $e');
+                      }
+                    }
                   },
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: Colors.grey,
+                    size: 24,
+                  ),
                 ),
               ],
             ),

@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'package:akari_app/stores/auth_store.dart';
 
 import 'package:akari_app/services/firebase_messaging_service.dart';
-import 'package:akari_app/services/version_service.dart';
+import 'package:akari_app/services/secure_storage.dart';
 import 'package:akari_app/utils/logger.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:akari_app/pages/home/home_page.dart';
 import 'package:akari_app/pages/onboarding_page.dart';
@@ -89,58 +87,64 @@ class _SplashPageState extends State<SplashPage> {
 
     if (!mounted) return;
 
-    final authStore = Provider.of<AuthStore>(context, listen: false);
+    // DEBUG: Check token storage directly
+    await _debugTokenStorage();
     
-    // Start non-blocking API calls in the background
-    _startBackgroundApiCalls(authStore);
+    // Check if token exists locally (no HTTP call)
+    final token = await SecureStorage.getToken();
+    final hasToken = token != null;
     
-    // Navigate immediately based on current auth state (non-blocking)
-    _navigateBasedOnCurrentAuthState(authStore);
+    // No HTTP calls in splash - user data will be loaded in home page
+    if (hasToken) {
+      Logger.log('📱 Splash: Token found, will load user data in home page');
+    }
+    
+    Logger.log('🔑 Splash: Token exists: $hasToken');
+    if (hasToken) {
+      Logger.log('🔑 Splash: Token length: ${token.length}');
+    }
+    
+    // Navigate based on token presence
+    _navigateBasedOnTokenPresence(hasToken);
   }
 
-  Future<void> _startBackgroundApiCalls(AuthStore authStore) async {
+  // DEBUG: Add token storage debugging
+  Future<void> _debugTokenStorage() async {
     try {
-      // Start version check in background (non-blocking)
-      _performVersionCheckInBackground();
+      Logger.log('🔍 DEBUG: Checking token storage...');
       
-      // Start auth status check in background (non-blocking)
-      _performAuthCheckInBackground(authStore);
+      // Check if token exists
+      final token = await SecureStorage.getToken();
+      Logger.log('🔑 DEBUG: Token exists: ${token != null}');
+      Logger.log('🔑 DEBUG: Token length: ${token?.length ?? 0}');
+      if (token != null) {
+        Logger.log('🔑 DEBUG: Token preview: ${token.substring(0, 50)}...');
+      }
+      
+      // Check user data
+      final userData = await SecureStorage.getUserData('user_data');
+      Logger.log('👤 DEBUG: User data exists: ${userData != null}');
+      if (userData != null) {
+        Logger.log('👤 DEBUG: User data length: ${userData.length}');
+      }
       
     } catch (e) {
-      Logger.log('❌ Splash: Background API calls failed: $e');
+      Logger.log('❌ DEBUG: Error checking token storage: $e');
     }
   }
 
-  Future<void> _performVersionCheckInBackground() async {
-    try {
-      Logger.log('🔄 Splash: Starting background version check...');
-      
-      // Store version check flag in a global variable or service
-      // This will be checked by the destination page
-      VersionService.instance.setPendingVersionCheck(true);
-      
-      Logger.log('✅ Splash: Background version check flag set');
-    } catch (e) {
-      Logger.log('❌ Splash: Background version check failed: $e');
-    }
-  }
 
-  Future<void> _performAuthCheckInBackground(AuthStore authStore) async {
-    try {
-      Logger.log('🔄 Splash: Starting background auth check...');
-      await authStore.checkAuthStatus();
-      Logger.log('✅ Splash: Background auth check completed');
-    } catch (e) {
-      Logger.log('❌ Splash: Background auth check failed: $e');
-    }
-  }
 
-  void _navigateBasedOnCurrentAuthState(AuthStore authStore) {
+
+
+
+
+  void _navigateBasedOnTokenPresence(bool hasToken) {
     if (_hasNavigated) return;
     _hasNavigated = true;
 
     Logger.log('🚀 Splash: Starting navigation...');
-    Logger.log('🔐 Splash: Auth state - isAuthenticated: ${authStore.isAuthenticated}');
+    Logger.log('🔐 Splash: Token presence - hasToken: $hasToken');
 
     // Check for initial notification
     final hasInitialNotification = FirebaseMessagingService.initialMessage != null;
@@ -148,7 +152,7 @@ class _SplashPageState extends State<SplashPage> {
     
     if (hasInitialNotification) {
       // Navigate based on current auth state (not waiting for API response)
-      if (authStore.isAuthenticated) {
+      if (hasToken) {
         Logger.log('🏠 Splash: Navigating to Home (with notification)');
         _navigateToHome();
       } else {
@@ -164,7 +168,7 @@ class _SplashPageState extends State<SplashPage> {
       });
     } else {
       // Normal navigation without notification
-      if (authStore.isAuthenticated) {
+      if (hasToken) {
         Logger.log('🏠 Splash: Navigating to Home (no notification)');
         _navigateToHome();
       } else {

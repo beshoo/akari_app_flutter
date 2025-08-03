@@ -72,7 +72,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
   };
 
   // Transaction type for shares (buy/sell)
-  String _shareTransactionType = '1'; // '1' for sell, '2' for buy
+  String? _shareTransactionType; // '1' for sell, '2' for buy
 
   // Operators
   String _priceOperator = '=';
@@ -109,15 +109,15 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
   Map<String, dynamic>? _pendingRegionChange;
 
   // Apartment tab state
-  final List<SectorTypeOption> _apartmentSectorTypes = [];
+  List<SectorTypeOption> _apartmentSectorTypes = [];
   List<SectorOption> _apartmentSectors = [];
   SectorTypeOption? _apartmentSelectedSectorType;
   SectorOption? _apartmentSelectedSector;
   Map<String, dynamic>? _apartmentMainSectors;
-  final bool _apartmentIsLoadingSectors = false;
+  bool _apartmentIsLoadingSectors = false;
 
   // 1. Add Apartment Search State Variables and Stores
-  String _apartmentTransactionType = '1';
+  String? _apartmentTransactionType;
   List<ApartmentType> _apartmentTypes = [];
   List<Direction> _directions = [];
   List<ApartmentStatus> _apartmentStatuses = [];
@@ -139,6 +139,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
 
   // Apartment search form data
   final Map<String, String> _apartmentFormData = {
+    'id': '',
     'owner_name': '',
     'region_id': '',
     'sector_id': '',
@@ -151,7 +152,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
     'rooms_count': '',
     'salons_count': '',
     'balcony_count': '',
-    'is_taras': '0',
+    'is_taras': '',
     'equity': '',
     'price': '',
   };
@@ -180,9 +181,17 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
     _loadInitialData();
     _loadApartmentDropdowns();
     _tabController.addListener(() {
-      if (_tabController.index == 1) {
+      if (_tabController.index == 0) {
+        // Share tab selected
+        if (_selectedRegion != null) {
+          _loadSectorsForRegion(_selectedRegion!.id);
+        }
+      } else if (_tabController.index == 1) {
         // Apartment tab selected
         _loadApartmentDropdowns();
+        if (_selectedRegion != null) {
+          _loadApartmentSectorsForRegion(_selectedRegion!.id);
+        }
       }
     });
   }
@@ -266,6 +275,42 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
     }
   }
 
+  Future<void> _loadApartmentSectorsForRegion(int regionId) async {
+    setState(() {
+      _apartmentIsLoadingSectors = true;
+    });
+
+    try {
+      final response = await _shareRepository.fetchSectorsByRegion(regionId);
+      _apartmentMainSectors = response.data;
+      
+      final sectorTypesSelection = <SectorTypeOption>[];
+      if (_apartmentMainSectors?['data'] != null) {
+        final data = _apartmentMainSectors!['data'] as List;
+        for (int index = 0; index < data.length; index++) {
+          final sectorItem = data[index] as Map<String, dynamic>;
+          sectorTypesSelection.add(SectorTypeOption(
+            id: index.toString(),
+            name: sectorItem['key'] ?? '',
+          ));
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _apartmentSectorTypes = sectorTypesSelection;
+          _apartmentIsLoadingSectors = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _apartmentIsLoadingSectors = false;
+        });
+      }
+    }
+  }
+
   void _handleRegionChange(region_model.Region? region) {
     if (region != null) {
       final isShareAvailable = region.hasShare;
@@ -311,6 +356,29 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
       }
       
       _proceedWithRegionChange(region, isShareAvailable, isApartmentAvailable);
+    } else {
+      // Handle clearing the region selection
+      setState(() {
+        _selectedRegion = null;
+        _shareFormData['region_id'] = '';
+        
+        // Clear dependent fields
+        _sectorTypes.clear();
+        _sectors.clear();
+        _selectedSectorType = null;
+        _selectedSector = null;
+        
+        // Reset apartment dropdowns
+        _apartmentSelectedType = null;
+        _apartmentSelectedDirection = null;
+        _apartmentSelectedStatus = null;
+        _apartmentSelectedPayment = null;
+        _apartmentTypes.clear();
+        _directions.clear();
+        _apartmentStatuses.clear();
+        _paymentMethods.clear();
+        _apartmentFieldsToShow.clear();
+      });
     }
   }
 
@@ -355,6 +423,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
     }
     if (_currentSearchType == 'apartment' && isApartmentAvailable) {
       _loadApartmentDropdowns();
+      _loadApartmentSectorsForRegion(region.id);
     }
   }
   
@@ -373,7 +442,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
         final sectorCodes = selectedSectorData['code'] as List?;
         
         if (sectorCodes != null) {
-          final sectorOptions = sectorCodes.map((code) {
+          List<SectorOption> sectorOptions = sectorCodes.map((code) {
             final codeMap = code as Map<String, dynamic>;
             return SectorOption(
               id: codeMap['id'] ?? 0,
@@ -382,6 +451,21 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
             );
           }).toList();
 
+          // Apply filtering logic for sector types
+          if (sectorType.name == 'أسهم على الشيوع') {
+            // For "أسهم على الشيوع": show only the first item
+            if (sectorOptions.isNotEmpty) {
+              sectorOptions = [sectorOptions.first];
+            }
+          } else {
+            // For other sector types: hide the first item, show the rest
+            if (sectorOptions.length > 1) {
+              sectorOptions = sectorOptions.skip(1).toList();
+            } else {
+              sectorOptions = []; // If only one item, hide it all
+            }
+          }
+
           if (mounted) {
             setState(() {
               _sectors = sectorOptions;
@@ -389,6 +473,13 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
           }
         }
       }
+    } else {
+      // Handle clearing the sector type selection
+      setState(() {
+        _selectedSectorType = null;
+        _sectors.clear();
+        _selectedSector = null;
+      });
     }
   }
 
@@ -397,6 +488,12 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
       setState(() {
         _selectedSector = sector;
         _shareFormData['sector_id'] = sector.id.toString();
+      });
+    } else {
+      // Handle clearing the sector selection
+      setState(() {
+        _selectedSector = null;
+        _shareFormData['sector_id'] = '';
       });
     }
   }
@@ -427,15 +524,18 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
       });
 
       try {
+        // If reference ID is provided, only search by ID
+        final hasReferenceId = _shareFormData['id']?.isNotEmpty == true;
+        
         final searchResult = await _shareRepository.searchShares(
-          id: _shareFormData['id']?.isNotEmpty == true ? _shareFormData['id'] : null,
-          regionId: _shareFormData['region_id']?.isNotEmpty == true ? int.tryParse(_shareFormData['region_id']!) : null,
-          sectorId: _shareFormData['sector_id']?.isNotEmpty == true ? int.tryParse(_shareFormData['sector_id']!) : null,
-          quantity: _shareFormData['quantity']?.isNotEmpty == true ? _shareFormData['quantity'] : null,
-          quantityOperator: _quantityOperator,
-          transactionType: int.tryParse(_shareTransactionType),
-          price: _shareFormData['price']?.isNotEmpty == true ? _shareFormData['price'] : null,
-          priceOperator: _priceOperator,
+          id: hasReferenceId ? _shareFormData['id'] : null,
+          regionId: hasReferenceId ? null : (_shareFormData['region_id']?.isNotEmpty == true ? int.tryParse(_shareFormData['region_id']!) : null),
+          sectorId: hasReferenceId ? null : (_shareFormData['sector_id']?.isNotEmpty == true ? int.tryParse(_shareFormData['sector_id']!) : null),
+          quantity: hasReferenceId ? null : (_shareFormData['quantity']?.isNotEmpty == true ? _shareFormData['quantity'] : null),
+          quantityOperator: hasReferenceId ? null : _quantityOperator,
+          transactionType: hasReferenceId ? null : (_shareTransactionType != null && _shareTransactionType!.isNotEmpty ? int.tryParse(_shareTransactionType!) : null),
+          price: hasReferenceId ? null : (_shareFormData['price']?.isNotEmpty == true ? _shareFormData['price'] : null),
+          priceOperator: hasReferenceId ? null : _priceOperator,
         );
 
         setState(() {
@@ -451,14 +551,14 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                 searchData: searchResult.toJson(),
                 searchQuery: 'بحث الأسهم',
                 originalSearchParams: {
-                  'id': _shareFormData['id']?.isNotEmpty == true ? _shareFormData['id'] : null,
-                  'regionId': _shareFormData['region_id']?.isNotEmpty == true ? int.tryParse(_shareFormData['region_id']!) : null,
-                  'sectorId': _shareFormData['sector_id']?.isNotEmpty == true ? int.tryParse(_shareFormData['sector_id']!) : null,
-                  'quantity': _shareFormData['quantity']?.isNotEmpty == true ? _shareFormData['quantity'] : null,
-                  'quantityOperator': _quantityOperator,
-                  'transactionType': int.tryParse(_shareTransactionType),
-                  'price': _shareFormData['price']?.isNotEmpty == true ? _shareFormData['price'] : null,
-                  'priceOperator': _priceOperator,
+                  'id': hasReferenceId ? _shareFormData['id'] : null,
+                  'regionId': hasReferenceId ? null : (_shareFormData['region_id']?.isNotEmpty == true ? int.tryParse(_shareFormData['region_id']!) : null),
+                  'sectorId': hasReferenceId ? null : (_shareFormData['sector_id']?.isNotEmpty == true ? int.tryParse(_shareFormData['sector_id']!) : null),
+                  'quantity': hasReferenceId ? null : (_shareFormData['quantity']?.isNotEmpty == true ? _shareFormData['quantity'] : null),
+                  'quantityOperator': hasReferenceId ? null : _quantityOperator,
+                  'transactionType': hasReferenceId ? null : (_shareTransactionType != null && _shareTransactionType!.isNotEmpty ? int.tryParse(_shareTransactionType!) : null),
+                  'price': hasReferenceId ? null : (_shareFormData['price']?.isNotEmpty == true ? _shareFormData['price'] : null),
+                  'priceOperator': hasReferenceId ? null : _priceOperator,
                   'ownerName': null,
                 },
               ),
@@ -485,40 +585,29 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
       });
 
       try {
+        // If reference ID is provided, only search by ID
+        final hasReferenceId = _apartmentFormData['id']?.isNotEmpty == true;
+        
         final searchResult = await _apartmentRepository.searchApartments(
-          regionId: _apartmentFormData['region_id']?.isNotEmpty == true
-              ? int.tryParse(_apartmentFormData['region_id']!)
-              : null,
-          sectorId: _apartmentFormData['sector_id']?.isNotEmpty == true
-              ? int.tryParse(_apartmentFormData['sector_id']!)
-              : null,
-          directionId: _apartmentFormData['direction_id']?.isNotEmpty == true
-              ? int.tryParse(_apartmentFormData['direction_id']!)
-              : null,
-          apartmentTypeId:
-              _apartmentFormData['apartment_type_id']?.isNotEmpty == true
-                  ? int.tryParse(_apartmentFormData['apartment_type_id']!)
-                  : null,
-          paymentMethodId:
-              _apartmentFormData['payment_method_id']?.isNotEmpty == true
-                  ? int.tryParse(_apartmentFormData['payment_method_id']!)
-                  : null,
-          apartmentStatusId:
-              _apartmentFormData['apartment_status_id']?.isNotEmpty == true
-                  ? int.tryParse(_apartmentFormData['apartment_status_id']!)
-                  : null,
-          area: _apartmentFormData['area'],
-          floor: _apartmentFormData['floor'],
-          roomsCount: _apartmentFormData['rooms_count'],
-          salonsCount: _apartmentFormData['salons_count'],
-          balconyCount: _apartmentFormData['balcony_count'],
-          isTaras: _apartmentFormData['is_taras'],
-          equity: _apartmentFormData['equity'],
-          price: _apartmentFormData['price'],
-          transactionType: _apartmentTransactionType,
-          priceOperator: _apartmentPriceOperator,
-          equityOperator: _apartmentEquityOperator,
-          ownerName: _apartmentFormData['owner_name'],
+          id: hasReferenceId ? int.tryParse(_apartmentFormData['id']!) : null,
+          regionId: hasReferenceId ? null : (_apartmentFormData['region_id']?.isNotEmpty == true ? int.tryParse(_apartmentFormData['region_id']!) : null),
+          sectorId: hasReferenceId ? null : (_apartmentFormData['sector_id']?.isNotEmpty == true ? int.tryParse(_apartmentFormData['sector_id']!) : null),
+          directionId: hasReferenceId ? null : (_apartmentFormData['direction_id']?.isNotEmpty == true ? int.tryParse(_apartmentFormData['direction_id']!) : null),
+          apartmentTypeId: hasReferenceId ? null : (_apartmentFormData['apartment_type_id']?.isNotEmpty == true ? int.tryParse(_apartmentFormData['apartment_type_id']!) : null),
+          paymentMethodId: hasReferenceId ? null : (_apartmentFormData['payment_method_id']?.isNotEmpty == true ? int.tryParse(_apartmentFormData['payment_method_id']!) : null),
+          apartmentStatusId: hasReferenceId ? null : (_apartmentFormData['apartment_status_id']?.isNotEmpty == true ? int.tryParse(_apartmentFormData['apartment_status_id']!) : null),
+          area: hasReferenceId ? null : _apartmentFormData['area'],
+          floor: hasReferenceId ? null : _apartmentFormData['floor'],
+          roomsCount: hasReferenceId ? null : _apartmentFormData['rooms_count'],
+          salonsCount: hasReferenceId ? null : _apartmentFormData['salons_count'],
+          balconyCount: hasReferenceId ? null : _apartmentFormData['balcony_count'],
+          isTaras: hasReferenceId ? null : _apartmentFormData['is_taras'],
+          equity: hasReferenceId ? null : _apartmentFormData['equity'],
+          price: hasReferenceId ? null : _apartmentFormData['price'],
+          transactionType: hasReferenceId ? null : (_apartmentTransactionType != null && _apartmentTransactionType!.isNotEmpty ? _apartmentTransactionType : null),
+          priceOperator: hasReferenceId ? null : _apartmentPriceOperator,
+          equityOperator: hasReferenceId ? null : _apartmentEquityOperator,
+          ownerName: hasReferenceId ? null : _apartmentFormData['owner_name'],
         );
 
         setState(() {
@@ -534,35 +623,24 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                 searchData: searchResult.toJson(),
                 searchQuery: 'بحث العقارات',
                 originalSearchParams: {
-                  'regionId': _apartmentFormData['region_id']?.isNotEmpty == true
-                      ? int.tryParse(_apartmentFormData['region_id']!)
-                      : null,
-                  'sectorId': _apartmentFormData['sector_id']?.isNotEmpty == true
-                      ? int.tryParse(_apartmentFormData['sector_id']!)
-                      : null,
-                  'directionId': _apartmentFormData['direction_id']?.isNotEmpty == true
-                      ? int.tryParse(_apartmentFormData['direction_id']!)
-                      : null,
-                  'apartmentTypeId': _apartmentFormData['apartment_type_id']?.isNotEmpty == true
-                      ? int.tryParse(_apartmentFormData['apartment_type_id']!)
-                      : null,
-                  'paymentMethodId': _apartmentFormData['payment_method_id']?.isNotEmpty == true
-                      ? int.tryParse(_apartmentFormData['payment_method_id']!)
-                      : null,
-                  'apartmentStatusId': _apartmentFormData['apartment_status_id']?.isNotEmpty == true
-                      ? int.tryParse(_apartmentFormData['apartment_status_id']!)
-                      : null,
-                  'area': _apartmentFormData['area'],
-                  'floor': _apartmentFormData['floor'],
-                  'roomsCount': _apartmentFormData['rooms_count'],
-                  'salonsCount': _apartmentFormData['salons_count'],
-                  'balconyCount': _apartmentFormData['balcony_count'],
-                  'isTaras': _apartmentFormData['is_taras'],
-                  'equity': _apartmentFormData['equity'],
-                  'price': _apartmentFormData['price'],
-                  'priceOperator': _apartmentPriceOperator,
-                  'equityOperator': _apartmentEquityOperator,
-                  'ownerName': _apartmentFormData['owner_name'],
+                  'id': hasReferenceId ? int.tryParse(_apartmentFormData['id']!) : null,
+                  'regionId': hasReferenceId ? null : (_apartmentFormData['region_id']?.isNotEmpty == true ? int.tryParse(_apartmentFormData['region_id']!) : null),
+                  'sectorId': hasReferenceId ? null : (_apartmentFormData['sector_id']?.isNotEmpty == true ? int.tryParse(_apartmentFormData['sector_id']!) : null),
+                  'directionId': hasReferenceId ? null : (_apartmentFormData['direction_id']?.isNotEmpty == true ? int.tryParse(_apartmentFormData['direction_id']!) : null),
+                  'apartmentTypeId': hasReferenceId ? null : (_apartmentFormData['apartment_type_id']?.isNotEmpty == true ? int.tryParse(_apartmentFormData['apartment_type_id']!) : null),
+                  'paymentMethodId': hasReferenceId ? null : (_apartmentFormData['payment_method_id']?.isNotEmpty == true ? int.tryParse(_apartmentFormData['payment_method_id']!) : null),
+                  'apartmentStatusId': hasReferenceId ? null : (_apartmentFormData['apartment_status_id']?.isNotEmpty == true ? int.tryParse(_apartmentFormData['apartment_status_id']!) : null),
+                  'area': hasReferenceId ? null : _apartmentFormData['area'],
+                  'floor': hasReferenceId ? null : _apartmentFormData['floor'],
+                  'roomsCount': hasReferenceId ? null : _apartmentFormData['rooms_count'],
+                  'salonsCount': hasReferenceId ? null : _apartmentFormData['salons_count'],
+                  'balconyCount': hasReferenceId ? null : _apartmentFormData['balcony_count'],
+                  'isTaras': hasReferenceId ? null : _apartmentFormData['is_taras'],
+                  'equity': hasReferenceId ? null : _apartmentFormData['equity'],
+                  'price': hasReferenceId ? null : _apartmentFormData['price'],
+                  'priceOperator': hasReferenceId ? null : _apartmentPriceOperator,
+                  'equityOperator': hasReferenceId ? null : _apartmentEquityOperator,
+                  'ownerName': hasReferenceId ? null : _apartmentFormData['owner_name'],
                 },
               ),
             ),
@@ -617,6 +695,13 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
           }
         }
       }
+    } else {
+      // Handle clearing the apartment sector type selection
+      setState(() {
+        _apartmentSelectedSectorType = null;
+        _apartmentSectors.clear();
+        _apartmentSelectedSector = null;
+      });
     }
   }
 
@@ -625,6 +710,11 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
       setState(() {
         _apartmentSelectedSector = sector;
         // Set in apartment form data if you have it
+      });
+    } else {
+      // Handle clearing the apartment sector selection
+      setState(() {
+        _apartmentSelectedSector = null;
       });
     }
   }
@@ -741,6 +831,13 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
         _apartmentFormData['apartment_type_id'] = type.id.toString();
         _apartmentFieldsToShow = type.fields;
       });
+    } else {
+      // Handle clearing the apartment type selection
+      setState(() {
+        _apartmentSelectedType = null;
+        _apartmentFormData['apartment_type_id'] = '';
+        _apartmentFieldsToShow = [];
+      });
     }
   }
   void _onApartmentDirectionChanged(Direction? dir) {
@@ -748,6 +845,12 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
       setState(() {
         _apartmentSelectedDirection = dir;
         _apartmentFormData['direction_id'] = dir.id.toString();
+      });
+    } else {
+      // Handle clearing the apartment direction selection
+      setState(() {
+        _apartmentSelectedDirection = null;
+        _apartmentFormData['direction_id'] = '';
       });
     }
   }
@@ -757,6 +860,12 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
         _apartmentSelectedStatus = status;
         _apartmentFormData['apartment_status_id'] = status.id.toString();
       });
+    } else {
+      // Handle clearing the apartment status selection
+      setState(() {
+        _apartmentSelectedStatus = null;
+        _apartmentFormData['apartment_status_id'] = '';
+      });
     }
   }
   void _onApartmentPaymentChanged(PaymentMethod? pay) {
@@ -764,6 +873,12 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
       setState(() {
         _apartmentSelectedPayment = pay;
         _apartmentFormData['payment_method_id'] = pay.id.toString();
+      });
+    } else {
+      // Handle clearing the apartment payment method selection
+      setState(() {
+        _apartmentSelectedPayment = null;
+        _apartmentFormData['payment_method_id'] = '';
       });
     }
   }
@@ -953,6 +1068,22 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   onChanged: (value) {
                     setState(() {
                       _shareFormData['id'] = value;
+                      
+                      // If reference ID is entered, clear all other fields
+                      if (value.isNotEmpty) {
+                        _shareFormData['region_id'] = '';
+                        _shareFormData['sector_id'] = '';
+                        _shareFormData['quantity'] = '';
+                        _shareFormData['price'] = '';
+                        _selectedRegion = null;
+                        _selectedSectorType = null;
+                        _selectedSector = null;
+                        _shareTransactionType = null;
+                        _selectedPriceOperator = _priceOperators.first;
+                        _selectedQuantityOperator = _priceOperators.first;
+                        _priceOperator = _priceOperators.first.id;
+                        _quantityOperator = _priceOperators.first.id;
+                      }
                     });
                   },
                   enabled: !disableForServiceUnavailable,
@@ -960,18 +1091,18 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
 
                 const SizedBox(height: 16),
 
-                // Region dropdown (always enabled)
+                // Region dropdown (disabled if Reference ID is filled or service unavailable)
                 CustomDropdown<region_model.Region>(
                   labelText: 'المنطقة',
                   value: _selectedRegion,
                   items: _regions,
                   itemLabel: (region) => region.name,
                   itemValue: (region) => region.id.toString(),
-                  onChanged: _handleRegionChange,
+                  onChanged: (disableOtherFields || disableForServiceUnavailable) ? null : _handleRegionChange,
                   hintText: 'اختر المنطقة',
                   emptyMessage: 'لا توجد مناطق متاحة',
                   isLoading: _isLoadingRegions,
-                  isEnabled: true,
+                  isEnabled: !(disableOtherFields || disableForServiceUnavailable),
                   borderColor: disableForServiceUnavailable ? const Color(0xFFA47764) : null,
                 ),
 
@@ -988,7 +1119,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   hintText: 'اختر نوع المقسم',
                   emptyMessage: 'يرجى اختيار المنطقة أولاً',
                   isLoading: _isLoadingSectors,
-                  isEnabled: !(disableOtherFields || disableForServiceUnavailable) && _selectedRegion != null && !_isLoadingSectors,
+                  isEnabled: !(disableOtherFields || disableForServiceUnavailable) && _selectedRegion != null,
                 ),
 
                 const SizedBox(height: 16),
@@ -1035,6 +1166,21 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                           setState(() {
                             _shareTransactionType = value;
                           });
+                          
+                          // Re-filter sectors when transaction type changes
+                          if (_selectedSectorType != null) {
+                            _onSectorTypeChanged(_selectedSectorType);
+                          }
+                        } else {
+                          // Handle clearing the transaction type selection
+                          setState(() {
+                            _shareTransactionType = null;
+                          });
+                          
+                          // Re-filter sectors when transaction type changes
+                          if (_selectedSectorType != null) {
+                            _onSectorTypeChanged(_selectedSectorType);
+                          }
                         }
                       },
                       hintText: 'اختر نوع العملية',
@@ -1060,8 +1206,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Expanded(
-                          flex: 1,
+                        IntrinsicWidth(
                           child: CustomDropdown<PriceOperatorOption>(
                             value: _selectedPriceOperator,
                             items: _priceOperators,
@@ -1077,11 +1222,11 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                             },
                             hintText: '',
                             isEnabled: !(disableOtherFields || disableForServiceUnavailable),
+                            showClearButton: false,
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          flex: 2,
                           child: CustomTextField(
                             hintText: 'السعر',
                             value: _shareFormData['price'],
@@ -1117,8 +1262,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Expanded(
-                          flex: 1,
+                        IntrinsicWidth(
                           child: CustomDropdown<PriceOperatorOption>(
                             value: _selectedQuantityOperator,
                             items: _priceOperators,
@@ -1134,11 +1278,11 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                             },
                             hintText: '',
                             isEnabled: !(disableOtherFields || disableForServiceUnavailable),
+                            showClearButton: false,
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          flex: 2,
                           child: CustomTextField(
                             hintText: 'عدد الأسهم',
                             value: _shareFormData['quantity'],
@@ -1196,7 +1340,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
 
   Widget _buildApartmentSearchForm() {
     final availableSearchTypes = _availableSearchTypes;
-    bool disableOtherFields = false;
+    bool disableOtherFields = _apartmentFormData['id'] != null && _apartmentFormData['id']!.isNotEmpty;
     bool disableForServiceUnavailable = !availableSearchTypes.any((option) => option.id == 'apartment') && _selectedRegion != null;
     return Column(
       children: [
@@ -1246,6 +1390,55 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   ),
 
                 const SizedBox(height: 16),
+
+                // Reference ID input (disabled if service unavailable)
+                CustomTextField(
+                  labelText: 'الرقم المرجعي',
+                  hintText: 'أدخل الرقم المرجعي',
+                  value: _apartmentFormData['id'],
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged: (value) {
+                    setState(() {
+                      _apartmentFormData['id'] = value;
+                      
+                      // If reference ID is entered, clear all other fields
+                      if (value.isNotEmpty) {
+                        _apartmentFormData['region_id'] = '';
+                        _apartmentFormData['sector_id'] = '';
+                        _apartmentFormData['direction_id'] = '';
+                        _apartmentFormData['apartment_type_id'] = '';
+                        _apartmentFormData['payment_method_id'] = '';
+                        _apartmentFormData['apartment_status_id'] = '';
+                        _apartmentFormData['area'] = '';
+                        _apartmentFormData['floor'] = '';
+                        _apartmentFormData['rooms_count'] = '';
+                        _apartmentFormData['salons_count'] = '';
+                        _apartmentFormData['balcony_count'] = '';
+                        _apartmentFormData['is_taras'] = '';
+                        _apartmentFormData['equity'] = '';
+                        _apartmentFormData['price'] = '';
+                        _apartmentFormData['owner_name'] = '';
+                        
+                        _selectedRegion = null;
+                        _apartmentSelectedSectorType = null;
+                        _apartmentSelectedSector = null;
+                        _apartmentSelectedDirection = null;
+                        _apartmentSelectedType = null;
+                        _apartmentSelectedStatus = null;
+                        _apartmentSelectedPayment = null;
+                        _apartmentTransactionType = null;
+                        _selectedApartmentPriceOperator = _priceOperators.first;
+                        _selectedApartmentEquityOperator = _priceOperators.first;
+                        _apartmentPriceOperator = _priceOperators.first.id;
+                        _apartmentEquityOperator = _priceOperators.first.id;
+                      }
+                    });
+                  },
+                  enabled: !disableForServiceUnavailable,
+                ),
+
+                const SizedBox(height: 16),
                 // Region dropdown
                 CustomDropdown<region_model.Region>(
                   labelText: 'المنطقة',
@@ -1253,10 +1446,11 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   items: _regions,
                   itemLabel: (region) => region.name,
                   itemValue: (region) => region.id.toString(),
-                  onChanged: (region) {
+                  onChanged: (disableOtherFields || disableForServiceUnavailable) ? null : (region) {
                     _handleRegionChange(region);
                     if (region != null) {
                       _loadApartmentDropdowns();
+                      _loadApartmentSectorsForRegion(region.id);
                       setState(() {
                         _apartmentSectorTypes.clear();
                         _apartmentSectors.clear();
@@ -1268,7 +1462,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   hintText: 'اختر المنطقة',
                   emptyMessage: 'لا توجد مناطق متاحة',
                   isLoading: _isLoadingRegions,
-                  isEnabled: true,
+                  isEnabled: !(disableOtherFields || disableForServiceUnavailable),
                   borderColor: disableForServiceUnavailable ? const Color(0xFFA47764) : null,
                 ),
                 const SizedBox(height: 16),
@@ -1283,7 +1477,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   hintText: 'اختر نوع المقسم',
                   emptyMessage: 'يرجى اختيار المنطقة أولاً',
                   isLoading: _apartmentIsLoadingSectors,
-                  isEnabled: !(disableOtherFields || disableForServiceUnavailable) && _selectedRegion != null && !_apartmentIsLoadingSectors,
+                  isEnabled: !(disableOtherFields || disableForServiceUnavailable) && _selectedRegion != null,
                 ),
                 const SizedBox(height: 16),
                 // Sector dropdown
@@ -1327,6 +1521,11 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                           setState(() {
                             _apartmentTransactionType = value;
                           });
+                        } else {
+                          // Handle clearing the apartment transaction type selection
+                          setState(() {
+                            _apartmentTransactionType = null;
+                          });
                         }
                       },
                       hintText: 'اختر نوع العملية',
@@ -1343,10 +1542,11 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   items: _directions,
                   itemLabel: (direction) => direction.name,
                   itemValue: (direction) => direction.id.toString(),
-                  onChanged: _onApartmentDirectionChanged,
+                  onChanged: (disableOtherFields || disableForServiceUnavailable) ? null : _onApartmentDirectionChanged,
                   hintText: 'اختر اتجاه العقار',
                   emptyMessage: 'لا توجد اتجاهات متاحة',
                   isLoading: _apartmentIsLoadingDirections,
+                  isEnabled: !(disableOtherFields || disableForServiceUnavailable),
                 ),
                 const SizedBox(height: 16),
                 // Apartment type dropdown
@@ -1356,10 +1556,11 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   items: _apartmentTypes,
                   itemLabel: (apartmentType) => apartmentType.name,
                   itemValue: (apartmentType) => apartmentType.id.toString(),
-                  onChanged: _onApartmentTypeChanged,
+                  onChanged: (disableOtherFields || disableForServiceUnavailable) ? null : _onApartmentTypeChanged,
                   hintText: 'اختر نوع العقار',
                   emptyMessage: 'لا توجد أنواع عقارات متاحة',
                   isLoading: _apartmentIsLoadingTypes,
+                  isEnabled: !(disableOtherFields || disableForServiceUnavailable),
                 ),
                 const SizedBox(height: 16),
                 // Apartment status dropdown
@@ -1369,10 +1570,11 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   items: _apartmentStatuses,
                   itemLabel: (apartmentStatus) => apartmentStatus.name,
                   itemValue: (apartmentStatus) => apartmentStatus.id.toString(),
-                  onChanged: _onApartmentStatusChanged,
+                  onChanged: (disableOtherFields || disableForServiceUnavailable) ? null : _onApartmentStatusChanged,
                   hintText: 'اختر حالة العقار',
                   emptyMessage: 'لا توجد حالات عقارات متاحة',
                   isLoading: _apartmentIsLoadingStatuses,
+                  isEnabled: !(disableOtherFields || disableForServiceUnavailable),
                 ),
                 const SizedBox(height: 16),
                 // Area input
@@ -1385,6 +1587,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   onChanged: (value) {
                     _apartmentFormData['area'] = value;
                   },
+                  enabled: !(disableOtherFields || disableForServiceUnavailable),
                 ),
                 const SizedBox(height: 16),
                 // Conditional fields
@@ -1398,6 +1601,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                     onChanged: (value) {
                       _apartmentFormData['floor'] = value;
                     },
+                    enabled: !(disableOtherFields || disableForServiceUnavailable),
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -1411,6 +1615,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                     onChanged: (value) {
                       _apartmentFormData['rooms_count'] = value;
                     },
+                    enabled: !(disableOtherFields || disableForServiceUnavailable),
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -1424,6 +1629,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                     onChanged: (value) {
                       _apartmentFormData['salons_count'] = value;
                     },
+                    enabled: !(disableOtherFields || disableForServiceUnavailable),
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -1437,6 +1643,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                     onChanged: (value) {
                       _apartmentFormData['balcony_count'] = value;
                     },
+                    enabled: !(disableOtherFields || disableForServiceUnavailable),
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -1448,6 +1655,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   onChanged: (value) {
                     _apartmentFormData['owner_name'] = value;
                   },
+                  enabled: !(disableOtherFields || disableForServiceUnavailable),
                 ),
                 const SizedBox(height: 16),
                 // Equity input
@@ -1465,14 +1673,13 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Expanded(
-                          flex: 1,
+                        IntrinsicWidth(
                           child: CustomDropdown<PriceOperatorOption>(
                             value: _selectedApartmentEquityOperator,
                             items: _priceOperators,
                             itemLabel: (operator) => operator.name,
                             itemValue: (operator) => operator.id,
-                            onChanged: (operator) {
+                            onChanged: (disableOtherFields || disableForServiceUnavailable) ? null : (operator) {
                               if (operator != null) {
                                 setState(() {
                                   _selectedApartmentEquityOperator = operator;
@@ -1481,11 +1688,12 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                               }
                             },
                             hintText: '',
+                            isEnabled: !(disableOtherFields || disableForServiceUnavailable),
+                            showClearButton: false,
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          flex: 2,
                           child: CustomTextField(
                             hintText: 'عدد الأسهم',
                             value: _apartmentFormData['equity'],
@@ -1496,6 +1704,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                             onChanged: (value) {
                               _apartmentFormData['equity'] = value;
                             },
+                            enabled: !(disableOtherFields || disableForServiceUnavailable),
                           ),
                         ),
                       ],
@@ -1518,14 +1727,13 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Expanded(
-                          flex: 1,
+                        IntrinsicWidth(
                           child: CustomDropdown<PriceOperatorOption>(
                             value: _selectedApartmentPriceOperator,
                             items: _priceOperators,
                             itemLabel: (operator) => operator.name,
                             itemValue: (operator) => operator.id,
-                            onChanged: (operator) {
+                            onChanged: (disableOtherFields || disableForServiceUnavailable) ? null : (operator) {
                               if (operator != null) {
                                 setState(() {
                                   _selectedApartmentPriceOperator = operator;
@@ -1534,11 +1742,12 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                               }
                             },
                             hintText: '',
+                            isEnabled: !(disableOtherFields || disableForServiceUnavailable),
+                            showClearButton: false,
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          flex: 2,
                           child: CustomTextField(
                             hintText: 'السعر',
                             value: _apartmentFormData['price'],
@@ -1551,6 +1760,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                             onChanged: (value) {
                               _apartmentFormData['price'] = value;
                             },
+                            enabled: !(disableOtherFields || disableForServiceUnavailable),
                           ),
                         ),
                       ],
@@ -1565,10 +1775,11 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                   items: _paymentMethods,
                   itemLabel: (paymentMethod) => paymentMethod.name,
                   itemValue: (paymentMethod) => paymentMethod.id.toString(),
-                  onChanged: _onApartmentPaymentChanged,
+                  onChanged: (disableOtherFields || disableForServiceUnavailable) ? null : _onApartmentPaymentChanged,
                   hintText: 'اختر طريقة الدفع',
                   emptyMessage: 'لا توجد طرق دفع متاحة',
                   isLoading: _apartmentIsLoadingPayments,
+                  isEnabled: !(disableOtherFields || disableForServiceUnavailable),
                 ),
                 const SizedBox(height: 16),
                 // Taras radio buttons

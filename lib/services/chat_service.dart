@@ -1,17 +1,18 @@
 import 'dart:convert';
-import 'dart:math';
 import 'package:dio/dio.dart';
 import '../utils/logger.dart';
 import '../services/secure_storage.dart';
+import '../config/environment.dart';
 
 class ChatService {
   static final Dio _dio = Dio();
-  static const String baseUrl = 'https://arrows-dev.versetech.net/api';
-  static const int timeoutDuration = 60000; // 60 seconds
+  static const int timeoutDuration = 120000; // 120 seconds
 
   static Future<String?> sendMessage(String message) async {
+    final startTime = DateTime.now();
     try {
       Logger.log('ChatService: Sending message - $message');
+      Logger.log('ChatService: API call started at: $startTime');
       
       // Get auth token
       final authToken = await SecureStorage.getToken();
@@ -21,7 +22,7 @@ class ChatService {
       }
       
       final response = await _dio.post(
-        '$baseUrl/chat',
+        '${Environment.baseUrl}/chat',
         data: {
           'message': message,
         },
@@ -40,9 +41,9 @@ class ChatService {
         // Extract response text from the API response format
         String responseText = _extractResponseText(response.data);
         
-        // Add realistic delay
-        await _addRandomDelay(500, 1500);
-        
+        final endTime = DateTime.now();
+        final duration = endTime.difference(startTime);
+        Logger.log('ChatService: Received response after ${duration.inSeconds} seconds');
         Logger.log('ChatService: Received response - $responseText');
         return responseText;
       } else {
@@ -50,10 +51,20 @@ class ChatService {
         return null;
       }
     } on DioException catch (e) {
-      Logger.log('ChatService: Dio error - ${e.message}');
+      final endTime = DateTime.now();
+      final duration = endTime.difference(startTime);
+      Logger.log('ChatService: Dio error after ${duration.inSeconds} seconds - ${e.message}');
+      Logger.log('ChatService: Dio error type - ${e.type}');
+      if (e.type == DioExceptionType.receiveTimeout || 
+          e.type == DioExceptionType.sendTimeout || 
+          e.type == DioExceptionType.connectionTimeout) {
+        Logger.log('ChatService: Timeout error occurred after ${timeoutDuration}ms');
+      }
       return _getErrorMessage(e);
     } catch (e) {
-      Logger.log('ChatService: Unexpected error - $e');
+      final endTime = DateTime.now();
+      final duration = endTime.difference(startTime);
+      Logger.log('ChatService: Unexpected error after ${duration.inSeconds} seconds - $e');
       return 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.';
     }
   }
@@ -70,7 +81,7 @@ class ChatService {
       }
       
       final response = await _dio.delete(
-        '$baseUrl/chat/threads',
+        '${Environment.baseUrl}/chat/threads',
         options: Options(
           headers: {
             'Accept': 'application/json',
@@ -146,11 +157,7 @@ class ChatService {
     }
   }
 
-  static Future<void> _addRandomDelay(int minMs, int maxMs) async {
-    final random = Random();
-    final delay = minMs + random.nextInt(maxMs - minMs);
-    await Future.delayed(Duration(milliseconds: delay));
-  }
+
 
   // Test API connectivity and authentication
   static Future<bool> testConnection() async {
@@ -164,7 +171,7 @@ class ChatService {
       }
       
       final response = await _dio.post(
-        '$baseUrl/chat',
+        '${Environment.baseUrl}/chat',
         data: {
           'message': 'test connection',
         },

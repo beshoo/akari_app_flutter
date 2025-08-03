@@ -5,10 +5,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/models/chat_message_model.dart';
 import '../services/chat_service.dart';
 import '../services/local_storage_service.dart';
+import '../services/local_notification_service.dart';
 import '../services/message_parser_service.dart';
 import '../utils/logger.dart';
 
 class ChatStore extends ChangeNotifier {
+  // Timeout constants
+  static const int _apiTimeoutSeconds = 130; // 120 seconds HTTP + 10 seconds buffer
+  static const int _typingTimeoutSeconds = 140; // Slightly longer than API timeout
+  
   // Chat state
   List<ChatMessage> _messages = [];
   bool _isTyping = false;
@@ -21,6 +26,9 @@ class ChatStore extends ChangeNotifier {
   Timer? _typingTimer;
   Timer? _safetyTimeout;
   Timer? _backgroundApiTimer;
+  
+  // Notification tracking
+  bool _shouldShowNotification = false;
   
   // Persistence keys
   static const String _chatStateKey = 'chat_store_state';
@@ -111,18 +119,6 @@ class ChatStore extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       
-      // Save main state
-      final stateMap = {
-        'messages_count': _messages.length,
-        'is_typing': _isTyping,
-        'active_api_calls': _activeApiCalls.toList(),
-        'pending_api_call_id': _pendingApiCallId,
-        'last_updated': DateTime.now().millisecondsSinceEpoch,
-      };
-      
-      await prefs.setString(_chatStateKey, 
-        Map<String, dynamic>.from(stateMap).toString());
-      
       // Save typing state separately for quick access
       await prefs.setBool(_typingStateKey, _isTyping);
       
@@ -133,9 +129,15 @@ class ChatStore extends ChangeNotifier {
         await prefs.remove(_pendingCallStateKey);
       }
       
+      // Save basic state information as individual preferences instead of complex map
+      await prefs.setInt('messages_count', _messages.length);
+      await prefs.setStringList('active_api_calls', _activeApiCalls.toList());
+      await prefs.setInt('last_updated', DateTime.now().millisecondsSinceEpoch);
+      
       Logger.log('ChatStore: State persisted successfully');
     } catch (e) {
       Logger.log('ChatStore: Error saving state - $e');
+      // Don't rethrow - state saving failure shouldn't break the chat
     }
   }
 
@@ -150,12 +152,17 @@ class ChatStore extends ChangeNotifier {
       // Load pending API call
       _pendingApiCallId = prefs.getString(_pendingCallStateKey);
       
-      if (_pendingApiCallId != null) {
+      // Load active API calls
+      final activeCallsList = prefs.getStringList('active_api_calls') ?? [];
+      _activeApiCalls.clear();
+      _activeApiCalls.addAll(activeCallsList);
+      
+      if (_pendingApiCallId != null && !_activeApiCalls.contains(_pendingApiCallId!)) {
         _activeApiCalls.add(_pendingApiCallId!);
         Logger.log('ChatStore: Recovered pending API call - $_pendingApiCallId');
       }
       
-      Logger.log('ChatStore: Loaded persisted state - typing: $_isTyping, pending: $_pendingApiCallId');
+      Logger.log('ChatStore: Loaded persisted state - typing: $_isTyping, pending: $_pendingApiCallId, active calls: ${_activeApiCalls.length}');
     } catch (e) {
       Logger.log('ChatStore: Error loading persisted state - $e');
     }
@@ -247,43 +254,130 @@ class ChatStore extends ChangeNotifier {
   
   // Execute the actual API call independently
   Future<void> _executeApiCall(String message, String messageId) async {
+    final startTime = DateTime.now();
     try {
       Logger.log('ChatStore: Executing API call for message: $messageId');
+      Logger.log('ChatStore: Message content: $message');
+      Logger.log('ChatStore: API call started at: $startTime');
       
       // Call API - this should continue even if user leaves the page
+      Logger.log('ChatStore: About to call ChatService.sendMessage');
       final response = await ChatService.sendMessage(message);
+      final endTime = DateTime.now();
+      final duration = endTime.difference(startTime);
+      Logger.log('ChatStore: ChatService.sendMessage returned after ${duration.inSeconds} seconds');
       
-      Logger.log('ChatStore: API call completed for message: $messageId, response: ${response?.substring(0, 50)}...');
+      // Cancel the safety timeout since API call completed successfully
+      _safetyTimeout?.cancel();
+      Logger.log('ChatStore: Safety timeout cancelled for message: $messageId');
+      
+      Logger.log('ChatStore: API call completed for message: $messageId');
+      Logger.log('ChatStore: Response is null: ${response == null}');
+      if (response != null) {
+        Logger.log('ChatStore: Response length: ${response.length}');
+        Logger.log('ChatStore: Response content: ${response.length > 100 ? response.substring(0, 100) : response}...');
+      }
       
       if (response != null) {
-        // Create AI response message
-        final aiMessage = ChatMessage(
-          id: _generateMessageId(),
-          text: response,
-          senderType: SenderType.ai,
-          timestamp: DateTime.now(),
-          parsedParts: MessageParserService.parseMessage(response),
-        );
+        try {
+          Logger.log('ChatStore: Starting to create AI response message');
+          
+          // Create AI response message
+          List<MessagePart> parsedParts;
+          try {
+            Logger.log('ChatStore: Parsing message with MessageParserService');
+            parsedParts = MessageParserService.parseMessage(response);
+            Logger.log('ChatStore: Message parsed successfully, parts count: ${parsedParts.length}');
+          } catch (parseError) {
+            Logger.log('ChatStore: Error parsing message - $parseError');
+            // Fallback to simple text part
+            parsedParts = [MessagePart(text: response)];
+            Logger.log('ChatStore: Using fallback parsing');
+          }
+          
+          final aiMessage = ChatMessage(
+            id: _generateMessageId(),
+            text: response,
+            senderType: SenderType.ai,
+            timestamp: DateTime.now(),
+            parsedParts: parsedParts,
+          );
+          
+          Logger.log('ChatStore: AI message created successfully');
 
-        // Add AI message to list
-        _messages.add(aiMessage);
-        if (_messages.length > 100) {
-          _messages = _messages.sublist(_messages.length - 100);
+          // Add AI message to list
+          _messages.add(aiMessage);
+          if (_messages.length > 100) {
+            _messages = _messages.sublist(_messages.length - 100);
+          }
+          
+          Logger.log('ChatStore: AI response created and added to messages');
+          
+          // Save messages with error handling
+          try {
+            await _saveMessages();
+            Logger.log('ChatStore: Messages saved successfully');
+          } catch (saveError) {
+            Logger.log('ChatStore: Error saving messages - $saveError');
+            // Continue anyway - don't let save errors break the response display
+          }
+          
+          // Hide typing indicator with error handling
+          try {
+            await _hideTypingIndicator();
+            Logger.log('ChatStore: Typing indicator hidden');
+          } catch (typingError) {
+            Logger.log('ChatStore: Error hiding typing indicator - $typingError');
+            // Continue anyway
+          }
+          
+                    // Notify listeners with error handling
+          try {
+            notifyListeners();
+            Logger.log('ChatStore: UI updated successfully');
+          } catch (notifyError) {
+            Logger.log('ChatStore: Error notifying listeners - $notifyError');
+          }
+          
+          // Show notification if user is not on chat page
+          await _showNotificationIfNeeded(response);
+          
+          Logger.log('ChatStore: AI response processing completed successfully');
+      } catch (processingError) {
+        Logger.log('ChatStore: Error processing AI response - $processingError');
+        // Cancel the safety timeout since we're handling the processing error
+        _safetyTimeout?.cancel();
+        // If we fail to process the response, show the raw response as text
+        try {
+          final fallbackMessage = ChatMessage(
+            id: _generateMessageId(),
+            text: response,
+            senderType: SenderType.ai,
+            timestamp: DateTime.now(),
+            parsedParts: [MessagePart(text: response)],
+          );
+          _messages.add(fallbackMessage);
+          notifyListeners();
+          await _hideTypingIndicator();
+          Logger.log('ChatStore: Fallback message created');
+        } catch (fallbackError) {
+          Logger.log('ChatStore: Fallback processing also failed - $fallbackError');
+          await _addErrorMessage('تم استلام الرد لكن حدث خطأ في عرضه. الرد: $response');
+          await _hideTypingIndicator();
         }
-        
-        await _saveMessages();
-        await _hideTypingIndicator();
-        notifyListeners();
-        
-        Logger.log('ChatStore: AI response saved and UI updated');
+      }
       } else {
         Logger.log('ChatStore: API returned null response');
+        // Cancel the safety timeout since we're handling the null response
+        _safetyTimeout?.cancel();
         await _addErrorMessage('عذراً، حدث خطأ في إرسال الرسالة. يرجى المحاولة مرة أخرى.');
         await _hideTypingIndicator();
       }
 
     } catch (e) {
       Logger.log('ChatStore: API call error - $e');
+      // Cancel the safety timeout since we're handling the error
+      _safetyTimeout?.cancel();
       await _addErrorMessage('حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
       await _hideTypingIndicator();
     } finally {
@@ -301,11 +395,11 @@ class ChatStore extends ChangeNotifier {
     // Cancel any existing safety timeout
     _safetyTimeout?.cancel();
     
-    // Set up a more aggressive timeout for recovery calls
-    _safetyTimeout = Timer(const Duration(seconds: 45), () async {
-      Logger.log('ChatStore: API call timeout reached for: $messageId');
+    // Set up timeout that matches the HTTP timeout
+    _safetyTimeout = Timer(const Duration(seconds: _apiTimeoutSeconds), () async {
+      Logger.log('ChatStore: API call timeout reached for: $messageId after $_apiTimeoutSeconds seconds');
       await _hideTypingIndicator();
-      await _addErrorMessage('انتهت مهلة الاستعلام. يرجى المحاولة مرة أخرى.');
+      await _addErrorMessage('انتهت مهلة الاستعلام ($_apiTimeoutSeconds ثانية). يرجى المحاولة مرة أخرى.');
       await _cleanupApiCall(messageId);
       await _clearPendingApiCallMessage(messageId);
     });
@@ -333,21 +427,44 @@ class ChatStore extends ChangeNotifier {
 
   // Add error message
   Future<void> _addErrorMessage(String errorText) async {
-    final errorMessage = ChatMessage(
-      id: _generateMessageId(),
-      text: errorText,
-      senderType: SenderType.ai,
-      timestamp: DateTime.now(),
-      parsedParts: MessageParserService.parseMessage(errorText),
-    );
+    try {
+      final errorMessage = ChatMessage(
+        id: _generateMessageId(),
+        text: errorText,
+        senderType: SenderType.ai,
+        timestamp: DateTime.now(),
+        parsedParts: [MessagePart(text: errorText)], // Use simple parsing for error messages
+      );
 
-    _messages.add(errorMessage);
-    if (_messages.length > 100) {
-      _messages = _messages.sublist(_messages.length - 100);
+      _messages.add(errorMessage);
+      if (_messages.length > 100) {
+        _messages = _messages.sublist(_messages.length - 100);
+      }
+      
+      // Try to save but don't let save failures prevent error message display
+      try {
+        await _saveMessages();
+      } catch (saveError) {
+        Logger.log('ChatStore: Error saving error message - $saveError');
+      }
+      
+      // Try to notify listeners but don't let this fail
+      try {
+        notifyListeners();
+      } catch (notifyError) {
+        Logger.log('ChatStore: Error notifying listeners for error message - $notifyError');
+      }
+      
+      Logger.log('ChatStore: Error message added successfully');
+    } catch (e) {
+      Logger.log('ChatStore: Failed to add error message - $e');
+      // Last resort - just try to notify with whatever state we have
+      try {
+        notifyListeners();
+      } catch (finalError) {
+        Logger.log('ChatStore: Final error notification failed - $finalError');
+      }
     }
-    
-    await _saveMessages();
-    notifyListeners();
   }
 
   // Show typing indicator
@@ -358,9 +475,9 @@ class ChatStore extends ChangeNotifier {
 
     // Safety timeout to prevent stuck typing indicator
     _safetyTimeout?.cancel();
-    _safetyTimeout = Timer(const Duration(seconds: 30), () async {
+    _safetyTimeout = Timer(const Duration(seconds: _typingTimeoutSeconds), () async {
       if (_isTyping) {
-        Logger.log('ChatStore: Safety timeout triggered for typing indicator');
+        Logger.log('ChatStore: Safety timeout triggered for typing indicator after $_typingTimeoutSeconds seconds');
         await _hideTypingIndicator();
       }
     });
@@ -512,6 +629,34 @@ class ChatStore extends ChangeNotifier {
       Logger.log('ChatStore: State refreshed successfully');
     } catch (e) {
       Logger.log('ChatStore: Error refreshing state - $e');
+    }
+  }
+
+  // Set notification flag when user leaves chat page
+  void setNotificationFlag(bool shouldShow) {
+    _shouldShowNotification = shouldShow;
+    Logger.log('ChatStore: Notification flag set to $_shouldShowNotification');
+  }
+
+  // Show notification if user is not on chat page
+  Future<void> _showNotificationIfNeeded(String response) async {
+    if (_shouldShowNotification) {
+      try {
+        // Truncate response for notification
+        final notificationBody = response.length > 100 
+            ? '${response.substring(0, 100)}...' 
+            : response;
+        
+        await LocalNotificationService.showChatResponseNotification(
+          title: 'رد جديد من الذكاء الاصطناعي',
+          body: notificationBody,
+          payload: 'chat',
+        );
+        
+        Logger.log('ChatStore: Notification shown for chat response');
+      } catch (e) {
+        Logger.log('ChatStore: Error showing notification - $e');
+      }
     }
   }
 
