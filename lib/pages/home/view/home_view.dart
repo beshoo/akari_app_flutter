@@ -112,7 +112,7 @@ class _HomeViewState extends State<HomeView> {
                       height: MediaQuery.of(context).size.height,
                       child: const Align(
                         alignment: Alignment(0.0, -0.2),
-                        child: CustomSpinner(size: 40.0),
+                        child: CustomSpinner(size: 50.0),
                       ),
                     );
                   }
