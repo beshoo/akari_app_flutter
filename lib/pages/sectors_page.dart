@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
+import 'package:shimmer/shimmer.dart';
 import '../data/models/region_model.dart';
 import '../data/models/sector_model.dart';
 import '../data/repositories/home_repository.dart';
@@ -564,53 +565,69 @@ class _SectorsPageState extends State<SectorsPage> with TickerProviderStateMixin
             bottom: BorderSide(color: Color(0xFFE0E0E0), width: 1),
           ),
         ),
-        child: _regions.length <= 3
-            ? Center(
-                child: TabBar(
-                  controller: _regionTabController,
-                  isScrollable: false,
-                  labelColor: const Color(0xFF633e3d),
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: const Color(0xFF633e3d),
-                  labelStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Cairo',
-                  ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    fontFamily: 'Cairo',
-                  ),
-                  tabs: _regions.map((region) => Tab(text: region.name)).toList(),
-                ),
-              )
-            : TabBar(
-                controller: _regionTabController,
-                isScrollable: true,
-                labelColor: const Color(0xFF633e3d),
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: const Color(0xFF633e3d),
-                labelStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Cairo',
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  fontFamily: 'Cairo',
-                ),
-                tabs: _regions.map((region) => Tab(text: region.name)).toList(),
-              ),
+        child: TabBar(
+          controller: _regionTabController,
+          isScrollable: _regions.length > 3,
+          tabAlignment: _regions.length > 3 ? TabAlignment.center : TabAlignment.fill,
+          labelColor: const Color(0xFF633e3d),
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: const Color(0xFF633e3d),
+          labelStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Cairo',
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            fontFamily: 'Cairo',
+          ),
+          tabs: _regions.map((region) => Tab(text: region.name)).toList(),
+        ),
       ),
     );
   }
 
   Widget _buildSectorTypeTabs() {
+    // Show loading state when region is switching
+    if (_isRegionSwitching) {
+      return SizedBox(
+        width: double.infinity,
+        child: Container(
+          height: 50,
+          decoration: const BoxDecoration(
+            color: Color(0xFFF7F5F2),
+            border: Border(
+              bottom: BorderSide(color: Color(0xFFE0E0E0), width: 1),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(4, (index) => 
+              Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: Container(
+                  width: 60,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     if (_sectorTypeTabController == null || _sectorResponse?.data.isEmpty == true) {
       return const SizedBox.shrink();
     }
+
+    final sectorTypeKeys = _sectorResponse?.sectorTypeKeys ?? [];
+    final hasMoreThan3Tabs = sectorTypeKeys.length > 3;
 
     return SizedBox(
       width: double.infinity,
@@ -624,7 +641,8 @@ class _SectorsPageState extends State<SectorsPage> with TickerProviderStateMixin
         ),
         child: TabBar(
           controller: _sectorTypeTabController!,
-          isScrollable: ((_sectorResponse?.sectorTypeKeys.length ?? 0) > 3) ? true : false,
+          isScrollable: hasMoreThan3Tabs,
+          tabAlignment: hasMoreThan3Tabs ? TabAlignment.center : TabAlignment.fill,
           labelColor: const Color(0xFF8C7A6A),
           unselectedLabelColor: Colors.grey,
           indicatorColor: const Color(0xFF8C7A6A),
@@ -638,8 +656,7 @@ class _SectorsPageState extends State<SectorsPage> with TickerProviderStateMixin
             fontWeight: FontWeight.w400,
             fontFamily: 'Cairo',
           ),
-          // No tabAlignment needed for centered tabs when isScrollable is false
-          tabs: (_sectorResponse?.sectorTypeKeys ?? []).map((type) => Tab(text: type)).toList(),
+          tabs: sectorTypeKeys.map((type) => Tab(text: type)).toList(),
         ),
       ),
     );
@@ -648,25 +665,37 @@ class _SectorsPageState extends State<SectorsPage> with TickerProviderStateMixin
   Widget _buildSectorCodeDropdown() {
     return Container(
       key: const ValueKey('sector_code_dropdown'),
-      padding: const EdgeInsets.all(16),
+      padding: _isRegionSwitching ? EdgeInsets.zero : const EdgeInsets.all(16),
       decoration: const BoxDecoration(
         color: Color(0xFFF7F5F2),
         border: Border(
           bottom: BorderSide(color: Color(0xFFE0E0E0), width: 1),
         ),
       ),
-      child: CustomDropdownTypeTextSupport<SectorCodeOption>(
-        key: const ValueKey('sector_dropdown_widget'),
-        value: _selectedSectorCode,
-        items: _sectorCodeOptions,
-        itemLabel: (option) => option.displayName,
-        itemValue: (option) => option.code,
-        onChanged: _onSectorCodeChanged,
-        hintText: 'البحث برقم المقسم',
-        labelText: 'ترتيب حسب رقم المقسم',
-        emptyMessage: 'لا توجد مقاسم متاحة',
-        searchHintText: 'ابحث عن رقم المقسم...',
-      ),
+      child: _isRegionSwitching
+          ? Shimmer.fromColors(
+              baseColor: Colors.grey[300]!,
+              highlightColor: Colors.grey[100]!,
+              child: Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            )
+          : CustomDropdownTypeTextSupport<SectorCodeOption>(
+              key: const ValueKey('sector_dropdown_widget'),
+              value: _selectedSectorCode,
+              items: _sectorCodeOptions,
+              itemLabel: (option) => option.displayName,
+              itemValue: (option) => option.code,
+              onChanged: _onSectorCodeChanged,
+              hintText: 'البحث برقم المقسم',
+              labelText: 'ترتيب حسب رقم المقسم',
+              emptyMessage: 'لا توجد مقاسم متاحة',
+              searchHintText: 'ابحث عن رقم المقسم...',
+            ),
     );
   }
 
@@ -806,9 +835,13 @@ class _SectorsPageState extends State<SectorsPage> with TickerProviderStateMixin
                 child: CachedNetworkImage(
                   imageUrl: sector.sectorPhotos[index],
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: Colors.grey[200],
-                    child: const Center(child: CustomSpinner(size: 30.0)),
+                  placeholder: (context, url) => Shimmer.fromColors(
+                    baseColor: Colors.grey[400]!,
+                    highlightColor: Colors.grey[100]!,
+                    period: const Duration(milliseconds: 1500),
+                    child: Container(
+                      color: Colors.grey[400]!,
+                    ),
                   ),
                   errorWidget: (context, url, error) => _buildPlaceholderImageOnly(sector),
                 ),
@@ -833,10 +866,17 @@ class _SectorsPageState extends State<SectorsPage> with TickerProviderStateMixin
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/images/no_photo.jpg',
-              height: 80,
-              fit: BoxFit.contain,
+            Shimmer.fromColors(
+              baseColor: Colors.grey[300]!,
+              highlightColor: Colors.grey[100]!,
+              child: Container(
+                height: 80,
+                width: 80,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(40),
+                ),
+              ),
             ),
             const SizedBox(height: 8),
             const Text(

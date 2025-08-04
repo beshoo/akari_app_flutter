@@ -140,19 +140,6 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> with SingleTicker
                       ),
                     ),
                   ),
-                  // Add clear button if enabled and value is selected
-                  if (widget.showClearButton && widget.value != null && widget.isEnabled)
-                    GestureDetector(
-                      onTap: _clearSelection,
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8, right: 8),
-                        child: Icon(
-                          Icons.cancel_rounded,
-                          color: Colors.grey[600],
-                          size: 20,
-                        ),
-                      ),
-                    ),
                   if (widget.isLoading)
                     SizedBox(
                       width: 16,
@@ -164,12 +151,25 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> with SingleTicker
                         ),
                       ),
                     ),
-                  if (widget.isLoading) const SizedBox(width: 8),
                   Icon(
                     _isOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                     color: widget.isEnabled ? const Color(0xFF8C7A6A) : const Color(0xFFB8B8B8),
                     size: 20,
                   ),
+                  if (widget.isLoading) const SizedBox(width: 8),
+                  // Add clear button if enabled and value is selected
+                  if (widget.showClearButton && widget.value != null && widget.isEnabled)
+                    Transform.translate(
+                      offset: const Offset(-3, 0),
+                      child: GestureDetector(
+                        onTap: _clearSelection,
+                        child: Icon(
+                          Icons.cancel_rounded,
+                          color: Colors.grey[600],
+                          size: 20,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

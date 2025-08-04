@@ -7,6 +7,7 @@ import '../utils/logger.dart';
 import '../utils/toast_helper.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_dialog.dart';
+import '../widgets/custom_rich_text.dart';
 import '../data/repositories/share_repository.dart';
 import '../data/repositories/apartment_repository.dart';
 import 'chat_page.dart';
@@ -547,6 +548,63 @@ class _ContactUsPageState extends State<ContactUsPage> {
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
+                             // Note about commission
+               Container(
+                 width: double.infinity,
+                 padding: const EdgeInsets.all(16),
+                 margin: const EdgeInsets.only(bottom: 20),
+                 decoration: BoxDecoration(
+                   color: const Color(0xFFF7F5F2),
+                   borderRadius: BorderRadius.circular(12),
+                   border: Border.all(
+                     color: const Color(0xFF8B4513),
+                     width: 1,
+                   ),
+                   boxShadow: [
+                     BoxShadow(
+                       color: Colors.black.withValues(alpha: 0.1),
+                       offset: const Offset(0, 2),
+                       blurRadius: 4,
+                       spreadRadius: 0,
+                     ),
+                   ],
+                 ),
+                 child: Column(
+                   crossAxisAlignment: CrossAxisAlignment.start,
+                   children: [
+                     Row(
+                       children: [
+                         Icon(
+                           Icons.info_outline,
+                           color: const Color(0xFF8B4513),
+                           size: 20,
+                         ),
+                         const SizedBox(width: 8),
+                         const Text(
+                           'ملاحظة:',
+                           style: TextStyle(
+                             fontFamily: 'Cairo',
+                             fontSize: 16,
+                             fontWeight: FontWeight.bold,
+                             color: Color(0xFF8B4513),
+                           ),
+                         ),
+                       ],
+                     ),
+                     const SizedBox(height: 8),
+                     CustomRichText(
+                       text: 'عند إتمام أي صفقة بيع أو شراء عبر تطبيق عقاري، سوف يتم احتساب عمولة بنسبة <b>2٪</b> من البائع و <b>1٪</b> من المشتري.',
+                       textAlign: TextAlign.justify,
+                       fontFamily: 'Cairo',
+                       fontSize: 14,
+                       height: 2,
+                       baseStyle: const TextStyle(
+                         color: Color(0xFF1A1A1A),
+                       ),
+                     ),
+                   ],
+                 ),
+               ),
               // Debug info (remove in production)
 /*               Container(
                 padding: const EdgeInsets.all(8),

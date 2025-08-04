@@ -231,7 +231,7 @@ class ApartmentPostAdapter implements PostCardData {
         RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
         (Match match) => '${match[1]},'
       );
-      rows.add(InfoRowData(iconName: 'area.png', text: 'المساحة : $formattedArea متر'));
+      rows.add(InfoRowData(iconName: 'area.png', text: 'المساحة : $formattedArea (م2)'));
     }
     
     // Show apartment status

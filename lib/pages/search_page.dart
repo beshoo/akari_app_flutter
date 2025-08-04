@@ -1579,7 +1579,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                 const SizedBox(height: 16),
                 // Area input
                 CustomTextField(
-                  labelText: 'المساحة',
+                  labelText: 'المساحة (م2)',
                   hintText: 'أدخل المساحة',
                   value: _apartmentFormData['area'],
                   keyboardType: TextInputType.number,

@@ -224,77 +224,85 @@ class _ShareFormPageState extends State<ShareFormPage> {
   }
 
   void _onRegionChanged(region_model.Region? region) {
-    if (region != null) {
-      setState(() {
-        _selectedRegion = region;
+    setState(() {
+      _selectedRegion = region;
+      if (region != null) {
         _formData['region_id'] = region.id.toString();
-        _errors.remove('region');
-        _hasErrors.remove('region');
-      });
-      _loadSectorsForRegion(region.id);
-    }
+        _loadSectorsForRegion(region.id);
+      } else {
+        _formData.remove('region_id');
+        _sectors.clear();
+        _selectedSector = null;
+        _selectedSectorType = null;
+      }
+      _errors.remove('region');
+      _hasErrors.remove('region');
+    });
   }
 
   void _onSectorTypeChanged(SectorTypeOption? sectorType) {
-    if (sectorType != null && _mainSectors != null) {
-      setState(() {
-        _selectedSectorType = sectorType;
-        _errors.remove('sector_type');
-        _hasErrors.remove('sector_type');
+    setState(() {
+      _selectedSectorType = sectorType;
+      if (sectorType != null && _mainSectors != null) {
         _sectors.clear();
         _selectedSector = null;
-      });
 
-      final sectorIndex = int.parse(sectorType.id);
-      final data = _mainSectors!['data'] as List;
-      if (sectorIndex < data.length) {
-        final selectedSectorData = data[sectorIndex] as Map<String, dynamic>;
-        final sectorCodes = selectedSectorData['code'] as List?;
-        
-        if (sectorCodes != null) {
-          List<SectorOption> sectorOptions = sectorCodes.map((code) {
-            final codeMap = code as Map<String, dynamic>;
-            return SectorOption(
-              id: codeMap['id'] ?? 0,
-              name: codeMap['name'] ?? '',
-              code: codeMap['code'] ?? '',
-            );
-          }).toList();
+        final sectorIndex = int.parse(sectorType.id);
+        final data = _mainSectors!['data'] as List;
+        if (sectorIndex < data.length) {
+          final selectedSectorData = data[sectorIndex] as Map<String, dynamic>;
+          final sectorCodes = selectedSectorData['code'] as List?;
+          
+          if (sectorCodes != null) {
+            List<SectorOption> sectorOptions = sectorCodes.map((code) {
+              final codeMap = code as Map<String, dynamic>;
+              return SectorOption(
+                id: codeMap['id'] ?? 0,
+                name: codeMap['name'] ?? '',
+                code: codeMap['code'] ?? '',
+              );
+            }).toList();
 
-          // Apply filtering logic for "أسهم على الشيوع" sector type
-          if (sectorType.name == 'أسهم على الشيوع') {
-            if (_currentType == 'buy') {
-              // For buy: show only the first item
-              if (sectorOptions.isNotEmpty) {
-                sectorOptions = [sectorOptions.first];
-              }
-            } else {
-              // For sell: hide the first item, show the rest
-              if (sectorOptions.length > 1) {
-                sectorOptions = sectorOptions.skip(1).toList();
+            // Apply filtering logic for "أسهم على الشيوع" sector type
+            if (sectorType.name == 'أسهم على الشيوع') {
+              if (_currentType == 'buy') {
+                // For buy: show only the first item
+                if (sectorOptions.isNotEmpty) {
+                  sectorOptions = [sectorOptions.first];
+                }
               } else {
-                sectorOptions = []; // If only one item, hide it all
+                // For sell: hide the first item, show the rest
+                if (sectorOptions.length > 1) {
+                  sectorOptions = sectorOptions.skip(1).toList();
+                } else {
+                  sectorOptions = []; // If only one item, hide it all
+                }
               }
             }
-          }
 
-          setState(() {
             _sectors = sectorOptions;
-          });
+          }
         }
+      } else {
+        _sectors.clear();
+        _selectedSector = null;
       }
-    }
+      _errors.remove('sector_type');
+      _hasErrors.remove('sector_type');
+    });
   }
 
   void _onSectorChanged(SectorOption? sector) {
-    if (sector != null) {
-      setState(() {
-        _selectedSector = sector;
+    setState(() {
+      _selectedSector = sector;
+      if (sector != null) {
         _formData['sector_id'] = sector.id.toString();
-        _errors.remove('sector');
-        _hasErrors.remove('sector');
-      });
-    }
+      } else {
+        _formData.remove('sector_id');
+      }
+      _errors.remove('sector');
+      _hasErrors.remove('sector');
+    });
   }
 
   // Form validation

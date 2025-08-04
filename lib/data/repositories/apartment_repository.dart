@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
 import '../models/apartment_model.dart';
@@ -138,26 +139,45 @@ class ApartmentRepository {
     int? salonsCount,
     int? balconyCount,
     String? isTaras,
+    List<Uint8List>? photos,
   }) async {
+    // Prepare form data for multipart request
+    final formData = FormData.fromMap({
+      'region_id': regionId,
+      'sector_id': sectorId,
+      'direction_id': directionId,
+      'apartment_type_id': apartmentTypeId,
+      'payment_method_id': paymentMethodId,
+      'apartment_status_id': apartmentStatusId,
+      'area': area,
+      'owner_name': ownerName,
+      'price': double.tryParse(price) ?? 0.0,
+      'equity': int.tryParse(equity) ?? 0,
+      'floor': floor ?? 0,
+      'rooms_count': roomsCount ?? 0,
+      'salons_count': salonsCount ?? 0,
+      'balcony_count': balconyCount ?? 0,
+      'is_taras': isTaras ?? '0',
+    });
+
+    // Add photos if provided
+    if (photos != null && photos.isNotEmpty) {
+      for (int i = 0; i < photos.length; i++) {
+        formData.files.add(
+          MapEntry(
+            'photos[]',
+            MultipartFile.fromBytes(
+              photos[i],
+              filename: 'photo_$i.jpg',
+            ),
+          ),
+        );
+      }
+    }
+
     final response = await ApiService.instance.post(
       '/apartment/sell',
-      data: {
-        'region_id': regionId,
-        'sector_id': sectorId,
-        'direction_id': directionId,
-        'apartment_type_id': apartmentTypeId,
-        'payment_method_id': paymentMethodId,
-        'apartment_status_id': apartmentStatusId,
-        'area': area,
-        'owner_name': ownerName,
-        'price': double.tryParse(price) ?? 0.0,
-        'equity': int.tryParse(equity) ?? 0,
-        'floor': floor ?? 0,
-        'rooms_count': roomsCount ?? 0,
-        'salons_count': salonsCount ?? 0,
-        'balcony_count': balconyCount ?? 0,
-        'is_taras': isTaras ?? '0',
-      },
+      data: formData,
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -185,13 +205,20 @@ class ApartmentRepository {
     int? salonsCount,
     int? balconyCount,
     String? isTaras,
+    List<Uint8List>? newPhotos,
+    List<int>? photosToDelete, // Photo IDs to delete
   }) async {
     // Convert string transaction type to numeric: 1 for sell, 2 for buy
     final numericTransactionType = transactionType == 'sell' ? 1 : 2;
     
-    final response = await ApiService.instance.post(
-      '/apartment/update/$apartmentId',
-      data: {
+    // Prepare form data for multipart request if photos are involved
+    Logger.log('Photo update check:');
+    Logger.log('New photos count: ${newPhotos?.length ?? 0}');
+    Logger.log('Photos to delete count: ${photosToDelete?.length ?? 0}');
+    Logger.log('Will use multipart: ${(newPhotos != null && newPhotos.isNotEmpty) || (photosToDelete != null && photosToDelete.isNotEmpty)}');
+    
+    if (newPhotos != null && newPhotos.isNotEmpty || (photosToDelete != null && photosToDelete.isNotEmpty)) {
+      final formData = FormData.fromMap({
         'region_id': regionId,
         'sector_id': sectorId,
         'direction_id': directionId,
@@ -202,19 +229,78 @@ class ApartmentRepository {
         'owner_name': ownerName,
         'price': double.tryParse(price) ?? 0.0,
         'equity': int.tryParse(equity) ?? 0,
-        'transaction_type': numericTransactionType, // Send numeric value
+        'transaction_type': numericTransactionType,
         'floor': floor ?? 0,
         'rooms_count': roomsCount ?? 0,
         'salons_count': salonsCount ?? 0,
         'balcony_count': balconyCount ?? 0,
         'is_taras': isTaras ?? '0',
-      },
-    );
+      });
 
-    if (response.statusCode == 200) {
-      return response.data;
+      // Add photo deletion parameters
+      if (photosToDelete != null && photosToDelete.isNotEmpty) {
+        Logger.log('Adding photo deletion parameters: $photosToDelete');
+        for (int photoId in photosToDelete) {
+          formData.fields.add(
+            MapEntry('delete_photo_ids[]', photoId.toString()),
+          );
+        }
+      }
+
+      // Add new photos
+      if (newPhotos != null && newPhotos.isNotEmpty) {
+        for (int i = 0; i < newPhotos.length; i++) {
+          formData.files.add(
+            MapEntry(
+              'photos[]',
+              MultipartFile.fromBytes(
+                newPhotos[i],
+                filename: 'photo_$i.jpg',
+              ),
+            ),
+          );
+        }
+      }
+
+      final response = await ApiService.instance.post(
+        '/apartment/update/$apartmentId',
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception('Failed to update apartment: ${response.statusCode}');
+      }
     } else {
-      throw Exception('Failed to update apartment: ${response.statusCode}');
+      // No photo changes, use regular JSON request
+      final response = await ApiService.instance.post(
+        '/apartment/update/$apartmentId',
+        data: {
+          'region_id': regionId,
+          'sector_id': sectorId,
+          'direction_id': directionId,
+          'apartment_type_id': apartmentTypeId,
+          'payment_method_id': paymentMethodId,
+          'apartment_status_id': apartmentStatusId,
+          'area': area,
+          'owner_name': ownerName,
+          'price': double.tryParse(price) ?? 0.0,
+          'equity': int.tryParse(equity) ?? 0,
+          'transaction_type': numericTransactionType,
+          'floor': floor ?? 0,
+          'rooms_count': roomsCount ?? 0,
+          'salons_count': salonsCount ?? 0,
+          'balcony_count': balconyCount ?? 0,
+          'is_taras': isTaras ?? '0',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception('Failed to update apartment: ${response.statusCode}');
+      }
     }
   }
 

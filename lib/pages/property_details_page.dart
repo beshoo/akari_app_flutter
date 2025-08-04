@@ -211,24 +211,36 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   List<String> _getPhotos() {
     if (_itemData == null) return ['assets/images/no_photo.jpg'];
     
+    List<String> photos = [];
+    
+    // For apartments, include media images first
+    if (widget.itemType == "apartment") {
+      final apartment = _itemData as Apartment;
+      if (apartment.media.isNotEmpty) {
+        photos.addAll(apartment.media.map((media) => media.originalUrl));
+      }
+    }
+    
     // Get photos from sector if available
     if (_itemData.sector != null && 
         _itemData.sector.photos != null && 
         _itemData.sector.photos.isNotEmpty) {
-      return _itemData.sector.photos
-          .map<String>((photo) => photo['img'] as String)
-          .toList();
+      photos.addAll(_itemData.sector.photos
+          .map<String>((photo) => photo['img'] as String));
     }
     
-    // Get photos from item if available (for items that have direct media)
-    if (_itemData.media != null && _itemData.media.isNotEmpty) {
-      return _itemData.media
-          .map<String>((media) => media['img'] as String)
-          .toList();
+    // For shares, include media images if available
+    if (widget.itemType == "share" && _itemData.media != null && _itemData.media.isNotEmpty) {
+      photos.addAll(_itemData.media
+          .map<String>((media) => media['img'] as String));
     }
     
-    // Fallback to default image
-    return ['assets/images/no_photo.jpg'];
+    // Fallback to default image if no photos found
+    if (photos.isEmpty) {
+      return ['assets/images/no_photo.jpg'];
+    }
+    
+    return photos;
   }
 
   Widget _buildFixedHeader() {
@@ -701,6 +713,103 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     );
   }
 
+  Widget _buildMediaThumbnailsSection() {
+    if (_itemData == null || widget.itemType != "apartment") return const SizedBox.shrink();
+    
+    final apartment = _itemData as Apartment;
+    if (apartment.media.isEmpty) return const SizedBox.shrink();
+    
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // Section title
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFFE5E5E5)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: Text(
+                'صور العقار',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Cairo',
+                  color: Color(0xFF2D2D2D),
+                ),
+                textAlign: TextAlign.right,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          // Thumbnails grid
+          SizedBox(
+            height: 90,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: apartment.media.length,
+              itemBuilder: (context, index) {
+                final media = apartment.media[index];
+                return Container(
+                  width: 90,
+                  margin: EdgeInsets.only(
+                    right: index == 0 ? 0 : 12,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                        spreadRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: GestureDetector(
+                      onTap: () => _showFullScreenPhotoViewer(index),
+                      child: CachedNetworkImage(
+                        imageUrl: media.originalUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Shimmer.fromColors(
+                          baseColor: Colors.grey[300]!,
+                          highlightColor: Colors.grey[100]!,
+                          child: Container(
+                            width: 90,
+                            height: 90,
+                            color: Colors.grey[300],
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          width: 90,
+                          height: 90,
+                          color: Colors.grey[200],
+                          child: const Icon(
+                            Icons.error_outline,
+                            color: Colors.grey,
+                            size: 25,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildGridBox({
     required String iconPath,
     required String title,
@@ -898,8 +1007,8 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     if (shouldShowValue(apartment.area)) {
       mainDetailBoxes.add(_buildGridBox(
         iconPath: 'area.png',
-        title: 'المساحة',
-        value: '${apartment.area} م²',
+        title: 'المساحة (م2)',
+        value: '${apartment.area}',
         textAlign: TextAlign.right,
       ));
     }
@@ -1257,8 +1366,8 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                   Expanded(
                     child: _buildGridBox(
                       iconPath: 'building_1.png',
-                      title: 'المساحة السكنية',
-                      value: '${sector.residentialArea} م²',
+                      title: 'المساحة السكنية (م2)',
+                      value: '${sector.residentialArea}',
                       textAlign: TextAlign.right,
                     ),
                   ),
@@ -1268,8 +1377,8 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                   Expanded(
                     child: _buildGridBox(
                       iconPath: 'building_type.png',
-                      title: 'المساحة التجارية',
-                      value: '${sector.commercialArea} م²',
+                      title: 'المساحة التجارية (م2)',
+                      value: '${sector.commercialArea}',
                       textAlign: TextAlign.right,
                     ),
                   ),
@@ -2152,24 +2261,31 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   }
 
   void _showFullScreenPhotoViewer(int initialIndex) {
+    final photos = _getPhotos();
+    
+    // Ensure the index is within bounds
+    final safeIndex = initialIndex.clamp(0, photos.length - 1);
+    
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
         barrierColor: Colors.black,
         pageBuilder: (context, animation, secondaryAnimation) {
           return FullScreenPhotoViewer(
-            photos: _getPhotos(),
-            initialIndex: initialIndex,
+            photos: photos,
+            initialIndex: safeIndex,
             onPhotoChanged: (index) {
               // Update the carousel when user changes photo in full screen
-              _pageController.animateToPage(
-                index,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-              setState(() {
-                _currentPhotoIndex = index;
-              });
+              if (_pageController.hasClients && index < photos.length) {
+                _pageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+                setState(() {
+                  _currentPhotoIndex = index;
+                });
+              }
             },
           );
         },
@@ -2256,6 +2372,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                                     _buildActionButtons(),
                                     // _buildReactionSummary(),
                                     _buildMainDetailsCard(),
+                                    _buildMediaThumbnailsSection(),
                                     Container(
                                       margin: const EdgeInsets.symmetric(horizontal: 20),
                                       child: Column(

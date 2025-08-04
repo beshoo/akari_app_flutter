@@ -1,6 +1,102 @@
 import 'package:flutter/foundation.dart';
 import 'share_model.dart'; // For shared models like User, Region, Sector, ReactionCounts
 
+class Media {
+  final int id;
+  final String modelType;
+  final int modelId;
+  final String uuid;
+  final String collectionName;
+  final String name;
+  final String fileName;
+  final String mimeType;
+  final String disk;
+  final String conversionsDisk;
+  final int size;
+  final List<dynamic> manipulations;
+  final List<dynamic> customProperties;
+  final List<dynamic> generatedConversions;
+  final List<dynamic> responsiveImages;
+  final int orderColumn;
+  final String createdAt;
+  final String updatedAt;
+  final String originalUrl;
+  final String previewUrl;
+
+  const Media({
+    required this.id,
+    required this.modelType,
+    required this.modelId,
+    required this.uuid,
+    required this.collectionName,
+    required this.name,
+    required this.fileName,
+    required this.mimeType,
+    required this.disk,
+    required this.conversionsDisk,
+    required this.size,
+    required this.manipulations,
+    required this.customProperties,
+    required this.generatedConversions,
+    required this.responsiveImages,
+    required this.orderColumn,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.originalUrl,
+    required this.previewUrl,
+  });
+
+  factory Media.fromJson(Map<String, dynamic> json) {
+    return Media(
+      id: json['id'] ?? 0,
+      modelType: json['model_type'] ?? '',
+      modelId: json['model_id'] ?? 0,
+      uuid: json['uuid'] ?? '',
+      collectionName: json['collection_name'] ?? '',
+      name: json['name'] ?? '',
+      fileName: json['file_name'] ?? '',
+      mimeType: json['mime_type'] ?? '',
+      disk: json['disk'] ?? '',
+      conversionsDisk: json['conversions_disk'] ?? '',
+      size: json['size'] ?? 0,
+      manipulations: json['manipulations'] ?? [],
+      customProperties: json['custom_properties'] ?? [],
+      generatedConversions: json['generated_conversions'] ?? [],
+      responsiveImages: json['responsive_images'] ?? [],
+      orderColumn: json['order_column'] ?? 0,
+      createdAt: json['created_at'] ?? '',
+      updatedAt: json['updated_at'] ?? '',
+      originalUrl: json['original_url'] ?? '',
+      previewUrl: json['preview_url'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'model_type': modelType,
+      'model_id': modelId,
+      'uuid': uuid,
+      'collection_name': collectionName,
+      'name': name,
+      'file_name': fileName,
+      'mime_type': mimeType,
+      'disk': disk,
+      'conversions_disk': conversionsDisk,
+      'size': size,
+      'manipulations': manipulations,
+      'custom_properties': customProperties,
+      'generated_conversions': generatedConversions,
+      'responsive_images': responsiveImages,
+      'order_column': orderColumn,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'original_url': originalUrl,
+      'preview_url': previewUrl,
+    };
+  }
+}
+
 class PaymentMethod {
   final int id;
   final String name;
@@ -142,7 +238,7 @@ class Apartment {
   final ApartmentStatus apartmentStatus;
   final ApartmentType apartmentType;
   final Sector sector;
-  final List<dynamic> media;
+  final List<Media> media;
   final dynamic orderable;
 
   const Apartment({
@@ -234,7 +330,9 @@ class Apartment {
       apartmentStatus: ApartmentStatus.fromJson(json['apartment_status'] ?? {}),
       apartmentType: ApartmentType.fromJson(json['apartment_type'] ?? {}),
       sector: Sector.fromJson(json['sector'] ?? {}),
-      media: json['media'] ?? [],
+      media: (json['media'] as List<dynamic>? ?? [])
+          .map((item) => Media.fromJson(item))
+          .toList(),
       orderable: json['orderable'],
     );
   }
@@ -281,7 +379,7 @@ class Apartment {
       'apartment_status': apartmentStatus.toJson(),
       'apartment_type': apartmentType.toJson(),
       'sector': sector.toJson(),
-      'media': media,
+      'media': media.map((m) => m.toJson()).toList(),
       'orderable': orderable,
     };
   }
@@ -345,7 +443,7 @@ class Apartment {
     ApartmentStatus? apartmentStatus,
     ApartmentType? apartmentType,
     Sector? sector,
-    List<dynamic>? media,
+    List<Media>? media,
     dynamic orderable,
   }) {
     return Apartment(

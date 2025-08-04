@@ -1,6 +1,9 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import '../data/models/apartment_model.dart';
 import '../data/models/region_model.dart' as region_model;
@@ -8,12 +11,14 @@ import '../data/repositories/apartment_repository.dart';
 import '../data/repositories/home_repository.dart';
 import '../data/repositories/share_repository.dart';
 import '../services/secure_storage.dart';
+import '../stores/auth_store.dart';
 import '../utils/logger.dart';
 import '../utils/toast_helper.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_dialog.dart';
 import '../widgets/custom_dropdown.dart';
+import '../widgets/custom_image_picker.dart';
 import '../widgets/custom_radio_buttons.dart';
 import '../widgets/custom_text_field.dart';
 import 'property_details_page.dart';
@@ -54,6 +59,8 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
   final HomeRepository _homeRepository = HomeRepository();
   final ShareRepository _shareRepository = ShareRepository();
   final ApartmentRepository _apartmentRepository = ApartmentRepository();
+
+  AuthStore get authStore => Provider.of<AuthStore>(context, listen: false);
 
   // Form controllers and state
   String _currentType = 'buy';
@@ -110,6 +117,12 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
   ApartmentStatus? _selectedApartmentStatus;
   PaymentMethod? _selectedPaymentMethod;
 
+  // Image upload state
+  List<File> _selectedImages = [];
+  List<Uint8List> _processedImages = [];
+  List<Media> _existingImages = [];
+  List<int> _photosToDelete = []; // Track photo IDs to delete
+
   // Fields to show based on apartment type
   List<String> _fieldsToShow = [];
 
@@ -142,6 +155,9 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
       
       // Use price_key (clean number like "30000000") for display and editing
       _formData['price'] = apartment.priceKey.toString();
+      
+      // Load existing images
+      _existingImages = apartment.media;
     }
   }
 
@@ -423,105 +439,122 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
   }
 
   void _onRegionChanged(region_model.Region? region) {
-    if (region != null) {
-      setState(() {
-        _selectedRegion = region;
+    setState(() {
+      _selectedRegion = region;
+      if (region != null) {
         _formData['region_id'] = region.id.toString();
-        _errors.remove('region');
-        _hasErrors.remove('region');
-      });
-      _loadSectorsForRegion(region.id);
-    }
+        _loadSectorsForRegion(region.id);
+      } else {
+        _formData.remove('region_id');
+        _sectors.clear();
+        _selectedSector = null;
+        _selectedSectorType = null;
+      }
+      _errors.remove('region');
+      _hasErrors.remove('region');
+    });
   }
 
   void _onSectorTypeChanged(SectorTypeOption? sectorType) {
-    if (sectorType != null && _mainSectors != null) {
-      setState(() {
-        _selectedSectorType = sectorType;
-        _errors.remove('sector_type');
-        _hasErrors.remove('sector_type');
+    setState(() {
+      _selectedSectorType = sectorType;
+      if (sectorType != null && _mainSectors != null) {
         _sectors.clear();
         _selectedSector = null;
-      });
 
-      final sectorIndex = int.parse(sectorType.id);
-      final data = _mainSectors!['data'] as List;
-      if (sectorIndex < data.length) {
-        final selectedSectorData = data[sectorIndex] as Map<String, dynamic>;
-        final sectorCodes = selectedSectorData['code'] as List?;
-        
-        if (sectorCodes != null) {
-          final sectorOptions = sectorCodes.map((code) {
-            final codeMap = code as Map<String, dynamic>;
-            return SectorOption(
-              id: codeMap['id'] ?? 0,
-              name: codeMap['name'] ?? '',
-              code: codeMap['code'] ?? '',
-            );
-          }).toList();
+        final sectorIndex = int.parse(sectorType.id);
+        final data = _mainSectors!['data'] as List;
+        if (sectorIndex < data.length) {
+          final selectedSectorData = data[sectorIndex] as Map<String, dynamic>;
+          final sectorCodes = selectedSectorData['code'] as List?;
+          
+          if (sectorCodes != null) {
+            final sectorOptions = sectorCodes.map((code) {
+              final codeMap = code as Map<String, dynamic>;
+              return SectorOption(
+                id: codeMap['id'] ?? 0,
+                name: codeMap['name'] ?? '',
+                code: codeMap['code'] ?? '',
+              );
+            }).toList();
 
-          setState(() {
             _sectors = sectorOptions;
-          });
+          }
         }
+      } else {
+        _sectors.clear();
+        _selectedSector = null;
       }
-    }
+      _errors.remove('sector_type');
+      _hasErrors.remove('sector_type');
+    });
   }
 
   void _onSectorChanged(SectorOption? sector) {
-    if (sector != null) {
-      setState(() {
-        _selectedSector = sector;
+    setState(() {
+      _selectedSector = sector;
+      if (sector != null) {
         _formData['sector_id'] = sector.id.toString();
-        _errors.remove('sector');
-        _hasErrors.remove('sector');
-      });
-    }
+      } else {
+        _formData.remove('sector_id');
+      }
+      _errors.remove('sector');
+      _hasErrors.remove('sector');
+    });
   }
 
   void _onApartmentTypeChanged(ApartmentType? apartmentType) {
-    if (apartmentType != null) {
-      setState(() {
-        _selectedApartmentType = apartmentType;
+    setState(() {
+      _selectedApartmentType = apartmentType;
+      if (apartmentType != null) {
         _formData['apartment_type_id'] = apartmentType.id.toString();
         _fieldsToShow = apartmentType.fields;
-        _errors.remove('apartment_type');
-        _hasErrors.remove('apartment_type');
-      });
-    }
+      } else {
+        _formData.remove('apartment_type_id');
+        _fieldsToShow = [];
+      }
+      _errors.remove('apartment_type');
+      _hasErrors.remove('apartment_type');
+    });
   }
 
   void _onDirectionChanged(Direction? direction) {
-    if (direction != null) {
-      setState(() {
-        _selectedDirection = direction;
+    setState(() {
+      _selectedDirection = direction;
+      if (direction != null) {
         _formData['direction_id'] = direction.id.toString();
-        _errors.remove('direction');
-        _hasErrors.remove('direction');
-      });
-    }
+      } else {
+        _formData.remove('direction_id');
+      }
+      _errors.remove('direction');
+      _hasErrors.remove('direction');
+    });
   }
 
   void _onApartmentStatusChanged(ApartmentStatus? apartmentStatus) {
-    if (apartmentStatus != null) {
-      setState(() {
-        _selectedApartmentStatus = apartmentStatus;
+    setState(() {
+      _selectedApartmentStatus = apartmentStatus;
+      if (apartmentStatus != null) {
         _formData['apartment_status_id'] = apartmentStatus.id.toString();
-        _errors.remove('apartment_status');
-        _hasErrors.remove('apartment_status');
-      });
-    }
+      } else {
+        _formData.remove('apartment_status_id');
+      }
+      _errors.remove('apartment_status');
+      _hasErrors.remove('apartment_status');
+    });
   }
 
   void _onPaymentMethodChanged(PaymentMethod? paymentMethod) {
-    if (paymentMethod != null) {
-      setState(() {
-        _selectedPaymentMethod = paymentMethod;
+    setState(() {
+      _selectedPaymentMethod = paymentMethod;
+      if (paymentMethod != null) {
         _formData['payment_method_id'] = paymentMethod.id.toString();
-        _errors.remove('payment_method');
-        _hasErrors.remove('payment_method');
-      });
-    }
+      } else {
+        _formData.remove('payment_method_id');
+      }
+      _errors.remove('payment_method');
+      _hasErrors.remove('payment_method');
+    });
   }
 
   // Form validation
@@ -760,6 +793,7 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
             salonsCount: salonsCount,
             balconyCount: balconyCount,
             isTaras: isTaras,
+            photos: _processedImages.isNotEmpty ? _processedImages : null,
           );
         }
       } else {
@@ -781,7 +815,15 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
           salonsCount: salonsCount,
           balconyCount: balconyCount,
           isTaras: isTaras,
+          newPhotos: _processedImages.isNotEmpty ? _processedImages : null,
+          photosToDelete: _photosToDelete.isNotEmpty ? _photosToDelete : null,
         );
+        
+        Logger.log('Form submission photo data:');
+        Logger.log('Photos to delete: $_photosToDelete');
+        Logger.log('Existing images count: ${_existingImages.length}');
+        Logger.log('New images count: ${_processedImages.length}');
+        Logger.log('Existing image IDs: ${_existingImages.map((p) => p.id).toList()}');
       }
 
       if (response['success'] == true || response.containsKey('id')) {
@@ -1007,7 +1049,7 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
 
                 // Area input
                 CustomTextField(
-                  labelText: 'المساحة',
+                  labelText: 'المساحة (م2)',
                   hintText: 'أدخل المساحة',
                   value: _formData['area'],
                   keyboardType: TextInputType.number,
@@ -1299,6 +1341,40 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
                         _formData['is_taras'] = value;
                       });
                     },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Image picker (only for sell transactions)
+                if (_currentType == 'sell') ...[
+                  CustomImagePicker(
+                    selectedImages: _selectedImages,
+                    processedImages: _processedImages,
+                    existingImages: _existingImages,
+                    onImagesSelected: (images) {
+                      setState(() {
+                        _selectedImages = images;
+                      });
+                    },
+                    onImagesProcessed: (processedImages) {
+                      setState(() {
+                        _processedImages = processedImages;
+                      });
+                    },
+                    onExistingImagesChanged: (existingImages) {
+                      setState(() {
+                        _existingImages = existingImages;
+                      });
+                    },
+                    onPhotoDeleted: (photoId) {
+                      setState(() {
+                        _photosToDelete.add(photoId);
+                      });
+                      Logger.log('Photo marked for deletion: $photoId');
+                      Logger.log('Photos to delete: $_photosToDelete');
+                    },
+                    maxImages: authStore.userPrivilege == 'admin' ? 999 : 6,
+                    isEnabled: !_isSubmitting,
                   ),
                   const SizedBox(height: 16),
                 ],
