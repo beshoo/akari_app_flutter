@@ -43,6 +43,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   late PostCardData _currentPostData;
   late AnimationController _reactionAnimationController;
   late Animation<double> _reactionScaleAnimation;
+  
+  // Share button debounce
+  bool _isSharing = false;
 
   // Reaction data
   final Map<String, String> _reactionEmojis = {
@@ -1029,7 +1032,22 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   void _shareContent() {
+    // Prevent multiple share dialogs from opening
+    if (_isSharing) return;
+    
+    _isSharing = true;
+    
+    // Share the content
     share_plus.Share.share(_currentPostData.shareButtonText);
+    
+    // Reset the flag after a short delay to allow for future shares
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _isSharing = false;
+        });
+      }
+    });
   }
 
   void _showGoldAccountDialog(BuildContext context) {

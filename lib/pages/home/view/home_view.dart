@@ -11,6 +11,7 @@ import 'package:akari_app/pages/share_form_page.dart';
 import 'package:akari_app/services/api_service.dart';
 import 'package:akari_app/services/firebase_messaging_service.dart';
 import 'package:akari_app/stores/notification_store.dart';
+import 'package:akari_app/utils/logger.dart';
 import 'package:akari_app/widgets/custom_app_bar.dart';
 import 'package:akari_app/widgets/custom_bottom_nav_bar.dart';
 import 'package:akari_app/widgets/custom_dialog.dart';
@@ -119,7 +120,18 @@ class _HomeViewState extends State<HomeView> {
                   if (state is HomeFailure) {
                     return NetworkErrorPage(
                       onRetry: () async {
+                        Logger.log('HomeView: Retrying home data load');
                         context.read<HomeBloc>().add(LoadHomeData());
+                        
+                        // Wait a bit to see if the bloc loads successfully
+                        await Future.delayed(const Duration(seconds: 2));
+                        
+                        // Check if we're still in failure state
+                        final currentState = context.read<HomeBloc>().state;
+                        if (currentState is HomeFailure) {
+                          Logger.log('HomeView: Retry failed, still in failure state');
+                          throw Exception('Home data load failed');
+                        }
                       },
                     );
                   }

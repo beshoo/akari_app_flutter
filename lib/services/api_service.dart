@@ -184,19 +184,28 @@ class ApiService {
             () => NetworkErrorPage(
               onRetry: () async {
                 try {
-                  // Re-attempt the failed request with a 10-second timeout
+                  Logger.log('ApiService: Retrying original request');
+                  
+                  // Re-attempt the failed request with proper timeouts
                   final newResponse = await dio.fetch(
                     error.requestOptions.copyWith(
-                      sendTimeout: const Duration(seconds: 10),
-                      receiveTimeout: const Duration(seconds: 10),
-                      connectTimeout: const Duration(seconds: 10),
+                      sendTimeout: const Duration(seconds: 15),
+                      receiveTimeout: const Duration(seconds: 15),
                     ),
                   );
+                  
                   // If successful, pop the error page and return the response
-                  Get.back(result: newResponse);
+                  if (newResponse.statusCode! >= 200 && newResponse.statusCode! < 300) {
+                    Logger.log('ApiService: Retry successful, returning response');
+                    Get.back(result: newResponse);
+                  } else {
+                    Logger.log('ApiService: Retry failed with status: ${newResponse.statusCode}');
+                    // Don't pop, let user try again
+                  }
                 } catch (e) {
                   // If retry fails, print the error and stay on the error page
-                  Logger.error('--- RETRY FAILED ---', e);
+                  Logger.error('ApiService: Retry failed with exception', e);
+                  // Don't pop, let user try again
                 }
               },
             ),
@@ -357,6 +366,11 @@ class ApiService {
       Logger.error('Failed to fetch notifications', e);
       return {'notifications': <NotificationItem>[], 'nextPageUrl': null};
     }
+  }
+  
+  // Test network connectivity - no longer needed since we retry original requests directly
+  static Future<bool> testNetworkConnectivity() async {
+    return true;
   }
   
   // Helper method to check if ApiService is initialized

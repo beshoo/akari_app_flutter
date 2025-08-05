@@ -40,6 +40,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   final ShareRepository _shareRepository = ShareRepository();
   final PageController _pageController = PageController();
   final ScrollController _scrollController = ScrollController();
+  final ScrollController _dotsScrollController = ScrollController();
   final GlobalKey _reactionButtonKey = GlobalKey();
 
   // State management
@@ -69,6 +70,9 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   };
 
   bool _isClosingDeal = false;
+  
+  // Share button debounce
+  bool _isSharing = false;
 
   AuthStore get authStore => Provider.of<AuthStore>(context, listen: false);
   bool get isOwner => authStore.userId == _itemData?.userId.toString();
@@ -99,6 +103,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     _reactionAnimationController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _dotsScrollController.dispose();
     super.dispose();
   }
   
@@ -107,6 +112,42 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
       setState(() {
         _showReactions = false;
       });
+    }
+  }
+
+  void _autoScrollToCurrentDot() {
+    if (!_dotsScrollController.hasClients) return;
+    
+    final photos = _getPhotos();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final dotWidth = 12.0;
+    final dotMargin = 12.0;
+    final totalDotWidth = dotWidth + (dotMargin * 2);
+    final maxDotsVisible = (screenWidth / totalDotWidth).floor();
+    
+    // Only auto-scroll if we have more dots than can fit on screen
+    if (photos.length <= maxDotsVisible) return;
+    
+    // Calculate the position of the current dot
+    final currentDotPosition = _currentPhotoIndex * totalDotWidth;
+    final scrollOffset = _dotsScrollController.offset;
+    final maxScrollExtent = _dotsScrollController.position.maxScrollExtent;
+    
+    // Calculate the center position of the visible area
+    final visibleCenter = scrollOffset + (screenWidth / 2);
+    final currentDotCenter = currentDotPosition + (totalDotWidth / 2);
+    
+    // If current dot is not in the center area, scroll to it
+    final tolerance = totalDotWidth * 2; // Allow some tolerance
+    if ((currentDotCenter - visibleCenter).abs() > tolerance) {
+      final targetScrollOffset = currentDotCenter - (screenWidth / 2);
+      final clampedOffset = targetScrollOffset.clamp(0.0, maxScrollExtent);
+      
+      _dotsScrollController.animateTo(
+        clampedOffset,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
@@ -315,6 +356,10 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
               setState(() {
                 _currentPhotoIndex = index;
               });
+              // Auto-scroll dots to keep current dot visible
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _autoScrollToCurrentDot();
+              });
             },
             itemBuilder: (context, index) {
               return GestureDetector(
@@ -395,34 +440,87 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     final photos = _getPhotos();
     if (photos.length <= 1) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: photos.asMap().entries.map((entry) {
-          return GestureDetector(
-            onTap: () {
-              _pageController.animateToPage(
-                entry.key,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
+    // Calculate if we need scrollable dots
+    final screenWidth = MediaQuery.of(context).size.width;
+    final dotWidth = 12.0;
+    final dotMargin = 12.0;
+    final totalDotWidth = dotWidth + (dotMargin * 2);
+    final maxDotsVisible = (screenWidth / totalDotWidth).floor();
+    final needsScroll = photos.length > maxDotsVisible;
+
+    if (needsScroll) {
+      // Use scrollable dots for many photos
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        height: 44, // Fixed height for consistency
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (ScrollNotification scrollInfo) {
+            // Auto-scroll to keep current dot visible
+            if (scrollInfo is ScrollUpdateNotification) {
+              _autoScrollToCurrentDot();
+            }
+            return false;
+          },
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            controller: _dotsScrollController,
+            itemCount: photos.length,
+            itemBuilder: (context, index) {
+              return GestureDetector(
+                onTap: () {
+                  _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  margin: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _currentPhotoIndex == index
+                        ? const Color(0xFF8B6F47)
+                        : const Color(0xFF8B6F47).withValues(alpha: 0.3),
+                  ),
+                ),
               );
             },
-            child: Container(
-              width: 12,
-              height: 12,
-              margin: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _currentPhotoIndex == entry.key
-                    ? const Color(0xFF8B6F47)
-                    : const Color(0xFF8B6F47).withValues(alpha: 0.3),
+          ),
+        ),
+      );
+    } else {
+      // Use centered dots for few photos
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: photos.asMap().entries.map((entry) {
+            return GestureDetector(
+              onTap: () {
+                _pageController.animateToPage(
+                  entry.key,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
+              child: Container(
+                width: 12,
+                height: 12,
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _currentPhotoIndex == entry.key
+                      ? const Color(0xFF8B6F47)
+                      : const Color(0xFF8B6F47).withValues(alpha: 0.3),
+                ),
               ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
+            );
+          }).toList(),
+        ),
+      );
+    }
   }
 
   Widget _buildActionButtons() {
@@ -2075,8 +2173,23 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   }
 
   void _shareContent() {
+    // Prevent multiple share dialogs from opening
+    if (_isSharing) return;
+    
     if (_itemData?.shareButton != null) {
+      _isSharing = true;
+      
+      // Share the content
       share_plus.Share.share(_itemData.shareButton);
+      
+      // Reset the flag after a short delay to allow for future shares
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          setState(() {
+            _isSharing = false;
+          });
+        }
+      });
     } else {
       ToastHelper.showToast(context, 'لا يمكن مشاركة هذا العنصر', isError: true);
     }

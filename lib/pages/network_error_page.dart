@@ -20,7 +20,25 @@ class _NetworkErrorPageState extends State<NetworkErrorPage> {
       _isLoading = true;
     });
 
-    await widget.onRetry();
+    try {
+      await widget.onRetry();
+      // If we reach here without exception, the retry was successful
+      // The page should be popped by the calling code
+    } catch (e) {
+      // If retry fails, show a brief message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'فشل في إعادة المحاولة. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontFamily: 'Cairo'),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
 
     if (mounted) {
       setState(() {
