@@ -879,8 +879,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['message'] ?? 'فشل في إزالة التفاعل'),
-            backgroundColor: Colors.red,
+            content: Text(
+              result['message'] ?? 'فشل في إزالة التفاعل',
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: const Color.fromARGB(255, 98, 54, 37),
           ),
         );
       }
@@ -959,8 +962,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['message'] ?? 'فشل في إضافة التفاعل'),
-            backgroundColor: Colors.red,
+            content: Text(
+              result['message'] ?? 'فشل في إضافة التفاعل',
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: const Color.fromARGB(255, 98, 54, 37),
           ),
         );
       }

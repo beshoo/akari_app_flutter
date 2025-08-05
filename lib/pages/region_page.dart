@@ -571,8 +571,11 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         // Show error message for loading more
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('فشل في تحميل المزيد من الأسهم'),
-            backgroundColor: Colors.red,
+            content: Text(
+              'فشل في تحميل المزيد من الأسهم',
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: const Color.fromARGB(255, 98, 54, 37),
           ),
         );
       }
@@ -710,8 +713,11 @@ class _RegionPageState extends State<RegionPage> with TickerProviderStateMixin {
         // Show error message for loading more
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('فشل في تحميل المزيد من العقارات'),
-            backgroundColor: Colors.red,
+            content: Text(
+              'فشل في تحميل المزيد من العقارات',
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: const Color.fromARGB(255, 98, 54, 37),
           ),
         );
       }

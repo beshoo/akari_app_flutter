@@ -2421,7 +2421,6 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
       appBar: CustomAppBar(
         showBackButton: true,
         onBackPressed: () => Navigator.pop(context),
-        onLogoPressed: () => Navigator.pop(context),
         showLogo: true,
         showAddAdButton: true,
         showNotificationButton: true,

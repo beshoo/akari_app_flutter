@@ -218,12 +218,15 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
         });
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('فشل في تحميل المزيد من النتائج'),
-              backgroundColor: Colors.red,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'فشل في تحميل المزيد من النتائج',
+              style: const TextStyle(color: Colors.white),
             ),
-          );
+            backgroundColor: const Color.fromARGB(255, 98, 54, 37),
+          ),
+        );
         }
       }
     }

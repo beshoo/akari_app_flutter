@@ -107,40 +107,16 @@ class _MorePageState extends State<MorePage> {
           user = authStore.user;
           loading = false;
         });
-        
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم تحديث بيانات المستخدم بنجاح'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
+
       } else {
         Logger.log('❌ MorePage: Failed to refresh user data: ${result['message']}');
         setState(() => loading = false);
         
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('فشل في تحديث البيانات: ${result['message']}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
       }
     } catch (e) {
       Logger.error('❌ MorePage: Error refreshing user data', e);
       setState(() => loading = false);
       
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('حدث خطأ أثناء تحديث البيانات'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
     }
   }
 

@@ -6,6 +6,7 @@ import 'package:akari_app/services/secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import '../utils/navigation_helper.dart';
+import '../utils/logger.dart';
 import 'custom_bottom_sheet.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -234,15 +235,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   final token = await SecureStorage.getToken();
                   
                   if (token != null) {
-                    // User is authenticated, check if already on home page
-                    final ModalRoute<Object?>? route = ModalRoute.of(context);
-                    final currentRoute = route?.settings.name;
-                    
-                    if (currentRoute != '/home') {
-                      // Not on home page, navigate to home
-                      Navigator.pushReplacementNamed(context, '/home');
-                    }
-                    // If already on home page, do nothing
+                    // User is authenticated, always navigate to home
+                    Navigator.pushNamedAndRemoveUntil(
+                      context, 
+                      '/home', 
+                      (route) => false
+                    );
                   } else {
                     // User is not authenticated, navigate to onboarding
                     Navigator.pushNamedAndRemoveUntil(
