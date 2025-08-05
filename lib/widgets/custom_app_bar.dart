@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:akari_app/pages/webview_page.dart';
 import 'package:akari_app/stores/notification_store.dart';
+import 'package:akari_app/stores/auth_store.dart';
+import 'package:akari_app/services/secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import '../utils/navigation_helper.dart';
@@ -227,18 +229,27 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 borderRadius: BorderRadius.circular(24),
                 splashColor: Colors.transparent,
                 highlightColor: Colors.transparent,
-                onTap: onLogoPressed ?? () {
-                  final ModalRoute<Object?>? route = ModalRoute.of(context);
-                  if (route != null && route.settings.name != '/home') {
-                    // Check if we're on a main navigation page
-                    final currentRoute = route.settings.name;
-                    if (currentRoute == '/sectors' || currentRoute == '/my-posts' || currentRoute == '/more' || currentRoute == '/orders' || currentRoute == '/favorites') {
-                      // For main navigation pages, use pushReplacementNamed to replace current route
+                onTap: onLogoPressed ?? () async {
+                  // Check if user has authentication token
+                  final token = await SecureStorage.getToken();
+                  
+                  if (token != null) {
+                    // User is authenticated, check if already on home page
+                    final ModalRoute<Object?>? route = ModalRoute.of(context);
+                    final currentRoute = route?.settings.name;
+                    
+                    if (currentRoute != '/home') {
+                      // Not on home page, navigate to home
                       Navigator.pushReplacementNamed(context, '/home');
-                    } else {
-                      // For other pages, use pushNamed to preserve navigation stack
-                      Navigator.pushNamed(context, '/home');
                     }
+                    // If already on home page, do nothing
+                  } else {
+                    // User is not authenticated, navigate to onboarding
+                    Navigator.pushNamedAndRemoveUntil(
+                      context, 
+                      '/onboarding', 
+                      (route) => false
+                    );
                   }
                 },
                 child: Container(
