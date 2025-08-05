@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../stores/auth_store.dart';
 import '../stores/enums_store.dart';
 import '../utils/toast_helper.dart';
+import '../services/geolocation_service.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -26,6 +27,8 @@ class _SignupPageState extends State<SignupPage> {
   String _name = '';
   int _jobTitle = 0;
   bool _agreeToTerms = false;
+  IsoCode _detectedCountry = IsoCode.SY;
+  bool _isLoadingCountry = true;
   
   // Store instances
   late AuthStore _authStore;
@@ -41,6 +44,9 @@ class _SignupPageState extends State<SignupPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadJobTitles();
     });
+    
+    // Detect user's country automatically
+    _detectUserCountry();
   }
   
   @override
@@ -53,6 +59,25 @@ class _SignupPageState extends State<SignupPage> {
   
   Future<void> _loadJobTitles() async {
     await _enumsStore.getJobTitles();
+  }
+  
+  // Detect user's country automatically
+  Future<void> _detectUserCountry() async {
+    try {
+      final detectedCountry = await GeolocationService.getAutoDetectedCountry();
+      if (mounted) {
+        setState(() {
+          _detectedCountry = detectedCountry;
+          _isLoadingCountry = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingCountry = false;
+        });
+      }
+    }
   }
   
   // Handle signup
@@ -370,13 +395,47 @@ class _SignupPageState extends State<SignupPage> {
   }
   
   Widget _buildPhoneInput() {
+    if (_isLoadingCountry) {
+      return SizedBox(
+        height: 56,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFa47764)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              const Text(
+                'جاري تحديد البلد...',
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 14,
+                  color: Color(0xFF9ca3af),
+                ),
+              ),
+              const Spacer(),
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFa47764)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Stack(
       alignment: Alignment.centerLeft,
       children: [
         Directionality(
           textDirection: TextDirection.ltr,
           child: PhoneFormField(
-            initialValue: const PhoneNumber(isoCode: IsoCode.SY, nsn: ''),
+            initialValue: PhoneNumber(isoCode: _detectedCountry, nsn: ''),
             decoration: InputDecoration(
               labelStyle: const TextStyle(fontFamily: 'Cairo'),
               hintStyle: const TextStyle(fontFamily: 'Cairo'),
@@ -531,8 +590,8 @@ class _SignupPageState extends State<SignupPage> {
                   const Spacer(),
                   if (enumsStore.jobTitlesLoading)
                     const SizedBox(
-                      width: 20,
-                      height: 20,
+                      width: 16,
+                      height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFa47764)),

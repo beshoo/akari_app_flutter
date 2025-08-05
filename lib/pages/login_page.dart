@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../stores/auth_store.dart';
 import '../utils/toast_helper.dart';
+import '../services/geolocation_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,8 +19,10 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
 
   // Form state
-  String _countryCode = 'SY';
+  String _countryCode = '';
   String _phone = '';
+  IsoCode _detectedCountry = IsoCode.SY;
+  bool _isLoadingCountry = true;
 
   // Store instances
   late AuthStore _authStore;
@@ -28,12 +31,32 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
     _authStore = Provider.of<AuthStore>(context, listen: false);
+    _detectUserCountry();
   }
 
   @override
   void dispose() {
     _phoneController.dispose();
     super.dispose();
+  }
+
+  // Detect user's country automatically
+  Future<void> _detectUserCountry() async {
+    try {
+      final detectedCountry = await GeolocationService.getAutoDetectedCountry();
+      if (mounted) {
+        setState(() {
+          _detectedCountry = detectedCountry;
+          _isLoadingCountry = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingCountry = false;
+        });
+      }
+    }
   }
 
   // Handle send OTP
@@ -202,13 +225,47 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildPhoneInput() {
+    if (_isLoadingCountry) {
+      return SizedBox(
+        height: 56,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFa47764)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              const Text(
+                'جاري تحديد البلد...',
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 14,
+                  color: Color(0xFF9ca3af),
+                ),
+              ),
+              const Spacer(),
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFa47764)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Stack(
       alignment: Alignment.centerLeft,
       children: [
         Directionality(
           textDirection: TextDirection.ltr,
           child: PhoneFormField(
-            initialValue: const PhoneNumber(isoCode: IsoCode.SY, nsn: ''),
+            initialValue: PhoneNumber(isoCode: _detectedCountry, nsn: ''),
             decoration: InputDecoration(
               labelStyle: const TextStyle(fontFamily: 'Cairo'),
               hintStyle: const TextStyle(fontFamily: 'Cairo'),
