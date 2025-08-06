@@ -37,7 +37,7 @@ class PostCard extends StatefulWidget {
 class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   // === Action Button Size Controls ===
   static const double _actionButtonFontSize = 17;
-  static const double _actionButtonIconSize = 22;
+  static const double _actionButtonIconSize = 18;
 
   bool _showReactions = false;
   late PostCardData _currentPostData;
@@ -525,7 +525,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                         padding: const EdgeInsets.all(2),
                         child: Text(
                           _reactionEmojis[reactions[i]]!,
-                          style: const TextStyle(fontSize: 18),
+                          style: const TextStyle(fontSize: 14),
                         ),
                       ),
                     ),
@@ -797,7 +797,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     return sortedReactions.map((entry) => entry.key).toList();
   }
 
-  Widget _getCurrentReactionIcon({double size = 16}) {
+  Widget _getCurrentReactionIcon({double size = 15}) {
     return Container(
       width: size + 4, // Slightly larger container to prevent overflow
       height: size + 4, // Slightly larger container to prevent overflow
@@ -825,6 +825,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   void _handleReactionButtonTap() async {
+    _hideReactionPanel(); // Always hide the panel on tap
     if (_currentPostData.currentUserReaction != null) {
       // User has any reaction, remove it
       await _removeCurrentReaction();

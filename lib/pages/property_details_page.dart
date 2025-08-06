@@ -1956,10 +1956,11 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   }
 
   void _handleReactionButtonTap() {
+    _hideReactionPanel(); // Always hide the panel on tap
     setState(() {
       if (_itemData.currentUserReaction != null) {
         // User has an existing reaction, remove it
-        Logger.log('👆 Reaction button tapped - removing existing reaction: ${_itemData.currentUserReaction}');
+        Logger.log('👆 Reaction button tapped - removing existing reaction: \\${_itemData.currentUserReaction}');
         _handleReactionSelected(_itemData.currentUserReaction!);
         Logger.log('🗑️ Removing current reaction');
       } else {
