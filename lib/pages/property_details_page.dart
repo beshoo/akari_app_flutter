@@ -380,21 +380,14 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                       : CachedNetworkImage(
                           imageUrl: photos[index],
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => Stack(
-                            children: [
-                              Shimmer.fromColors(
-                                baseColor: Colors.grey[300]!,
-                                highlightColor: Colors.grey[100]!,
-                                child: Container(
-                                  width: double.infinity,
-                                  height: 300,
-                                  color: Colors.grey[300],
-                                ),
-                              ),
-                              const Center(
-                                child: CustomSpinner(size: 40),
-                              ),
-                            ],
+                          placeholder: (context, url) => Shimmer.fromColors(
+                            baseColor: Colors.grey[300]!,
+                            highlightColor: Colors.grey[100]!,
+                            child: Container(
+                              width: double.infinity,
+                              height: 300,
+                              color: Colors.grey[300],
+                            ),
                           ),
                           errorWidget: (context, url, error) => Image.asset(
                             'assets/images/no_photo.jpg',
@@ -2594,21 +2587,14 @@ class _FullScreenPhotoViewerState extends State<FullScreenPhotoViewer> {
                       : CachedNetworkImage(
                           imageUrl: widget.photos[index],
                           fit: BoxFit.contain,
-                          placeholder: (context, url) => Stack(
-                            children: [
-                              Shimmer.fromColors(
-                                baseColor: Colors.grey[700]!,
-                                highlightColor: Colors.grey[500]!,
-                                child: Container(
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  color: Colors.grey[700],
-                                ),
-                              ),
-                              const Center(
-                                child: CustomSpinner(size: 40),
-                              ),
-                            ],
+                          placeholder: (context, url) => Shimmer.fromColors(
+                            baseColor: Colors.grey[700]!,
+                            highlightColor: Colors.grey[500]!,
+                            child: Container(
+                              width: double.infinity,
+                              height: double.infinity,
+                              color: Colors.grey[700],
+                            ),
                           ),
                           errorWidget: (context, url, error) => Image.asset(
                             'assets/images/no_photo.jpg',

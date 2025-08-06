@@ -1,0 +1,57 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build and archive iOS app"
+  lane :build do
+    setup_ci if is_ci
+    
+    # Build the app
+    build_ios_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      configuration: "Release",
+      export_method: "app-store",
+      export_options: {
+        method: "app-store",
+        provisioningProfiles: {
+          "akari.versetech.net" => "match AppStore akari.versetech.net"
+        }
+      },
+      output_directory: "build/ios",
+      output_name: "akari_app.ipa"
+    )
+  end
+
+  desc "Upload to App Store Connect"
+  lane :upload do
+    # Upload to App Store Connect
+    upload_to_app_store(
+      api_key_path: ENV["APP_STORE_CONNECT_API_KEY_PATH"],
+      api_key_id: ENV["APP_STORE_CONNECT_KEY_IDENTIFIER"],
+      api_issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+      ipa: "build/ios/akari_app.ipa",
+      skip_screenshots: true,
+      skip_metadata: true,
+      force: true
+    )
+  end
+
+  desc "Build and upload to App Store Connect"
+  lane :build_and_upload do
+    build
+    upload
+  end
+
+  desc "Setup code signing"
+  lane :setup_signing do
+    # Setup code signing with match
+    setup_ci if is_ci
+    
+    # Sync certificates and provisioning profiles
+    sync_code_signing(
+      type: "appstore",
+      app_identifier: "akari.versetech.net",
+      readonly: true
+    )
+  end
+end 
