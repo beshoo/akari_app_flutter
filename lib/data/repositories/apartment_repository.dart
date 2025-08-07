@@ -575,4 +575,35 @@ class ApartmentRepository {
       rethrow;
     }
   }
+
+  /// Approve an apartment (admin action)
+  Future<Map<String, dynamic>> approveApartment(int apartmentId) async {
+    try {
+      final response = await _dio.get('/admin/apartment/approve/$apartmentId');
+      Logger.log("------- Approve Apartment Response -------");
+      Logger.log("Status Code: ${response.statusCode}");
+      Logger.log("URL: ${response.requestOptions.uri}");
+      Logger.log("Apartment ID: $apartmentId");
+      Logger.log("Response: ${response.data}");
+      Logger.log("------------------------------------------");
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data,
+          'message': 'تم الموافقة على الإعلان بنجاح',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': response.data?['message'] ?? 'فشل في الموافقة على الإعلان',
+        };
+      }
+    } on DioException catch (e) {
+      Logger.error('Error approving apartment', e.response?.data);
+      return {
+        'success': false,
+        'message': e.response?.data?['message'] ?? 'حدث خطأ أثناء الموافقة على الإعلان',
+      };
+    }
+  }
 } 

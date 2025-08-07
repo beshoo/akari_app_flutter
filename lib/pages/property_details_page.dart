@@ -74,6 +74,9 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
   // Share button debounce
   bool _isSharing = false;
 
+  // Approval loading state
+  bool _isApproving = false;
+
   AuthStore get authStore => Provider.of<AuthStore>(context, listen: false);
   bool get isOwner => authStore.userId == _itemData?.userId.toString();
   bool get isAdmin => authStore.userPrivilege == 'admin';
@@ -1582,13 +1585,16 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     int numberOfRows = 0;
     
     // Contact button row (only for non-owners)
-    if (!isOwner) numberOfRows += 1;
+    if (!isOwner && !isAdmin) numberOfRows += 1;
     
     // Edit/Delete row (for owners and admins)
     if (canEditDelete) numberOfRows += 1;
     
     // Admin-only row (إتمام الصفقة and تواصل مع)
     if (isAdmin) numberOfRows += 1;
+    
+    // Admin approval button row (only for unapproved items)
+    if (isAdmin && _itemData?.approve == 0) numberOfRows += 1;
     
     // If no buttons, return minimum height
     if (numberOfRows == 0) return padding * 2;
@@ -1603,13 +1609,16 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
     int numberOfRows = 0;
     
     // Contact button row (only for non-owners)
-    if (!isOwner) numberOfRows += 1;
+    if (!isOwner && !isAdmin) numberOfRows += 1;
     
     // Edit/Delete row (for owners and admins)
     if (canEditDelete) numberOfRows += 1;
     
     // Admin-only row (إتمام الصفقة and تواصل مع)
     if (isAdmin) numberOfRows += 1;
+    
+    // Admin approval button row (only for unapproved items)
+    if (isAdmin && _itemData?.approve == 0) numberOfRows += 1;
     
     // If no buttons, return minimum height
     if (numberOfRows == 0) return padding * 2;
@@ -1923,6 +1932,68 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                       ),
                     ),
                   ],
+                ),
+              ],
+              
+              // Admin approval button (only for unapproved items)
+              if (isAdmin && _itemData.approve == 0) ...[
+                SizedBox(height: spacing),
+                Container(
+                  width: double.infinity,
+                  height: buttonHeight,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color.fromARGB(255, 34, 197, 94), Color.fromARGB(255, 22, 163, 74)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color.fromARGB(255, 34, 197, 94).withValues(alpha: 0.3),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: _isApproving ? null : () {
+                        showCustomDialog(
+                          context: context,
+                          title: 'تأكيد الموافقة',
+                          message: 'هل أنت متأكد أنك تريد الموافقة على هذا الإعلان؟',
+                          okButtonText: 'الموافقة',
+                          cancelButtonText: 'إلغاء',
+                          isWarning: false,
+                          onOkPressed: _handleApproval,
+                        );
+                      },
+                      child: Center(
+                        child: _isApproving
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'الموافقة على الإعلان',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Cairo',
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ],
@@ -2312,6 +2383,35 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
       ToastHelper.showToast(context, 'حدث خطأ أثناء إتمام الصفقة', isError: true);
     } finally {
       if (mounted) setState(() { _isClosingDeal = false; });
+    }
+  }
+
+  Future<void> _handleApproval() async {
+    if (_isApproving || _itemData.approve == 1) return;
+    
+    setState(() { _isApproving = true; });
+    
+    try {
+      Map<String, dynamic> result;
+      if (widget.itemType == "apartment") {
+        result = await _apartmentRepository.approveApartment(_itemData.id);
+      } else {
+        result = await _shareRepository.approveShare(_itemData.id);
+      }
+      
+      Logger.log('✅ Approval API result: $result');
+      
+      if (result['success'] == true) {
+        ToastHelper.showToast(context, result['message'] ?? 'تم الموافقة على الإعلان بنجاح', isError: false);
+        await _loadItemDetails();
+      } else {
+        ToastHelper.showToast(context, result['message'] ?? 'فشل في الموافقة على الإعلان', isError: true);
+      }
+    } catch (e) {
+      Logger.error('❌ Error approving item', e);
+      ToastHelper.showToast(context, 'حدث خطأ أثناء الموافقة على الإعلان', isError: true);
+    } finally {
+      if (mounted) setState(() { _isApproving = false; });
     }
   }
 

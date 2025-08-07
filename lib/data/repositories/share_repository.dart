@@ -527,4 +527,35 @@ class ShareRepository {
       };
     }
   }
+
+  /// Approve a share (admin action)
+  Future<Map<String, dynamic>> approveShare(int shareId) async {
+    try {
+      final response = await _dio.get('/admin/share/approve/$shareId');
+      Logger.log("------- Approve Share Response -------");
+      Logger.log("Status Code: ${response.statusCode}");
+      Logger.log("URL: ${response.requestOptions.uri}");
+      Logger.log("Share ID: $shareId");
+      Logger.log("Response: ${response.data}");
+      Logger.log("--------------------------------------");
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data,
+          'message': 'تم الموافقة على الإعلان بنجاح',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': response.data?['message'] ?? 'فشل في الموافقة على الإعلان',
+        };
+      }
+    } on DioException catch (e) {
+      Logger.error('Error approving share', e.response?.data);
+      return {
+        'success': false,
+        'message': e.response?.data?['message'] ?? 'حدث خطأ أثناء الموافقة على الإعلان',
+      };
+    }
+  }
 }
