@@ -236,7 +236,7 @@ class _CustomImagePickerState extends State<CustomImagePicker> {
           width: double.infinity,
           padding: const EdgeInsets.only(top: 8),
           child: Text(
-            'يمكنك إضافة حتى ${widget.maxImages} صور. سيتم ضغط الصور تلقائياً إلى 1000 بكسل عرض.',
+            'يمكنك إضافة حتى ${widget.maxImages} و سوف يتم ضغط الصور تلقائيا.',
             style: TextStyle(
               fontSize: 11,
               color: Colors.grey.shade600,

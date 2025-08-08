@@ -1102,7 +1102,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
       mainDetailBoxes.add(_buildGridBox(
         iconPath: 'area.png',
         title: 'المساحة (م2)',
-        value: '${apartment.area}',
+        value: _formatNumber(apartment.area.toString()),
         textAlign: TextAlign.right,
       ));
     }
@@ -1461,7 +1461,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                     child: _buildGridBox(
                       iconPath: 'building_1.png',
                       title: 'المساحة السكنية (م2)',
-                      value: '${sector.residentialArea}',
+                      value: '${_formatNumber(sector.residentialArea.toString())}',
                       textAlign: TextAlign.right,
                     ),
                   ),
@@ -1472,7 +1472,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
                     child: _buildGridBox(
                       iconPath: 'building_type.png',
                       title: 'المساحة التجارية (م2)',
-                      value: '${sector.commercialArea}',
+                      value: '${_formatNumber(sector.commercialArea.toString())}',
                       textAlign: TextAlign.right,
                     ),
                   ),
@@ -2508,7 +2508,6 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> with TickerPr
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.itemType == "apartment" ? "تفاصيل العقار" : "تفاصيل الأسهم";
     
     return Scaffold(
       backgroundColor: const Color(0xFFF7F5F2),

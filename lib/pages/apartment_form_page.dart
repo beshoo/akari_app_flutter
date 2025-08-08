@@ -949,7 +949,7 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'أي تعديل على الإعلان يخضع لمراجعة الإدارة مجدداً',
+                            'أي تعديل على الإعلان سوف يخضع لمراجعة الإدارة مجدداً',
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF856404),
@@ -960,7 +960,7 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                 // const SizedBox(height: 16),
                 ],
 
                 // Buy/Sell radio buttons
@@ -1410,7 +1410,7 @@ class _ApartmentFormPageState extends State<ApartmentFormPage> {
                       Logger.log('Photo marked for deletion: $photoId');
                       Logger.log('Photos to delete: $_photosToDelete');
                     },
-                    maxImages: authStore.userPrivilege == 'admin' ? 999 : 6,
+                    maxImages: authStore.userPrivilege == 'admin' ? 20 : 6,
                     isEnabled: !_isSubmitting,
                   ),
                   const SizedBox(height: 16),

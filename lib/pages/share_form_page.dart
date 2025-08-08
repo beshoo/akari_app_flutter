@@ -530,6 +530,45 @@ class _ShareFormPageState extends State<ShareFormPage> {
                   ),
                 ),
 
+                const SizedBox(height: 16),
+
+                // Update mode note
+                if (widget.mode == ShareFormMode.update && widget.existingShare?.approve == 1) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3CD),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFFFFC107),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          color: Color(0xFF856404),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'أي تعديل على الإعلان سوف يخضع لمراجعة الإدارة مجدداً',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF856404),
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                //  const SizedBox(height: 16),
+                ],
+
                 // Buy/Sell radio buttons
                 CustomRadioButtons(
                   radioButtons: [
